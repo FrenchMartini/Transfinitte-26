@@ -57,5 +57,12 @@ class PropulsionModel:
         thrust_mag = self.mass_flow_kg_s * self.exhaust_velocity_m_s
         thrust_vec = thrust_mag * direction
         jet_power_w = 0.5 * self.mass_flow_kg_s * (self.exhaust_velocity_m_s**2)
-        total_power_w = jet_power_w / self.efficiency if self.efficiency > 0.0 else jet_power_w
-        return thrust_vec, float(total_power_w), self.mass_flow_kg_s, self.exhaust_velocity_m_s
+        total_power_w = (
+            jet_power_w / self.efficiency if self.efficiency > 0.0 else jet_power_w
+        )
+        return (
+            thrust_vec,
+            float(total_power_w),
+            self.mass_flow_kg_s,
+            self.exhaust_velocity_m_s,
+        )

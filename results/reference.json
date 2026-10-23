@@ -1,0 +1,88 @@
+{
+  "circular_velocity_1au_km_s": {
+    "value": 29.7846918,
+    "rel_tol": 1.0e-3,
+    "units": "km/s",
+    "source": "Analytic circular velocity sqrt(GM_SUN / AU)"
+  },
+  "circular_velocity_target_km_s": {
+    "value": 18.126386,
+    "rel_tol": 1.0e-2,
+    "units": "km/s",
+    "source": "ARCHITECTURE.md Section 2 (~18.1 km/s at 2.7 AU)"
+  },
+  "orbital_period_1au_yr": {
+    "value": 1.0000174,
+    "rel_tol": 1.0e-4,
+    "units": "years",
+    "source": "Kepler third law 2*pi*sqrt(AU^3 / GM_SUN) / YEAR"
+  },
+  "kepler_test_radii_au": {
+    "values": [0.5, 1.0, 2.7, 5.2],
+    "units": "AU"
+  },
+  "kepler_scaling_rel_tol": {
+    "value": 1.0e-12,
+    "units": "dimensionless"
+  },
+  "exact_identity_rel_tol": {
+    "value": 1.0e-12,
+    "units": "dimensionless"
+  },
+  "circular_eccentricity_abs_tol": {
+    "value": 1.0e-14,
+    "units": "dimensionless"
+  },
+  "hohmann_1_to_2_7_au": {
+    "r1_au": 1.0,
+    "r2_au": 2.7,
+    "dv1_km_s": 6.198,
+    "dv2_km_s": 4.800,
+    "total_dv_km_s": 10.997,
+    "transfer_time_yr": 1.258,
+    "slow_spiral_dv_km_s": 11.658,
+    "dv_rel_tol": 1.0e-3,
+    "time_rel_tol": 1.0e-3,
+    "spiral_dv_rel_tol": 5.0e-3,
+    "source": "ARCHITECTURE.md Section 2 & 11 Hohmann 1 -> 2.7 AU benchmark"
+  },
+  "one_year_orbit_integration": {
+    "rtol": 1.0e-12,
+    "atol": 1.0e-9,
+    "num_points": 500,
+    "pos_rel_tol": 1.0e-10,
+    "vel_rel_tol": 1.0e-10,
+    "mass_rel_tol": 1.0e-15,
+    "ang_mom_rel_tol": 1.0e-11,
+    "source": "1-year DOP853 two-body integration benchmark"
+  },
+  "architecture_section2_facts": {
+    "r1_au": 1.0,
+    "r2_au": 2.7,
+    "duration_years": 10000.0,
+    "delta_energy_j": {
+      "value": 1.67e33,
+      "rel_tol": 5.0e-3,
+      "units": "J",
+      "source": "ARCHITECTURE.md Section 2: E(2.7 AU) - E(1 AU) = +1.67e33 J"
+    },
+    "avg_power_10kyr_w": {
+      "value": 5.0e21,
+      "rel_tol": 6.0e-2,
+      "units": "W",
+      "source": "ARCHITECTURE.md Section 2: delta E / (10,000 yr) ~ 5e21 W (5.29e21 W exact)"
+    },
+    "sunlight_pressure_force_n": {
+      "value": 6.0e8,
+      "rel_tol": 5.0e-2,
+      "units": "N",
+      "source": "ARCHITECTURE.md Section 2: solar radiation pressure on Earth cross-section ~ 6e8 N"
+    },
+    "insolation_ratio_1_to_2_7": {
+      "value": 7.0,
+      "rel_tol": 5.0e-2,
+      "units": "dimensionless",
+      "source": "ARCHITECTURE.md Section 2: insolation at 2.7 AU is ~7 times lower (2.7^2 = 7.29)"
+    }
+  }
+}

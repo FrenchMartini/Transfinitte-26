@@ -1,11 +1,14 @@
-"""Layer 2 Physics & Integrator Unit Tests (Phase 1)."""
+"""Physics, Orbital Mechanics & Section 2 Reference Benchmarks (migrated to octo.drivers)."""
 
+import json
+from pathlib import Path
 import numpy as np
 import pytest
 
-from physics import constants
-from physics.gravity import gravitational_acceleration, gravitational_force
-from physics.orbital_elements import (
+from octo.core import constants
+from octo.drivers.orbit import (
+    gravitational_acceleration,
+    gravitational_force,
     circular_velocity,
     orbital_period,
     specific_orbital_energy,
@@ -14,94 +17,126 @@ from physics.orbital_elements import (
     eccentricity,
     semi_major_axis,
     hohmann_transfer,
+    propagate_orbit,
+    orbital_energy_change,
+    average_power_required,
+    solar_radiation_pressure_force,
+    insolation_ratio,
 )
-from physics.propulsion import zero_thrust_propulsion, PropulsionModel
-from physics.integrator import propagate_orbit
+from octo.drivers.propulsion import zero_thrust_propulsion, PropulsionModel
 
 
-def test_circular_velocity_at_1_au():
-    """Circular velocity at 1 AU around the Sun is ~29.78 km/s."""
-    v_1au = circular_velocity(constants.AU, constants.MU_SUN)
-    assert pytest.approx(v_1au / 1000.0, rel=1e-3) == 29.78
+REFERENCE_PATH = Path(__file__).resolve().parent.parent / "results" / "reference.json"
 
 
-def test_keplers_third_law():
-    """Orbital period at 1 AU is 1 year; scaling follows T^2 / a^3 = 4*pi^2 / mu."""
-    t_1au = orbital_period(constants.AU, constants.MU_SUN)
-    assert pytest.approx(t_1au / constants.YEAR, rel=1e-4) == 1.0
+@pytest.fixture(scope="module")
+def ref_data() -> dict:
+    """Load benchmark answers and tolerances from results/reference.json."""
+    assert REFERENCE_PATH.is_file(), f"Missing {REFERENCE_PATH}"
+    return json.loads(REFERENCE_PATH.read_text())
 
-    for a_au in (0.5, 1.0, 2.7, 5.2):
+
+def test_circular_velocity_at_1_au(ref_data: dict):
+    """Circular velocity at 1 AU around the Sun matches reference.json."""
+    entry = ref_data["circular_velocity_1au_km_s"]
+    v_1au_km_s = circular_velocity(constants.AU, constants.GM_SUN) / 1000.0
+    assert pytest.approx(v_1au_km_s, rel=entry["rel_tol"]) == entry["value"]
+
+
+def test_circular_velocity_at_target_au(ref_data: dict):
+    """Circular velocity at target orbit (~2.7 AU) matches reference.json (~18.1 km/s)."""
+    entry = ref_data["circular_velocity_target_km_s"]
+    target_r_m = ref_data["hohmann_1_to_2_7_au"]["r2_au"] * constants.AU
+    v_target_km_s = circular_velocity(target_r_m, constants.GM_SUN) / 1000.0
+    assert pytest.approx(v_target_km_s, rel=entry["rel_tol"]) == entry["value"]
+
+
+def test_keplers_third_law(ref_data: dict):
+    """Orbital period at 1 AU is 1 year; scaling follows T^2 / a^3 = 4*pi^2 / GM_SUN."""
+    entry = ref_data["orbital_period_1au_yr"]
+    t_1au = orbital_period(constants.AU, constants.GM_SUN)
+    assert pytest.approx(t_1au / constants.YEAR, rel=entry["rel_tol"]) == entry["value"]
+
+    kepler_tol = ref_data["kepler_scaling_rel_tol"]["value"]
+    for a_au in ref_data["kepler_test_radii_au"]["values"]:
         a = a_au * constants.AU
-        period = orbital_period(a, constants.MU_SUN)
+        period = orbital_period(a, constants.GM_SUN)
         lhs = (period**2) / (a**3)
-        rhs = 4.0 * (np.pi**2) / constants.MU_SUN
-        assert pytest.approx(lhs, rel=1e-12) == rhs
+        rhs = 4.0 * (np.pi**2) / constants.GM_SUN
+        assert pytest.approx(lhs, rel=kepler_tol) == rhs
 
 
-def test_specific_energy_and_semi_major_axis():
-    """Specific orbital energy of a circular orbit at radius r equals -mu / (2r)."""
+def test_specific_energy_and_semi_major_axis(ref_data: dict):
+    """Specific orbital energy of a circular orbit at radius r equals -GM_SUN / (2r)."""
+    tol = ref_data["exact_identity_rel_tol"]["value"]
     r_vec = np.array([constants.AU, 0.0])
-    v_circ = circular_velocity(constants.AU, constants.MU_SUN)
+    v_circ = circular_velocity(constants.AU, constants.GM_SUN)
     v_vec = np.array([0.0, v_circ])
 
-    eps = specific_orbital_energy(r_vec, v_vec, constants.MU_SUN)
-    expected_eps = -constants.MU_SUN / (2.0 * constants.AU)
-    assert pytest.approx(eps, rel=1e-12) == expected_eps
+    eps = specific_orbital_energy(r_vec, v_vec, constants.GM_SUN)
+    expected_eps = -constants.GM_SUN / (2.0 * constants.AU)
+    assert pytest.approx(eps, rel=tol) == expected_eps
 
-    a = semi_major_axis(r_vec, v_vec, constants.MU_SUN)
-    assert pytest.approx(a, rel=1e-12) == constants.AU
+    a = semi_major_axis(r_vec, v_vec, constants.GM_SUN)
+    assert pytest.approx(a, rel=tol) == constants.AU
 
 
-def test_eccentricity_of_circular_and_elliptical_orbits():
+def test_eccentricity_of_circular_and_elliptical_orbits(ref_data: dict):
     """Eccentricity of a circular orbit is ~0; known ellipse matches analytic e."""
+    abs_tol = ref_data["circular_eccentricity_abs_tol"]["value"]
+    rel_tol = ref_data["exact_identity_rel_tol"]["value"]
+
     r_vec = np.array([constants.AU, 0.0])
-    v_circ = circular_velocity(constants.AU, constants.MU_SUN)
+    v_circ = circular_velocity(constants.AU, constants.GM_SUN)
     v_vec = np.array([0.0, v_circ])
 
-    e_circ = eccentricity(r_vec, v_vec, constants.MU_SUN)
-    assert e_circ == pytest.approx(0.0, abs=1e-14)
-    e_vec = eccentricity_vector(r_vec, v_vec, constants.MU_SUN)
-    assert np.linalg.norm(e_vec) == pytest.approx(0.0, abs=1e-14)
+    e_circ = eccentricity(r_vec, v_vec, constants.GM_SUN)
+    assert e_circ == pytest.approx(0.0, abs=abs_tol)
+    e_vec = eccentricity_vector(r_vec, v_vec, constants.GM_SUN)
+    assert np.linalg.norm(e_vec) == pytest.approx(0.0, abs=abs_tol)
 
-    # Periapsis at r_p = 1 AU, apoapsis at r_a = 2.7 AU -> e = (2.7 - 1.0)/(2.7 + 1.0)
-    r_p = 1.0 * constants.AU
-    r_a = 2.7 * constants.AU
+    h_cfg = ref_data["hohmann_1_to_2_7_au"]
+    r_p = h_cfg["r1_au"] * constants.AU
+    r_a = h_cfg["r2_au"] * constants.AU
     a_trans = 0.5 * (r_p + r_a)
-    v_p = np.sqrt(constants.MU_SUN * (2.0 / r_p - 1.0 / a_trans))
+    v_p = np.sqrt(constants.GM_SUN * (2.0 / r_p - 1.0 / a_trans))
     e_expected = (r_a - r_p) / (r_a + r_p)
 
-    e_calc = eccentricity(np.array([r_p, 0.0]), np.array([0.0, v_p]), constants.MU_SUN)
-    assert pytest.approx(e_calc, rel=1e-12) == e_expected
+    e_calc = eccentricity(np.array([r_p, 0.0]), np.array([0.0, v_p]), constants.GM_SUN)
+    assert pytest.approx(e_calc, rel=rel_tol) == e_expected
 
 
-def test_gravity_force_and_acceleration():
-    """Newtonian inverse-square gravity points toward the Sun with magnitude mu / r^2."""
+def test_gravity_force_and_acceleration(ref_data: dict):
+    """Newtonian inverse-square gravity points toward the Sun with magnitude GM_SUN / r^2."""
+    rel_tol = ref_data["exact_identity_rel_tol"]["value"]
     r_vec = np.array([constants.AU, 0.0])
-    acc = gravitational_acceleration(r_vec, constants.MU_SUN)
+    acc = gravitational_acceleration(r_vec, constants.GM_SUN)
     assert acc[0] < 0.0
-    assert acc[1] == pytest.approx(0.0, abs=1e-20)
-    assert pytest.approx(np.linalg.norm(acc), rel=1e-12) == constants.MU_SUN / (constants.AU**2)
+    assert acc[1] == pytest.approx(0.0, abs=ref_data["circular_eccentricity_abs_tol"]["value"])
+    assert pytest.approx(np.linalg.norm(acc), rel=rel_tol) == constants.GM_SUN / (constants.AU**2)
 
-    force = gravitational_force(r_vec, constants.M_EARTH, constants.MU_SUN)
-    assert np.allclose(force, constants.M_EARTH * acc, rtol=1e-12)
+    force = gravitational_force(r_vec, constants.M_EARTH, constants.GM_SUN)
+    assert np.allclose(force, constants.M_EARTH * acc, rtol=rel_tol)
 
 
-def test_hohmann_transfer_analytic():
-    """Analytic Hohmann transfer 1 -> 2.7 AU matches expected delta-v and duration."""
-    r1 = 1.0 * constants.AU
-    r2 = 2.7 * constants.AU
-    res = hohmann_transfer(r1, r2, constants.MU_SUN)
+def test_hohmann_transfer_analytic(ref_data: dict):
+    """Analytic Hohmann transfer 1 -> 2.7 AU matches reference.json delta-v and duration."""
+    h_ref = ref_data["hohmann_1_to_2_7_au"]
+    r1 = h_ref["r1_au"] * constants.AU
+    r2 = h_ref["r2_au"] * constants.AU
+    res = hohmann_transfer(r1, r2, constants.GM_SUN)
 
-    assert pytest.approx(res["dv1_m_s"] / 1000.0, rel=1e-3) == 6.198
-    assert pytest.approx(res["dv2_m_s"] / 1000.0, rel=1e-3) == 4.800
-    assert pytest.approx(res["total_dv_m_s"] / 1000.0, rel=1e-3) == 10.997
-    assert pytest.approx(res["transfer_time_s"] / constants.YEAR, rel=1e-3) == 1.258
+    assert pytest.approx(res["dv1_m_s"] / 1000.0, rel=h_ref["dv_rel_tol"]) == h_ref["dv1_km_s"]
+    assert pytest.approx(res["dv2_m_s"] / 1000.0, rel=h_ref["dv_rel_tol"]) == h_ref["dv2_km_s"]
+    assert pytest.approx(res["total_dv_m_s"] / 1000.0, rel=h_ref["dv_rel_tol"]) == h_ref["total_dv_km_s"]
+    assert pytest.approx(res["transfer_time_s"] / constants.YEAR, rel=h_ref["time_rel_tol"]) == h_ref["transfer_time_yr"]
+    assert pytest.approx(res["slow_spiral_dv_m_s"] / 1000.0, rel=h_ref["spiral_dv_rel_tol"]) == h_ref["slow_spiral_dv_km_s"]
 
 
 def test_propulsion_zero_thrust_stub_interface():
     """Propulsion stub takes (time, position, velocity, mass) and returns 4-tuple in SI."""
     r_vec = np.array([constants.AU, 0.0])
-    v_vec = np.array([0.0, 29780.0])
+    v_vec = np.array([0.0, circular_velocity(constants.AU, constants.GM_SUN)])
     thrust_vec, power_w, mdot_kg_s, ve_m_s = zero_thrust_propulsion(
         0.0, r_vec, v_vec, constants.M_EARTH
     )
@@ -118,11 +153,12 @@ def test_propulsion_zero_thrust_stub_interface():
     assert np.all(out[0] == 0.0)
 
 
-def test_integrator_dop853_one_year_circular_orbit():
-    """DOP853 (rtol=1e-12) propagates 2D Sun-Earth for 1 orbital period back to start."""
+def test_integrator_dop853_one_year_circular_orbit(ref_data: dict):
+    """DOP853 propagates 2D Sun-Earth for 1 orbital period back to start within reference tolerances."""
+    int_ref = ref_data["one_year_orbit_integration"]
     r0 = np.array([constants.AU, 0.0])
-    v0 = np.array([0.0, circular_velocity(constants.AU, constants.MU_SUN)])
-    period = orbital_period(constants.AU, constants.MU_SUN)
+    v0 = np.array([0.0, circular_velocity(constants.AU, constants.GM_SUN)])
+    period = orbital_period(constants.AU, constants.GM_SUN)
 
     traj = propagate_orbit(
         t_span=(0.0, period),
@@ -130,10 +166,10 @@ def test_integrator_dop853_one_year_circular_orbit():
         v0=v0,
         m0=constants.M_EARTH,
         propulsion_fn=zero_thrust_propulsion,
-        mu=constants.MU_SUN,
-        rtol=1e-12,
-        atol=1e-9,
-        num_points=500,
+        mu=constants.GM_SUN,
+        rtol=int_ref["rtol"],
+        atol=int_ref["atol"],
+        num_points=int_ref["num_points"],
     )
 
     assert traj["success"] is True
@@ -143,10 +179,36 @@ def test_integrator_dop853_one_year_circular_orbit():
 
     pos_rel_err = np.linalg.norm(r_final - r0) / constants.AU
     vel_rel_err = np.linalg.norm(v_final - v0) / np.linalg.norm(v0)
-    assert pos_rel_err < 1e-10
-    assert vel_rel_err < 1e-10
-    assert m_final == pytest.approx(constants.M_EARTH, rel=1e-15)
+    assert pos_rel_err < int_ref["pos_rel_tol"]
+    assert vel_rel_err < int_ref["vel_rel_tol"]
+    assert m_final == pytest.approx(constants.M_EARTH, rel=int_ref["mass_rel_tol"])
 
     h0 = specific_angular_momentum(r0, v0)
     h_final = specific_angular_momentum(r_final, v_final)
-    assert pytest.approx(h_final, rel=1e-11) == h0
+    assert pytest.approx(h_final, rel=int_ref["ang_mom_rel_tol"]) == h0
+
+
+def test_architecture_section2_hand_computed_facts(ref_data: dict):
+    """Recompute and verify ARCHITECTURE.md Section 2 hand-computed physics facts from constants."""
+    sec2 = ref_data["architecture_section2_facts"]
+    r1 = sec2["r1_au"] * constants.AU
+    r2 = sec2["r2_au"] * constants.AU
+
+    # 1. Orbital energy change delta E = +1.67e33 J
+    delta_e = orbital_energy_change(r1, r2, constants.M_EARTH, constants.GM_SUN)
+    assert pytest.approx(delta_e, rel=sec2["delta_energy_j"]["rel_tol"]) == sec2["delta_energy_j"]["value"]
+
+    # 2. Average power over 10,000 years ~ 5e21 W (5.29e21 W exact)
+    duration_s = sec2["duration_years"] * constants.YEAR
+    avg_power = average_power_required(delta_e, duration_s)
+    assert pytest.approx(avg_power, rel=sec2["avg_power_10kyr_w"]["rel_tol"]) == sec2["avg_power_10kyr_w"]["value"]
+
+    # 3. Sunlight radiation pressure force on Earth's cross-section ~ 6e8 N
+    rad_force = solar_radiation_pressure_force(
+        constants.SOLAR_CONSTANT_1AU, constants.R_EARTH, constants.C_LIGHT
+    )
+    assert pytest.approx(rad_force, rel=sec2["sunlight_pressure_force_n"]["rel_tol"]) == sec2["sunlight_pressure_force_n"]["value"]
+
+    # 4. Insolation ratio between 1 AU and 2.7 AU ~ 7 (2.7^2 = 7.29)
+    insol_ratio = insolation_ratio(r1, r2)
+    assert pytest.approx(insol_ratio, rel=sec2["insolation_ratio_1_to_2_7"]["rel_tol"]) == sec2["insolation_ratio_1_to_2_7"]["value"]
