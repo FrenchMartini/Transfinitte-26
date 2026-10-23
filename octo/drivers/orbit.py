@@ -183,11 +183,11 @@ def propagate_orbit(
     t_span: tuple[float, float],
     r0: np.ndarray,
     v0: np.ndarray,
+    rtol: float,
+    atol: float,
     m0: float = constants.M_EARTH,
     propulsion_fn: PropulsionCallable = zero_thrust_propulsion,
     mu: float = constants.GM_SUN,
-    rtol: float = 1e-12,
-    atol: float = 1e-9,
     num_points: int | None = None,
     t_eval: np.ndarray | None = None,
 ) -> dict[str, Any]:

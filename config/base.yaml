@@ -5,6 +5,10 @@ mode: "averaged"
 time_span_years: 10000.0
 macro_step_s: 86400.0
 
+integrator:
+  rtol: 1.0e-12
+  atol: 1.0e-9
+
 drivers:
   - "power"
   - "propulsion"

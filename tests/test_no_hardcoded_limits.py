@@ -22,11 +22,9 @@ OCTO_DIR = ROOT_DIR / "octo"
 
 # Explicit allowlist of (relative_file_path, numeric_value) pairs that coincide
 # with a number in rulebook_thresholds.yaml for legitimate mathematical/algorithmic
-# reasons (e.g., 0.5 in kinetic energy 0.5 * m * v^2, or 1e-12 default integrator rtol).
+# reasons (specifically 0.5 in kinetic energy 0.5 * m * v^2 and 0.5 * (r1 + r2)).
 ALLOWLIST: set[tuple[str, float]] = {
     ("octo/drivers/orbit.py", 0.5),
-    ("octo/drivers/orbit.py", 1e-12),
-    ("octo/drivers/orbit.py", 1e-9),
     ("octo/drivers/propulsion.py", 0.5),
 }
 

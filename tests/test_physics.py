@@ -153,6 +153,14 @@ def test_propulsion_zero_thrust_stub_interface():
     assert np.all(out[0] == 0.0)
 
 
+def test_propagate_orbit_requires_explicit_rtol_atol():
+    """propagate_orbit must not have default rtol/atol values; callers must pass them explicitly."""
+    r0 = np.array([constants.AU, 0.0])
+    v0 = np.array([0.0, circular_velocity(constants.AU, constants.GM_SUN)])
+    with pytest.raises(TypeError):
+        propagate_orbit(t_span=(0.0, 100.0), r0=r0, v0=v0)  # type: ignore[call-arg]
+
+
 def test_integrator_dop853_one_year_circular_orbit(ref_data: dict):
     """DOP853 propagates 2D Sun-Earth for 1 orbital period back to start within reference tolerances."""
     int_ref = ref_data["one_year_orbit_integration"]
