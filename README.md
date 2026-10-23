@@ -17,12 +17,12 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Last Prior Commit Hash:** `20ae2c8` (`step 1d: add test_no_hardcoded_limits.py and update docs/physics.md`)
-- **Current Test Count & Result:** 23 tests — **23 PASSED** (`pytest -v`)
+- **Last Prior Commit Hash:** `bc08e8d` (`step 2.3: add FlagRegistry capability/id validation and test_flags.py`)
+- **Current Test Count & Result:** 44 tests — **44 PASSED** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
   - **Step 1 (Restructure into `octo/`, Configs, `reference.json`, AST Limit Check):** DONE
-  - **Step 2 (`octo/core/`: README, `units`, `state`, `exchange`, `ledger`, `flags`, `FlagRegistry`, `recorder` skeleton):** IN PROGRESS (Step 2.0 complete)
+  - **Step 2 (`octo/core/`: README, `units`, `state`, `exchange`, `ledger`, `flags`, `FlagRegistry`, `recorder` skeleton):** DONE
   - **Step 3 (`orbit` driver + Coupler + Hohmann Milestone):** NOT STARTED
   - **Step 4 (`propulsion` driver variants + Rocket/Power cross-checks):** NOT STARTED
   - **Step 5 (`structure` + `em` drivers):** NOT STARTED
@@ -83,6 +83,10 @@ Every simulation run is judged against **six mandatory winning conditions**:
 | `tests/test_thresholds.py` | Config schema, unit/status/severity validation, and `AssumedThresholdWarning` tests | TODO |
 | `tests/test_no_hardcoded_limits.py` | AST scanner forbidding hard-coded rulebook threshold literals in `octo/` | TODO |
 | `tests/test_physics.py` | Closed-form orbital mechanics, Hohmann transfer, and Section 2 energetics tests | TODO |
+| `tests/test_core_contracts.py` | Unit wrappers, `Exchange` immutability, `State` determinism, and `Flag` contract tests | TODO |
+| `tests/test_ledger.py` | Conservation `Ledger` tests (self/NaN/Inf rejection, reaction pairs, rogue-driver audit, rocket exhaust, `math.fsum`, determinism) | TODO |
+| `tests/test_flags.py` | `FlagRegistry` tests (enabler matching, capability bounds, max-3 enablers, duplicate IDs) | TODO |
+| `tests/test_recorder.py` | `ParquetResultsWriter` and configurable **DRAFT** `BinaryReplayRecorder` tests | TODO |
 
 ---
 
@@ -203,4 +207,8 @@ Until confirmed, any clean run reports `"PASS (with unconfirmed thresholds)"`:
 
 - **2026-10-24 (`1760db8`):** Pre-restructure baseline (Phase 0 & Phase 1 initial prototype).
 - **2026-10-24 (`341a176` — `20ae2c8`):** Step 1 — Restructured into `octo/` package, added `pyproject.toml`, `config/base.yaml`, `config/rulebook_thresholds.yaml`, `config/hypothetical_enablers.yaml`, `results/reference.json`, Section 2 physics benchmarks, and AST hard-coded limit check (`tests/test_no_hardcoded_limits.py`).
-- **2026-10-24 (Step 2.0):** Created `README.md` and `tests/test_readme.py`; removed default `rtol`/`atol` from `propagate_orbit` so `ALLOWLIST` only contains `0.5`.
+- **2026-10-24 (`3d8cfca`):** Step 2.0 — Created `README.md` and `tests/test_readme.py`; removed default `rtol`/`atol` from `propagate_orbit` so `ALLOWLIST` only contains `0.5`.
+- **2026-10-24 (`7efe2ea`):** Step 2.1 — Added `octo/core/units.py`, `octo/core/exchange.py`, `octo/core/state.py`, `octo/core/flags.py`, and `tests/test_core_contracts.py`.
+- **2026-10-24 (`1ae3c31`):** Step 2.2 — Added `octo/core/ledger.py` and `tests/test_ledger.py` (reaction pairing, rogue-driver audit, rocket-equation exhaust closure, `math.fsum` exact summation, bit-identical determinism).
+- **2026-10-24 (`bc08e8d`):** Step 2.3 — Added `FlagRegistry` capability/ID validation and `tests/test_flags.py`.
+- **2026-10-24 (Step 2.4):** Added `octo/core/recorder.py` (`ParquetResultsWriter` + configurable **DRAFT** `BinaryReplayRecorder`), `tests/test_recorder.py`, and updated `docs/physics.md` and `README.md`.

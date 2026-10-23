@@ -98,5 +98,36 @@ $$\frac{S(r_1)}{S(r_2)} = \left(\frac{r_2}{r_1}\right)^2 = 2.7^2 = 7.29 \quad (\
 
 We evolve the state vector $\mathbf{y}(t) = [x, y, v_x, v_y, m]^T$ in time using `DOP853` (`rtol = 1e-12`):
 $$\frac{d\mathbf{r}}{dt} = \mathbf{v}, \qquad \frac{d\mathbf{v}}{dt} = \mathbf{a}_{\text{grav}}(\mathbf{r}) + \frac{\mathbf{F}_{\text{thrust}}(t, \mathbf{r}, \mathbf{v}, m)}{m}, \qquad \frac{dm}{dt} = -\dot{m}$$
-Jet kinetic power at efficiency $\eta$ satisfies:
-$$P_{\text{in}} = \frac{\frac{1}{2}\dot{m} v_e^2}{\eta} = \frac{F v_e}{2\eta} \quad [\text{W}]$$
+## 6. Conservation Ledger & Rocket-Exhaust Closure (`octo/core/ledger.py`)
+
+### Newton's Third Law (Action-Reaction Pairing)
+Every physical interaction is booked as an immutable `Exchange` between exerting component $a$ and receiving component $b$ ($a \neq b$). When $a$ exerts force $\mathbf{F}_{\text{on }b}$ on $b$ at inertial point $\mathbf{r}_p$, the `Ledger` automatically books the equal-and-opposite reaction on $a$:
+$$\mathbf{F}_{\text{on }a} = -\mathbf{F}_{\text{on }b} \quad [\text{N}]$$
+and the corresponding equal-and-opposite torques about the origin:
+$$\boldsymbol{\tau}_{\text{on }b} = \mathbf{r}_p \times \mathbf{F}_{\text{on }b}, \qquad \boldsymbol{\tau}_{\text{on }a} = \mathbf{r}_p \times \mathbf{F}_{\text{on }a} = -\boldsymbol{\tau}_{\text{on }b} \quad [\text{N}\cdot\text{m}]$$
+Because no public method exists to apply a force without booking an `Exchange`, the net internal force $\sum \mathbf{F}$ and net internal torque $\sum \boldsymbol{\tau}$ across all components are identically zero at every step.
+
+### Expelled Mass, Momentum, and Kinetic Energy Closure
+When a rocket or mass driver on body $b$ (moving at inertial velocity $\mathbf{v}_b$) expels reaction mass at rate $\dot{m}$ over timestep $\Delta t$ with exhaust velocity $\mathbf{v}_e$ relative to $b$:
+1. **Expelled mass increment:**
+$$\Delta m_{\text{ex}} = \dot{m}\,\Delta t \quad [\text{kg}]$$
+2. **Inertial exhaust velocity:**
+$$\mathbf{v}_{\text{ex, inertial}} = \mathbf{v}_b + \mathbf{v}_e \quad [\text{m/s}]$$
+3. **Momentum carried by the exhaust:**
+$$\Delta \mathbf{p}_{\text{ex}} = \Delta m_{\text{ex}}\,\mathbf{v}_{\text{ex, inertial}}, \qquad \Delta \mathbf{L}_{\text{ex}} = \mathbf{r}_p \times \Delta \mathbf{p}_{\text{ex}}$$
+4. **Kinetic energy carried by the exhaust in the inertial frame:**
+$$\Delta K_{\text{ex}} = \frac{1}{2}\,\Delta m_{\text{ex}}\,\|\mathbf{v}_{\text{ex, inertial}}\|^2 \quad [\text{J}]$$
+
+### Independent State Audit (`Ledger.audit`)
+To catch rogue drivers or numerical drift, `Ledger.audit(state, t)` never trusts running sums alone—it recomputes total system quantities directly from `State` and compares them against the initial baseline at $t = t_0$:
+- **Mass Conservation:**
+$$\frac{\left|\sum_i m_i(t) + M_{\text{expelled}}(t) - M_{\text{total}}(t_0)\right|}{M_{\text{total}}(t_0)} \le \varepsilon_{\text{mass}}$$
+- **Linear Momentum Conservation:**
+$$\frac{\left\|\sum_i m_i \mathbf{v}_i(t) + \mathbf{P}_{\text{exhaust}}(t) - \mathbf{P}_{\text{total}}(t_0)\right\|}{P_{\text{scale}}} \le \varepsilon_{\text{momentum}}$$
+- **Angular Momentum Conservation:**
+$$\frac{\left\|\sum_i \left(\mathbf{r}_i \times m_i \mathbf{v}_i(t) + \mathbf{L}_{\text{spin},i}(t)\right) + \mathbf{L}_{\text{exhaust}}(t) - \mathbf{L}_{\text{total}}(t_0)\right\|}{L_{\text{scale}}} \le \varepsilon_{\text{momentum}}$$
+- **Total Energy Conservation:**
+$$E_{\text{total}}(t) = \sum_i \frac{1}{2}m_i\|\mathbf{v}_i\|^2 - \sum_{i < j} \frac{G m_i m_j}{\|\mathbf{r}_i - \mathbf{r}_j\|} + E_{\text{stored}}(t) + E_{\text{heat}}(t) + E_{\text{radiated}}(t) + K_{\text{exhaust}}(t)$$
+$$\frac{\left|E_{\text{total}}(t) - E_{\text{total}}(t_0)\right|}{E_{\text{scale}}} \le \varepsilon_{\text{energy}}$$
+All sums use Python's exact floating-point accumulator (`math.fsum`) in a fixed deterministic order.
+
