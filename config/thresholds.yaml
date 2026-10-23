@@ -1,0 +1,163 @@
+# ==============================================================================
+# OrbitShift Rulebook & Appendix Thresholds
+# ==============================================================================
+# CENTRAL RULE: Every rulebook/appendix limit lives in this file.
+# Paste the real appendix values here when available and change status to CONFIRMED.
+#
+# Every entry MUST have all five fields:
+#   value:    numeric or boolean threshold
+#   units:    physical unit string
+#   status:   ASSUMED | CONFIRMED
+#   severity: hard | flag
+#   source:   reference or placeholder note
+# ==============================================================================
+
+simulation:
+  max_years:
+    value: 10000
+    units: years
+    status: CONFIRMED
+    severity: hard
+    source: "Winning Condition 1: Earth reaches its target orbit within 10,000 simulated years"
+
+structure:
+  min_safety_factor:
+    value: 1.5
+    units: dimensionless
+    status: CONFIRMED
+    severity: hard
+    source: "Winning Condition 3: Every structural safety factor >= 1.5"
+
+earth_safety:
+  max_acceleration_m_s2:
+    value: 0.098
+    units: m/s^2
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  max_jerk_m_s3:
+    value: 0.001
+    units: m/s^3
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  moon_retention_hill_fraction:
+    value: 0.5
+    units: fraction
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  max_mass_loss_fraction:
+    value: 0.01
+    units: fraction
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  min_insolation_w_m2:
+    value: 150.0
+    units: W/m^2
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  max_insolation_w_m2:
+    value: 1500.0
+    units: W/m^2
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  min_equilibrium_temp_k:
+    value: 150.0
+    units: K
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  max_equilibrium_temp_k:
+    value: 320.0
+    units: K
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  max_insolation_rate_w_m2_yr:
+    value: 10.0
+    units: W/m^2/yr
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  max_surface_waste_heat_w_m2:
+    value: 5.0
+    units: W/m^2
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  exhaust_reimpact_allowed:
+    value: false
+    units: boolean
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+
+orbit_targets:
+  target_radius_au:
+    value: 2.7
+    units: AU
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix (~2.7 AU prompt specification)"
+  target_radius_tolerance_au:
+    value: 0.05
+    units: AU
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  max_eccentricity:
+    value: 0.05
+    units: dimensionless
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+
+conservation:
+  max_energy_rel_error:
+    value: 1.0e-9
+    units: dimensionless
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  max_momentum_rel_error:
+    value: 1.0e-9
+    units: dimensionless
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  max_mass_rel_error:
+    value: 1.0e-12
+    units: dimensionless
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+
+benchmarks:
+  hohmann_dv_rel_tol:
+    value: 1.0e-3
+    units: dimensionless
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  hohmann_time_rel_tol:
+    value: 1.0e-3
+    units: dimensionless
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  one_year_pos_rel_tol:
+    value: 1.0e-9
+    units: dimensionless
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
+  one_year_energy_rel_tol:
+    value: 1.0e-11
+    units: dimensionless
+    status: ASSUMED
+    severity: hard
+    source: "placeholder - replace from appendix"
