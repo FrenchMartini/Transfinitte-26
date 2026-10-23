@@ -1,0 +1,136 @@
+"""Flag contract and FlagRegistry (ARCHITECTURE.md Sections 6 & 9)."""
+
+from dataclasses import dataclass, replace
+from pathlib import Path
+from typing import Any
+import yaml
+
+
+class EnablerValidationError(ValueError):
+    """Raised when hypothetical_enablers.yaml violates schema or exceeds max 3 enablers."""
+
+
+@dataclass(frozen=True, slots=True)
+class Flag:
+    """Record of a threshold or conservation violation raised by a driver or the Ledger."""
+
+    code: str
+    t: float
+    source: str
+    quantity: str
+    value: float
+    limit: float
+    enabler_id: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "code", str(self.code))
+        object.__setattr__(self, "t", float(self.t))
+        object.__setattr__(self, "source", str(self.source))
+        object.__setattr__(self, "quantity", str(self.quantity))
+        object.__setattr__(self, "value", float(self.value))
+        object.__setattr__(self, "limit", float(self.limit))
+
+
+@dataclass(frozen=True, slots=True)
+class HypotheticalEnabler:
+    """Declared impossible assumption from config/hypothetical_enablers.yaml."""
+
+    id: str
+    name: str
+    relaxes: tuple[str, ...]
+    value: float
+    justification: str
+    sources: tuple[str, ...]
+
+
+class FlagRegistry:
+    """Matches raised Flags against declared hypothetical enablers (max 3)."""
+
+    MAX_ENABLERS = 3
+
+    def __init__(self, enablers_data: dict[str, Any] | list[dict[str, Any]] | None = None) -> None:
+        raw_list: list[dict[str, Any]] = []
+        if enablers_data is None:
+            raw_list = []
+        elif isinstance(enablers_data, dict):
+            if "enablers" not in enablers_data or not isinstance(enablers_data["enablers"], list):
+                raise EnablerValidationError("Enablers config must contain an 'enablers' list.")
+            raw_list = enablers_data["enablers"]
+        elif isinstance(enablers_data, list):
+            raw_list = enablers_data
+        else:
+            raise EnablerValidationError("Invalid enablers_data type.")
+
+        if len(raw_list) > self.MAX_ENABLERS:
+            raise EnablerValidationError(
+                f"At most {self.MAX_ENABLERS} hypothetical enablers are allowed; got {len(raw_list)}."
+            )
+
+        self._enablers: list[HypotheticalEnabler] = []
+        for item in raw_list:
+            if not isinstance(item, dict):
+                raise EnablerValidationError("Each enabler entry must be a mapping.")
+            for req in ("id", "name", "relaxes", "value", "justification", "sources"):
+                if req not in item:
+                    raise EnablerValidationError(f"Enabler entry missing required field '{req}'.")
+            if not isinstance(item["relaxes"], list) or not item["relaxes"]:
+                raise EnablerValidationError(f"Enabler '{item['id']}' field 'relaxes' must be a non-empty list.")
+            self._enablers.append(
+                HypotheticalEnabler(
+                    id=str(item["id"]),
+                    name=str(item["name"]),
+                    relaxes=tuple(str(q) for q in item["relaxes"]),
+                    value=float(item["value"]),
+                    justification=str(item["justification"]),
+                    sources=tuple(str(s) for s in item["sources"]),
+                )
+            )
+
+        self._flags: list[Flag] = []
+
+    @classmethod
+    def from_yaml(cls, path: str | Path) -> "FlagRegistry":
+        """Load hypothetical_enablers.yaml and return a FlagRegistry."""
+        p = Path(path)
+        data = yaml.safe_load(p.read_text())
+        return cls(data)
+
+    @property
+    def enablers(self) -> tuple[HypotheticalEnabler, ...]:
+        """Return declared enablers."""
+        return tuple(self._enablers)
+
+    def register(self, flag: Flag) -> Flag:
+        """Evaluate a Flag against declared enablers, record it, and return the resolved Flag."""
+        matched_id: str | None = None
+        for enabler in self._enablers:
+            if flag.quantity in enabler.relaxes:
+                matched_id = enabler.id
+                break
+
+        resolved = replace(flag, enabler_id=matched_id)
+        self._flags.append(resolved)
+        return resolved
+
+    def register_many(self, flags: list[Flag]) -> list[Flag]:
+        """Register a sequence of flags in deterministic order."""
+        return [self.register(f) for f in flags]
+
+    @property
+    def all_flags(self) -> list[Flag]:
+        """Return all registered flags (both allowed and unresolved)."""
+        return list(self._flags)
+
+    @property
+    def allowed_flags(self) -> list[Flag]:
+        """Return flags excused by a declared hypothetical enabler."""
+        return [f for f in self._flags if f.enabler_id is not None]
+
+    @property
+    def unresolved_flags(self) -> list[Flag]:
+        """Return flags not explained by any declared hypothetical enabler."""
+        return [f for f in self._flags if f.enabler_id is None]
+
+    def has_unresolved_flags(self) -> bool:
+        """Return True if any registered flag has no matching enabler."""
+        return any(f.enabler_id is None for f in self._flags)
