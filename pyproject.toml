@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "octo"
+version = "0.1.0"
+description = "Octo-Earth / OrbitShift simulation core for the TRANSFINITTE challenge"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "scipy",
+    "rebound",
+    "pyyaml",
+    "pyarrow",
+    "pytest",
+    "hypothesis",
+    "optuna",
+    "matplotlib",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["octo*"]
