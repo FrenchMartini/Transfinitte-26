@@ -67,17 +67,24 @@ class FlagRegistry:
             )
 
         self._enablers: list[HypotheticalEnabler] = []
+        seen_ids: set[str] = set()
         for item in raw_list:
             if not isinstance(item, dict):
                 raise EnablerValidationError("Each enabler entry must be a mapping.")
             for req in ("id", "name", "relaxes", "value", "justification", "sources"):
                 if req not in item:
                     raise EnablerValidationError(f"Enabler entry missing required field '{req}'.")
+            enabler_id = str(item["id"]).strip()
+            if not enabler_id:
+                raise EnablerValidationError("Enabler 'id' must be non-empty.")
+            if enabler_id in seen_ids:
+                raise EnablerValidationError(f"Duplicate enabler id {enabler_id!r}.")
+            seen_ids.add(enabler_id)
             if not isinstance(item["relaxes"], list) or not item["relaxes"]:
-                raise EnablerValidationError(f"Enabler '{item['id']}' field 'relaxes' must be a non-empty list.")
+                raise EnablerValidationError(f"Enabler '{enabler_id}' field 'relaxes' must be a non-empty list.")
             self._enablers.append(
                 HypotheticalEnabler(
-                    id=str(item["id"]),
+                    id=enabler_id,
                     name=str(item["name"]),
                     relaxes=tuple(str(q) for q in item["relaxes"]),
                     value=float(item["value"]),
@@ -100,11 +107,24 @@ class FlagRegistry:
         """Return declared enablers."""
         return tuple(self._enablers)
 
+    @staticmethod
+    def _enabler_covers_flag(enabler: HypotheticalEnabler, flag: Flag) -> bool:
+        """Return True if `enabler` relaxes `flag.quantity` and covers `flag.value`."""
+        if flag.quantity not in enabler.relaxes:
+            return False
+        # Upper-bound violation (value > limit): enabler capability must be >= flag.value
+        if flag.value > flag.limit:
+            return flag.value <= enabler.value
+        # Lower-bound violation (value < limit): enabler capability must be <= flag.value
+        if flag.value < flag.limit:
+            return flag.value >= enabler.value
+        return True
+
     def register(self, flag: Flag) -> Flag:
         """Evaluate a Flag against declared enablers, record it, and return the resolved Flag."""
         matched_id: str | None = None
         for enabler in self._enablers:
-            if flag.quantity in enabler.relaxes:
+            if self._enabler_covers_flag(enabler, flag):
                 matched_id = enabler.id
                 break
 
