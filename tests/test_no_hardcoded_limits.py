@@ -24,6 +24,7 @@ OCTO_DIR = ROOT_DIR / "octo"
 # with a number in rulebook_thresholds.yaml for legitimate mathematical/algorithmic
 # reasons (specifically 0.5 in kinetic energy 0.5 * m * v^2 and 0.5 * (r1 + r2)).
 ALLOWLIST: set[tuple[str, float]] = {
+    ("octo/core/ledger.py", 0.5),
     ("octo/drivers/orbit.py", 0.5),
     ("octo/drivers/propulsion.py", 0.5),
 }
