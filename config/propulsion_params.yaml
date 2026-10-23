@@ -1,5 +1,0 @@
-# Design choices for propulsion system (all SI units)
-exhaust_velocity_m_s: 0.0
-mass_flow_kg_s: 0.0
-efficiency: 1.0
-mode: "zero_thrust_stub"

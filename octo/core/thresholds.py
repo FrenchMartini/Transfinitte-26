@@ -1,4 +1,4 @@
-"""Threshold configuration loader and schema validator."""
+"""Rulebook threshold configuration loader and schema validator."""
 
 from pathlib import Path
 from typing import Any
@@ -7,7 +7,7 @@ import yaml
 
 
 class ThresholdValidationError(ValueError):
-    """Raised when thresholds.yaml fails schema, unit, status, or severity validation."""
+    """Raised when rulebook_thresholds.yaml fails schema, unit, status, or severity validation."""
 
 
 class AssumedThresholdWarning(UserWarning):
@@ -15,7 +15,7 @@ class AssumedThresholdWarning(UserWarning):
 
 
 DEFAULT_THRESHOLDS_PATH = (
-    Path(__file__).resolve().parent.parent / "config" / "thresholds.yaml"
+    Path(__file__).resolve().parent.parent.parent / "config" / "rulebook_thresholds.yaml"
 )
 
 REQUIRED_ENTRY_FIELDS = ("value", "units", "status", "severity", "source")
@@ -74,12 +74,6 @@ REQUIRED_SCHEMA: dict[str, tuple[str, ...]] = {
         "max_momentum_rel_error",
         "max_mass_rel_error",
     ),
-    "benchmarks": (
-        "hohmann_dv_rel_tol",
-        "hohmann_time_rel_tol",
-        "one_year_pos_rel_tol",
-        "one_year_energy_rel_tol",
-    ),
 }
 
 
@@ -99,8 +93,10 @@ def get_threshold_value(
     return data[category][key]["value"]
 
 
-def load_thresholds(path: str | Path | None = None) -> dict[str, dict[str, dict[str, Any]]]:
-    """Load and validate thresholds YAML file.
+def load_thresholds(
+    path: str | Path | None = None,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Load and validate rulebook_thresholds.yaml.
 
     Raises ThresholdValidationError on missing categories/keys/fields or invalid
     units, status, or severity.
@@ -114,7 +110,6 @@ def load_thresholds(path: str | Path | None = None) -> dict[str, dict[str, dict[
     if not isinstance(raw, dict):
         raise ThresholdValidationError("Thresholds file root must be a YAML mapping.")
 
-    # Check required categories and keys exist
     for category, required_keys in REQUIRED_SCHEMA.items():
         if category not in raw or not isinstance(raw[category], dict):
             raise ThresholdValidationError(f"Missing required category '{category}'.")
@@ -126,7 +121,6 @@ def load_thresholds(path: str | Path | None = None) -> dict[str, dict[str, dict[
 
     assumed_keys: list[str] = []
 
-    # Validate every category and entry in the file
     for category, entries in raw.items():
         if not isinstance(entries, dict):
             raise ThresholdValidationError(

@@ -1,12 +1,12 @@
-"""Layer 1 Config & Constants Tests (Phase 0)."""
+"""Layer 1 Config & Constants Tests (migrated to octo.core)."""
 
 from pathlib import Path
 import copy
 import pytest
 import yaml
 
-from physics import constants
-from checker.thresholds import (
+from octo.core import constants
+from octo.core.thresholds import (
     load_thresholds,
     has_assumed_thresholds,
     get_threshold_value,
@@ -35,32 +35,31 @@ REQUIRED_SCHEMA_KEYS = [
     ("conservation", "max_energy_rel_error"),
     ("conservation", "max_momentum_rel_error"),
     ("conservation", "max_mass_rel_error"),
-    ("benchmarks", "hohmann_dv_rel_tol"),
-    ("benchmarks", "hohmann_time_rel_tol"),
-    ("benchmarks", "one_year_pos_rel_tol"),
-    ("benchmarks", "one_year_energy_rel_tol"),
 ]
 
 
 def test_universal_constants_values_and_no_limits():
-    """physics/constants.py must define only universal physical constants in SI units."""
-    assert pytest.approx(constants.G, rel=1e-4) == 6.67430e-11
-    assert pytest.approx(constants.M_SUN, rel=1e-4) == 1.98847e30
-    assert pytest.approx(constants.M_EARTH, rel=1e-4) == 5.9722e24
-    assert pytest.approx(constants.AU, rel=1e-6) == 1.495978707e11
-    assert pytest.approx(constants.YEAR, rel=1e-6) == 31557600.0
-    assert pytest.approx(constants.MU_SUN, rel=1e-4) == constants.G * constants.M_SUN
+    """octo/core/constants.py must define only universal IAU/CODATA constants in SI units."""
+    assert constants.GM_SUN == pytest.approx(1.32712440018e20, rel=1e-12)
+    assert constants.MU_SUN == pytest.approx(constants.GM_SUN, rel=1e-12)
+    assert constants.G == pytest.approx(6.67430e-11, rel=1e-6)
+    assert constants.M_SUN == pytest.approx(1.98847e30, rel=1e-4)
+    assert constants.M_EARTH == pytest.approx(5.9722e24, rel=1e-12)
+    assert constants.AU == pytest.approx(1.495978707e11, rel=1e-12)
+    assert constants.YEAR == pytest.approx(31557600.0, rel=1e-12)
 
     # Ensure no rulebook limits are leaked into constants.py
     public_names = [name for name in dir(constants) if not name.startswith("_")]
     forbidden_substrings = ("MAX", "MIN", "TOL", "LIMIT", "SAFETY", "TARGET")
     for name in public_names:
         for sub in forbidden_substrings:
-            assert sub not in name.upper(), f"Limit-like constant {name} found in physics/constants.py"
+            assert (
+                sub not in name.upper()
+            ), f"Limit-like constant {name} found in octo/core/constants.py"
 
 
 def test_load_default_thresholds_warns_on_assumed():
-    """Loading default config/thresholds.yaml succeeds and emits AssumedThresholdWarning."""
+    """Loading default config/rulebook_thresholds.yaml succeeds and emits AssumedThresholdWarning."""
     with pytest.warns(AssumedThresholdWarning, match="ASSUMED"):
         data = load_thresholds()
 
@@ -70,6 +69,9 @@ def test_load_default_thresholds_warns_on_assumed():
     assert get_threshold_value(data, "structure", "min_safety_factor") == 1.5
     assert data["structure"]["min_safety_factor"]["status"] == "CONFIRMED"
     assert has_assumed_thresholds(data) is True
+
+    # Ensure benchmark tolerances do NOT live in rulebook_thresholds.yaml
+    assert "benchmarks" not in data
 
     # Check all required categories and entries exist and have all 5 required fields
     for category, key in REQUIRED_SCHEMA_KEYS:
@@ -172,6 +174,7 @@ def test_bad_severity_raises(tmp_path: Path):
         data = load_thresholds()
 
     broken = copy.deepcopy(data)
+    broken["simulation"]["max_years"]["status"] = "CONFIRMED"
     broken["simulation"]["max_years"]["severity"] = "soft"
     cfg_file = tmp_path / "bad_severity.yaml"
     cfg_file.write_text(yaml.safe_dump(broken))
@@ -181,18 +184,37 @@ def test_bad_severity_raises(tmp_path: Path):
 
 
 def test_other_config_files_exist_and_parse():
-    """config/propulsion_params.yaml and config/hypothetical_enablers.yaml exist and parse."""
+    """config/base.yaml and config/hypothetical_enablers.yaml exist and follow schema."""
     root = Path(__file__).resolve().parent.parent
-    prop_path = root / "config" / "propulsion_params.yaml"
+    base_path = root / "config" / "base.yaml"
     enablers_path = root / "config" / "hypothetical_enablers.yaml"
 
-    assert prop_path.is_file(), "Missing config/propulsion_params.yaml"
+    assert base_path.is_file(), "Missing config/base.yaml"
     assert enablers_path.is_file(), "Missing config/hypothetical_enablers.yaml"
 
-    prop_cfg = yaml.safe_load(prop_path.read_text())
+    base_cfg = yaml.safe_load(base_path.read_text())
     enablers_cfg = yaml.safe_load(enablers_path.read_text())
 
+    for required_key in (
+        "mode",
+        "time_span_years",
+        "macro_step_s",
+        "drivers",
+        "propulsion",
+        "initial_conditions",
+        "target_orbit",
+        "seed",
+        "output_paths",
+    ):
+        assert required_key in base_cfg, f"Missing {required_key} in config/base.yaml"
+
+    prop_cfg = base_cfg["propulsion"]
+    assert "variant" in prop_cfg
     assert "exhaust_velocity_m_s" in prop_cfg
     assert "mass_flow_kg_s" in prop_cfg
+    assert "power_w" in prop_cfg
     assert "efficiency" in prop_cfg
+
     assert "enablers" in enablers_cfg
+    assert isinstance(enablers_cfg["enablers"], list)
+    assert len(enablers_cfg["enablers"]) <= 3

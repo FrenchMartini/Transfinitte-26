@@ -1,7 +1,8 @@
 # ==============================================================================
-# OrbitShift Rulebook & Appendix Thresholds
+# Octo-Earth / OrbitShift Rulebook & Appendix Thresholds
 # ==============================================================================
-# CENTRAL RULE: Every rulebook/appendix limit lives in this file.
+# CENTRAL RULE: Every organizer rulebook/appendix limit lives in this file.
+# Benchmark reference values and tolerances live in results/reference.json.
 # Paste the real appendix values here when available and change status to CONFIRMED.
 #
 # Every entry MUST have all five fields:
@@ -131,32 +132,6 @@ conservation:
     source: "placeholder - replace from appendix"
   max_mass_rel_error:
     value: 1.0e-12
-    units: dimensionless
-    status: ASSUMED
-    severity: hard
-    source: "placeholder - replace from appendix"
-
-benchmarks:
-  hohmann_dv_rel_tol:
-    value: 1.0e-3
-    units: dimensionless
-    status: ASSUMED
-    severity: hard
-    source: "placeholder - replace from appendix"
-  hohmann_time_rel_tol:
-    value: 1.0e-3
-    units: dimensionless
-    status: ASSUMED
-    severity: hard
-    source: "placeholder - replace from appendix"
-  one_year_pos_rel_tol:
-    value: 1.0e-9
-    units: dimensionless
-    status: ASSUMED
-    severity: hard
-    source: "placeholder - replace from appendix"
-  one_year_energy_rel_tol:
-    value: 1.0e-11
     units: dimensionless
     status: ASSUMED
     severity: hard

@@ -1,2 +1,12 @@
-# Declared hypothetical enablers for flag attribution
+# ==============================================================================
+# Declared Hypothetical Enablers (ARCHITECTURE.md Section 9, max 3 entries)
+# ==============================================================================
+# Format per entry:
+#   - id: E1
+#     name: "Fusion power source"
+#     relaxes: ["power.max_watts"]
+#     value: 5.0e21
+#     justification: "..."
+#     sources: ["..."]
+# ==============================================================================
 enablers: []
