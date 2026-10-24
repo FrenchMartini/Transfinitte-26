@@ -7,6 +7,8 @@
 // Universal Physical Constants (IAU 2012 / CODATA 2018)
 export const AU_METERS = 1.495978707e11;
 export const YEAR_SECONDS = 31557600.0;
+// Viewer convention: one axial turn per 24 simulated hours, epoch angle zero.
+export const EARTH_ROTATION_PERIOD_SECONDS = 86400;
 export const C_LIGHT = 299792458.0;
 export const GM_SUN = 1.32712440018e20; // m^3/s^2
 export const M_EARTH = 5.9722e24; // kg
@@ -49,3 +51,8 @@ export const ASSUMED_SOLAR_CONSTANT_W_M2 = 1361.0;
 
 // Visual Scene Scales (in Scene Units where 1 AU = 10 units for depth resolution)
 export const SCENE_SCALE_AU = 10.0;
+
+// Playback months are one twelfth of a Julian year.
+export const MIN_PLAYBACK_SPEED_YEARS_PER_SEC = 1 / 12;
+export const MAX_PLAYBACK_SPEED_YEARS_PER_SEC = 500;
+export const DEFAULT_PLAYBACK_SPEED_YEARS_PER_SEC = MIN_PLAYBACK_SPEED_YEARS_PER_SEC;

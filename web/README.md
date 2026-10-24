@@ -59,6 +59,8 @@ The viewer adheres to the **OrbitShift Replay Telemetry Schema (OCTO_JSON v2 DRA
 3. **Solar-System View (in AU):**
    - Sun at origin $(0, 0, 0)$ with point-light illumination.
    - Earth and Tug positions tracked from replay frames.
+   - The tug sits ahead of Earth with its engines centered on the asteroid. Two short, backward-facing flames retain the opposing cant angles and leave a visible gap before Earth's enlarged atmosphere. Flame length is illustrative.
+   - Earth's axial spin completes one turn per 24 simulated hours, with zero angle at the replay epoch. Spin follows playback speed, stops when paused, and resets correctly when seeking. At years-per-second speeds, daily rotation is too fast to resolve smoothly on screen.
    - Continuous spiral trail for Earth colored by semi-major axis $a(t)$ (gradient from 1.0 AU blue to 2.7 AU gold).
    - Reference orbital boundary rings:
      - Mars Crossing at $1.524\text{ AU}$ (orange dashed ring)
@@ -72,7 +74,7 @@ The viewer adheres to the **OrbitShift Replay Telemetry Schema (OCTO_JSON v2 DRA
 5. **Timeline Controller:**
    - Play/pause toggle (Spacebar shortcut).
    - Scrubbing slider with simulated time readout in Julian years ($t / 31,557,600$) and frame indices.
-   - Log-scale playback speed control ($1\times \to 500\times$ years/second).
+   - Log-scale playback speed control from 1 simulated month per real second (the default) to 500 years/second. A month is one twelfth of a Julian year; slow speeds are labeled in months/second.
    - Scrubber pip markers indicating condition failure epochs (clicking jumps directly to the failure timestamp).
 6. **Rulebook & Safety Indicators:**
    - Persistent banner: **"⚠ Thresholds not confirmed by organizers"** displayed when `meta.thresholds_confirmed === false`.

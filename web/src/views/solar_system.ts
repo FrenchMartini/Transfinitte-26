@@ -23,6 +23,7 @@ import {
   ASTEROID_BELT_INNER_AU,
   ASTEROID_BELT_OUTER_AU,
   CERES_SEMI_MAJOR_AXIS_AU,
+  EARTH_ROTATION_PERIOD_SECONDS,
   YEAR_SECONDS
 } from '../config';
 
@@ -567,7 +568,7 @@ export class SolarSystemView {
     const ceresMesh = new THREE.Mesh(ceresGeo, ceresMat);
     this.tugGroup.add(ceresMesh);
 
-    // 2. Structural Engine Gantry / Truss
+    // 2. Central engine gantry.
     const gantryGeo = new THREE.CylinderGeometry(0.12, 0.18, 0.16, 8);
     const gantryMat = new THREE.MeshStandardMaterial({
       color: 0x8892b0,
@@ -579,7 +580,7 @@ export class SolarSystemView {
     gantryMesh.position.set(0, 0, 0.20);
     this.tugGroup.add(gantryMesh);
 
-    // 3. Shadow Heat Shield Disc (protects Ceres ice from thruster radiation)
+    // 3. Central heat shield.
     const shieldGeo = new THREE.CylinderGeometry(0.26, 0.26, 0.02, 16);
     const shieldMat = new THREE.MeshStandardMaterial({
       color: 0xd1d5db,
@@ -614,21 +615,21 @@ export class SolarSystemView {
     nozzle2.position.set(0, -0.09, 0.35);
     this.tugGroup.add(nozzle2);
 
-    // Relativistic Exhaust Plumes (High-intensity plasma beams)
-    const plumeGeo = new THREE.ConeGeometry(0.11, 1.1, 16, 1, true);
-    plumeGeo.translate(0, -0.55, 0); // apex at 0, expanding to base at -1.1
+    // Short illustrative flames leave a clear gap before the magnified Earth.
+    const plumeGeo = new THREE.ConeGeometry(0.04, 0.32, 16, 1, true);
+    plumeGeo.translate(0, -0.16, 0); // apex at 0, expanding to base at -0.32
 
     const plumeMat1 = new THREE.MeshBasicMaterial({
       color: 0x00f0ff,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.60,
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide
     });
     const plumeMat2 = new THREE.MeshBasicMaterial({
       color: 0x00f0ff,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.60,
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide
     });
@@ -885,6 +886,13 @@ export class SolarSystemView {
       const mesh = this.getOrCreateBodyMesh(name);
       const scenePos = eclipticToScene([data.x, data.y, data.z], [0, 0, 0], SCENE_SCALE_AU);
       mesh.position.set(scenePos[0], scenePos[1], scenePos[2]);
+      if (name === 'Earth') {
+        // Set the daily phase from replay time so pause and seeking are deterministic.
+        // Reduce time before converting to radians to preserve precision on long runs.
+        const dayPhase_s = ((time_s % EARTH_ROTATION_PERIOD_SECONDS) + EARTH_ROTATION_PERIOD_SECONDS)
+          % EARTH_ROTATION_PERIOD_SECONDS;
+        mesh.rotation.y = (dayPhase_s / EARTH_ROTATION_PERIOD_SECONDS) * 2 * Math.PI;
+      }
     }
 
     // 2. Ensure ALL standard Solar System planets are ALWAYS visible and in orbit:
@@ -936,8 +944,9 @@ export class SolarSystemView {
 
       if (this.tugGroup) {
         this.tugGroup.position.copy(tugVisualPos);
-        // Look in forward direction so local -Z points forward, and +Z (nozzles/plumes) points backwards towards Earth
-        this.tugGroup.lookAt(tugVisualPos.clone().add(dir));
+        // Group.lookAt points local +Z at its target; +Z holds the aft engines.
+        // Aim it backward so the plumes oppose the forward pull on Earth.
+        this.tugGroup.lookAt(tugVisualPos.clone().sub(dir));
       }
 
       // Update Gravitational Towline (Earth center to Tug center)
@@ -1025,10 +1034,7 @@ export class SolarSystemView {
       this.tugThrusterPlume2.scale.set(pulse2, pulse2, pulse2 * (0.95 + 0.1 * Math.cos(this.pulseTime * 28.0)));
     }
 
-    // 3. Planetary axial rotations (spinning realistically)
-    const earthMesh = this.bodyMeshes.get('Earth');
-    if (earthMesh) earthMesh.rotation.y += 0.008;
-
+    // 3. Illustrative rotations for reference planets; Earth follows replay time in updateBodies.
     const marsMesh = this.bodyMeshes.get('Mars');
     if (marsMesh) marsMesh.rotation.y += 0.006;
 
