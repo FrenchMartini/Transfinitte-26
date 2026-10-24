@@ -78,11 +78,7 @@ def test_reduced_model_vs_full_nbody_window(base_config: dict):
     omega0_sq = 2.0 * constants.G * m_earth / (d0**3)
     kp = 3.0 * m_tug * omega0_sq
     kd = 2.0 * math.sqrt(m_tug * kp)
-    # Feedforward solar-tidal trim along track to eliminate steady-state standoff droop (d_eq = d0):
-    omega_sun_sq = mu_sun / (r0**3)
-    f_solar_drag = m_tug * omega_sun_sq * d0
-    f_trim = 0.5916 * f_solar_drag
-    f_nominal = f_eff + m_tug * a_req + f_trim
+    f_nominal = f_eff + m_tug * a_req
 
     def af_full(sim_pointer):
         s = sim_pointer.contents
