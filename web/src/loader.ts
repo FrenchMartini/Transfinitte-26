@@ -19,8 +19,8 @@ export function validateReplayData(raw: unknown): ValidationResult {
 
   const data = raw as Partial<ReplayData>;
 
-  if (data.format !== 'OCTO_JSON') {
-    errors.push(`Invalid format identifier: expected "OCTO_JSON", got "${data.format}".`);
+  if (data.format !== 'OCTO_JSON' && data.format !== 'OCTO_SIMULATION_JSON') {
+    errors.push(`Invalid format identifier: expected "OCTO_JSON" or "OCTO_SIMULATION_JSON", got "${data.format}".`);
   }
 
   if (data.version !== 2) {

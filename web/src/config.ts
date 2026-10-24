@@ -50,6 +50,12 @@ export const ASSUMED_BEAM_CANT_DEG = 5.0; // Dual out-of-ecliptic relativistic t
 // Visual Scene Scales (in Scene Units where 1 AU = 10 units for depth resolution)
 export const SCENE_SCALE_AU = 10.0;
 
+// Outer Ice Giants Orbits (in AU) & Periods (IAU / NASA Planetary Fact Sheets)
+export const URANUS_ORBIT_AU = 19.191; // Mean semi-major axis of Uranus
+export const NEPTUNE_ORBIT_AU = 30.069; // Mean semi-major axis of Neptune
+export const URANUS_PERIOD_YR = 84.011; // Orbital period of Uranus in years
+export const NEPTUNE_PERIOD_YR = 164.79; // Orbital period of Neptune in years
+
 // Planetary Axial Rotation Periods in Seconds (IAU / NASA Planetary Fact Sheets)
 export const MERCURY_ROTATION_PERIOD_SECONDS = 58.6462 * 86400.0; // 58.65 days
 export const VENUS_ROTATION_PERIOD_SECONDS = -243.018 * 86400.0; // 243 days (retrograde)
@@ -57,6 +63,8 @@ export const MOON_ROTATION_PERIOD_SECONDS = 27.32166 * 86400.0; // 27.32 days (t
 export const MARS_ROTATION_PERIOD_SECONDS = 1.025957 * 86400.0; // 24.62 hours
 export const JUPITER_ROTATION_PERIOD_SECONDS = 0.41354 * 86400.0; // 9.93 hours
 export const SATURN_ROTATION_PERIOD_SECONDS = 0.44401 * 86400.0; // 10.66 hours
+export const URANUS_ROTATION_PERIOD_SECONDS = -0.71833 * 86400.0; // 17.24 hours (retrograde, tilt 97.8 deg)
+export const NEPTUNE_ROTATION_PERIOD_SECONDS = 0.67125 * 86400.0; // 16.11 hours (prograde, tilt 28.3 deg)
 export const SUN_ROTATION_PERIOD_SECONDS = 27.0 * 86400.0; // 27 days differential equatorial
 
 // Moon Orbital Periods in Seconds (IAU / NASA Fact Sheets)
@@ -73,6 +81,10 @@ export const ENCELADUS_ORBIT_PERIOD_SECONDS = 1.370218 * 86400.0; // 1.37 days
 export const TETHYS_ORBIT_PERIOD_SECONDS = 1.887802 * 86400.0; // 1.89 days
 export const RHEA_ORBIT_PERIOD_SECONDS = 4.517500 * 86400.0; // 4.52 days
 
+export const TITANIA_ORBIT_PERIOD_SECONDS = 8.706 * 86400.0; // 8.71 days (Uranus)
+export const OBERON_ORBIT_PERIOD_SECONDS = 13.463 * 86400.0; // 13.46 days (Uranus)
+export const TRITON_ORBIT_PERIOD_SECONDS = -5.877 * 86400.0; // 5.88 days retrograde (Neptune)
+
 // Playback Speed Units in Years Per Real Second
 export const SPEED_DAY_YEARS_PER_SEC = 1.0 / 365.25; // ~0.002738 yr/s (1 day / real second)
 export const SPEED_WEEK_YEARS_PER_SEC = 7.0 / 365.25; // ~0.019165 yr/s (1 week / real second)
@@ -82,4 +94,29 @@ export const SPEED_YEAR_YEARS_PER_SEC = 1.0; // 1.0 yr/s (1 year / real second)
 export const MIN_PLAYBACK_SPEED_YEARS_PER_SEC = SPEED_DAY_YEARS_PER_SEC; // Min speed: 1 day/s
 export const MAX_PLAYBACK_SPEED_YEARS_PER_SEC = 500.0; // Max speed: 500 yr/s
 export const DEFAULT_PLAYBACK_SPEED_YEARS_PER_SEC = SPEED_MONTH_YEARS_PER_SEC; // Default: 1 month/s
+
+// Relativistic Plasma Thruster & Quarry Asteroid Mining (Enabler E2/E3)
+export const NOMINAL_MASS_FLOW_RATE_KG_S = 2.501e9; // 2,501,000 t/s (2.501 Mt/s)
+export const RELATIVISTIC_EXHAUST_VELOCITY_KM_S = 89937.7; // 0.300 c
+export const RELATIVISTIC_LORENTZ_GAMMA = 1.048285; // gamma = 1 / sqrt(1 - 0.3^2)
+export const QUARRY_INITIAL_MASS_KG = 9.400e20; // 100% Ceres-mass reaction mass reserve
+export const QUARRY_INITIAL_RADIUS_KM = 473.0; // Initial quarry mean radius
+export const JET_KINETIC_POWER_W = 1.0847e25; // 2.83% L_sun
+export const FLASH_VAPORIZATION_TEMP_K = 3000.0; // Silicate & water ice flash vaporization temperature
+
+// Dual-Lagrange Hexagonal Heating Swarm & Statite Constants (Enabler E3)
+export const L1_MIRROR_AREA_M2 = 8.44e14; // Gossamer reflector area
+export const L1_MIRROR_RADIUS_KM = 16380.0; // Equivalent circular radius
+export const L1_MIRROR_REFLECTIVITY = 0.95; // 95% specular reflectivity
+export const L1_MIRROR_MASS_KG = 1.0e11; // 10^11 kg gossamer membrane (sigma = 0.1185 g/m^2)
+export const L1_MIRROR_RADIATION_FORCE_N = 1.045e9; // Solar radiation pressure force on mirror
+export const STATITE_TRIM_AUTHORITY = 0.25; // Electrochromic margin for propellantless solar tacking
+export const L2_HALO_RADIUS_KM = 14000.0; // L2 Night-Side Swarm halo orbit radius (clears Earth shadow cone)
+export const L2_NIGHT_FLUX_FRACTION = 0.35; // Reverse Earthshine night-side flux fraction preventing hyper-canes
+
+// Out-of-Ecliptic Plume Canting Constants
+export const PLUME_CANT_ANGLE_DEG = 5.0; // +/- 5.0 deg out of ecliptic
+export const PLUME_COSINE_EFFICIENCY = 0.996195; // cos(5 deg)
+export const PLUME_STANDOFF_CLEARANCE_KM = 110696.0; // Perpendicular clearance at standoff distance
+
 

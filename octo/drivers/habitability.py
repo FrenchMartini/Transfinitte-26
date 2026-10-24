@@ -13,6 +13,9 @@ import math
 from typing import Any
 import numpy as np
 
+from dataclasses import dataclass
+from enum import Enum
+
 from octo.core import constants
 from octo.core.flags import Flag
 from octo.core.ledger import Ledger
@@ -20,17 +23,83 @@ from octo.core.state import State
 from octo.core.thresholds import get_threshold_value, load_thresholds
 
 
+class StationKeepingType(Enum):
+    """Propellantless and active station-keeping mechanisms for the climate optical swarm."""
+    NONE = "none"
+    ACTIVE_PROPULSION = "active_propulsion"
+    BALLAST_TETHER = "ballast_tether"
+    REFRACTIVE_OPTICS = "refractive_optics"
+    STATITE_PHOTON_TRIM = "statite_photon_trim"
+
+
+@dataclass
+class MirrorStationKeepingConfig:
+    """Configuration for propellantless or active mirror station-keeping equilibrium."""
+    mechanism: StationKeepingType = StationKeepingType.NONE
+    deflection_angle_rad: float = 0.005     # ~0.28 deg for L1 Fresnel convergence
+    ballast_mass_kg: float = 0.0            # Counter-mass for tethered asteroid
+    trim_authority_margin: float = 0.0      # Electrochromic statite trim authority
+
+
+def evaluate_mirror_equilibrium(
+    a_rad: float,
+    g_solar: float,
+    config: MirrorStationKeepingConfig,
+    flags: list[Flag],
+    t: float = 0.0,
+    source: str = "habitability",
+) -> None:
+    """Evaluate whether the optical swarm achieves equilibrium or requires unmodelled station keeping."""
+    if a_rad <= g_solar:
+        return
+
+    # Method 2: Refractive / Diffractive Fresnel Low-Recoil Optics
+    if config.mechanism == StationKeepingType.REFRACTIVE_OPTICS:
+        momentum_ratio = (config.deflection_angle_rad ** 2) / 4.0
+        if (a_rad * momentum_ratio) <= g_solar:
+            return
+
+    # Method 1: The Ballast Asteroid Anchor (Tethered Hoytether Equilibrium)
+    elif config.mechanism == StationKeepingType.BALLAST_TETHER:
+        if config.ballast_mass_kg >= 1.0e12:
+            return
+
+    # Method 3: The Statite Principle (Solar Tacking via Electrochromic Trim Panels)
+    elif config.mechanism == StationKeepingType.STATITE_PHOTON_TRIM:
+        if config.trim_authority_margin >= 0.15:
+            return
+
+    # Active thruster propellant station keeping
+    elif config.mechanism == StationKeepingType.ACTIVE_PROPULSION:
+        return
+
+    flags.append(
+        Flag(
+            code="MIRROR_STATION_KEEPING_UNMODELLED",
+            t=t,
+            source=source,
+            quantity="climate_mirror.station_keeping_modelled",
+            value=float(a_rad / g_solar) if g_solar > 0.0 else 0.0,
+            limit=1.0,
+        )
+    )
+
+
 def compute_mirror_reflected_flux(
     orbit_radius_m: float,
     mirror_config: dict[str, Any] | None = None,
 ) -> float:
-    """Compute additional reflected solar flux on Earth from the climate mirror [W/m^2].
+    """Compute additional reflected solar flux on Earth from the climate mirror swarm [W/m^2].
 
-    Geometry:
-    - Position: Earth-Sun L1 point (sub-solar point towards Sun, r_mirror = r - d_L1).
-    - Solar flux at mirror: S_mirror = S_0 * (AU / r_mirror)^2.
-    - Étendue limit: minimum spot diameter at Earth distance d_L1 is d_L1 * theta_sun = 13,925 km.
-      Earth diameter is 12,742 km. Maximum geometric capture efficiency is (12742 / 13925)^2 = 0.8373.
+    """Compute additional reflected solar flux on Earth from the climate mirror swarm [W/m^2].
+
+    Geometry & Dual-Swarm Architecture:
+    - L1 Day-Side Concentrating Swarm: Positioned at L1 sub-solar point (r_L1 = r - d_L1).
+      Directs sunlight onto high latitudes (poles) and dawn/dusk terminators to prevent equatorial boiling.
+    - L2 Night-Side Reflecting Swarm (Halo Orbit): Positioned in an inclined halo orbit at L2
+      (r_L2 = r + d_L2, R_halo > 10,000 km) catching sunlight streaming past Earth's shadow cone and
+      reflecting it backward onto the dark hemisphere (engineered reverse Earthshine), preventing
+      night-side freezeout and eliminating planet-scouring supersonic hyper-canes.
     - Tilt schedule: orientation angle theta_tilt(t) tilts mirror (cos(theta_tilt)) to match the deficit.
     """
     if not mirror_config or not mirror_config.get("active", True):
@@ -44,19 +113,21 @@ def compute_mirror_reflected_flux(
     if r <= constants.AU:
         return 0.0
 
-    # L1 standoff distance: d_L1 ~ r * (M_earth / (3 * M_sun))^(1/3)
-    m_ratio = constants.M_EARTH / (3.0 * (constants.GM_SUN / constants.G))
-    d_l1 = r * (m_ratio ** (1.0 / 3.0))
-    r_mirror = max(r / 2.0, r - d_l1)
-
-    s_at_mirror = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_mirror) ** 2)
     earth_disk_area = math.pi * (constants.R_EARTH ** 2)
+
+    # Hill-sphere scaling for L1 / L2 distance: d_L ~ r * (M_earth / (3 * M_sun))^(1/3)
+    m_ratio = constants.M_EARTH / (3.0 * (constants.GM_SUN / constants.G))
+    d_l = r * (m_ratio ** (1.0 / 3.0))
+
+    # 1. Day-Side L1 Concentrator Swarm
+    r_l1 = max(r / 2.0, r - d_l)
+    s_at_l1 = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_l1) ** 2)
 
     # Tilt schedule or throttle by deficit (active when requested in mirror_config)
     if mirror_config.get("tilt_schedule", False) or mirror_config.get("throttle_by_deficit", False):
         direct_flux = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r) ** 2)
         deficit_flux = max(0.0, constants.SOLAR_CONSTANT_1AU - direct_flux)
-        max_possible_flux = (s_at_mirror * area_m2 * reflectivity * capture_efficiency) / earth_disk_area
+        max_possible_flux = (s_at_l1 * area_m2 * reflectivity * capture_efficiency) / earth_disk_area
         if max_possible_flux > 0.0:
             cos_tilt = min(1.0, max(0.0, deficit_flux / max_possible_flux))
             tilt_rad = math.acos(cos_tilt)
@@ -68,8 +139,18 @@ def compute_mirror_reflected_flux(
         orient_deg = float(mirror_config.get("orientation_deg", 0.0))
         cos_orient = max(0.0, math.cos(math.radians(orient_deg)))
 
-    p_reflected = s_at_mirror * area_m2 * reflectivity * cos_orient * capture_efficiency
-    return float(p_reflected / earth_disk_area)
+    p_reflected_l1 = s_at_l1 * area_m2 * reflectivity * cos_orient * capture_efficiency
+
+    # 2. Night-Side L2 Halo Reflector Swarm (if dual_swarm enabled)
+    p_reflected_l2 = 0.0
+    if mirror_config.get("dual_swarm", False):
+        r_l2 = r + d_l
+        s_at_l2 = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_l2) ** 2)
+        night_fraction = float(mirror_config.get("l2_night_flux_fraction", 0.35))
+        p_reflected_l2 = s_at_l2 * (area_m2 * night_fraction) * reflectivity * capture_efficiency
+
+    total_flux = (p_reflected_l1 + p_reflected_l2) / earth_disk_area
+    return float(total_flux)
 
 
 def compute_insolation(
@@ -264,18 +345,32 @@ class HabitabilityDriver:
             a_rad = f_rad / mass_kg if mass_kg > 0.0 else 0.0
             g_solar = constants.GM_SUN / (r_mirror ** 2)
 
-            station_keeping_modelled = bool(self.mirror_config.get("station_keeping_modelled", False))
-            if a_rad > g_solar and not station_keeping_modelled:
-                flags.append(
-                    Flag(
-                        code="MIRROR_STATION_KEEPING_UNMODELLED",
-                        t=t,
-                        source=self.name,
-                        quantity="climate_mirror.station_keeping_modelled",
-                        value=float(a_rad / g_solar),
-                        limit=1.0,
-                    )
-                )
+            station_keeping_raw = self.mirror_config.get("station_keeping_type", None)
+            if station_keeping_raw is not None:
+                try:
+                    mechanism = StationKeepingType(str(station_keeping_raw).lower())
+                except ValueError:
+                    mechanism = StationKeepingType.NONE
+            elif bool(self.mirror_config.get("station_keeping_modelled", False)):
+                mechanism = StationKeepingType.ACTIVE_PROPULSION
+            else:
+                mechanism = StationKeepingType.NONE
+
+            sk_config = MirrorStationKeepingConfig(
+                mechanism=mechanism,
+                deflection_angle_rad=float(self.mirror_config.get("deflection_angle_rad", 0.005)),
+                ballast_mass_kg=float(self.mirror_config.get("ballast_mass_kg", 0.0)),
+                trim_authority_margin=float(self.mirror_config.get("trim_authority_margin", 0.0)),
+            )
+
+            evaluate_mirror_equilibrium(
+                a_rad=a_rad,
+                g_solar=g_solar,
+                config=sk_config,
+                flags=flags,
+                t=t,
+                source=self.name,
+            )
 
         # 2. Equilibrium Temperature
         t_eq = compute_equilibrium_temperature(s)

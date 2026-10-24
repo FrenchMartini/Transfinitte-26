@@ -53,8 +53,12 @@ climate_mirror:
   position: "L1"    # Positioned at Earth-Sun L1 sub-solar point
   orientation_deg: 0.0  # Normal aligned with Sun-Earth axis
   capture_efficiency: 1.0  # ASSUMED: Fraction of reflected flux intercepting Earth cross section
-  station_keeping_modelled: false  # ASSUMED: whether active station-keeping propulsion is modelled
   throttle_by_deficit: true  # Modulate mirror aperture/reflection to match solar deficit as orbit expands
+  station_keeping_type: "statite_photon_trim"  # Propellantless solar tacking via electrochromic edge panels
+  trim_authority_margin: 0.25  # > 0.15 margin to maintain displaced non-Keplerian equilibrium sunward of L1
+  dual_swarm: true  # L1 Day Concentrator Swarm + L2 Night Halo Swarm
+  l2_halo_radius_km: 14000.0  # Halo orbit clearing Earth shadow cone
+  l2_night_flux_fraction: 0.35  # Reverse Earthshine night-side flux fraction preventing hyper-canes
 
 initial_conditions:
   semi_major_axis_au: 1.0

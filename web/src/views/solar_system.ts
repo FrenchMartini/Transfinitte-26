@@ -49,7 +49,16 @@ import {
   TITAN_ORBIT_PERIOD_SECONDS,
   ENCELADUS_ORBIT_PERIOD_SECONDS,
   TETHYS_ORBIT_PERIOD_SECONDS,
-  RHEA_ORBIT_PERIOD_SECONDS
+  RHEA_ORBIT_PERIOD_SECONDS,
+  URANUS_ORBIT_AU,
+  NEPTUNE_ORBIT_AU,
+  URANUS_PERIOD_YR,
+  NEPTUNE_PERIOD_YR,
+  URANUS_ROTATION_PERIOD_SECONDS,
+  NEPTUNE_ROTATION_PERIOD_SECONDS,
+  TITANIA_ORBIT_PERIOD_SECONDS,
+  OBERON_ORBIT_PERIOD_SECONDS,
+  TRITON_ORBIT_PERIOD_SECONDS
 } from '../config';
 
 const MERCURY_ORBIT_AU = 0.387;
@@ -181,6 +190,236 @@ function createUranusRingMesh(uranusRadius: number = 0.45): THREE.Mesh {
   return ringMesh;
 }
 
+function createMarsTexture(): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Martian rust-red gradient
+  const baseGrad = ctx.createLinearGradient(0, 0, 0, 256);
+  baseGrad.addColorStop(0.0, '#a33917');
+  baseGrad.addColorStop(0.5, '#c95125');
+  baseGrad.addColorStop(1.0, '#a33917');
+  ctx.fillStyle = baseGrad;
+  ctx.fillRect(0, 0, 512, 256);
+  // Dark volcanic basalt maria (Syrtis Major, Acidalia Planitia)
+  const prng = mulberry32(888);
+  ctx.fillStyle = 'rgba(70, 22, 10, 0.45)';
+  for (let i = 0; i < 30; i++) {
+    const cx = prng() * 512;
+    const cy = 50 + prng() * 156;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 25 + prng() * 55, 12 + prng() * 28, prng() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Brilliant North & South Polar Ice Caps
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath();
+  ctx.ellipse(256, 6, 80, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(256, 250, 65, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+function createJupiterTexture(): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  const bands = [
+    { pos: 0.00, color: '#f5ede3' },
+    { pos: 0.10, color: '#c49a6c' },
+    { pos: 0.20, color: '#ecdcc8' },
+    { pos: 0.32, color: '#9c5333' },
+    { pos: 0.44, color: '#f7ede2' },
+    { pos: 0.52, color: '#e8af67' },
+    { pos: 0.60, color: '#8b3d22' },
+    { pos: 0.70, color: '#f2e7d5' },
+    { pos: 0.80, color: '#b06d48' },
+    { pos: 0.90, color: '#e2d5c3' },
+    { pos: 1.00, color: '#c29a75' }
+  ];
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 256);
+  bands.forEach((b) => gradient.addColorStop(b.pos, b.color));
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Subtle turbulent cloud noise bands
+  const prng = mulberry32(101);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  for (let y = 8; y < 248; y += 4) {
+    ctx.fillRect(0, y, 512, 2 + prng() * 3);
+  }
+  ctx.fillStyle = 'rgba(80, 30, 15, 0.09)';
+  for (let y = 14; y < 242; y += 6) {
+    ctx.fillRect(0, y, 512, 2 + prng() * 3);
+  }
+
+  // Great Red Spot in the South Tropical Zone
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(320, 158, 26, 15, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#b84328';
+  ctx.fill();
+  ctx.restore();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+function createUranusTexture(): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Pale cyan aquamarine gradient with delicate atmospheric haze
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0.0, '#70d6d1');
+  grad.addColorStop(0.25, '#88e5df');
+  grad.addColorStop(0.5, '#a5f3fc');
+  grad.addColorStop(0.75, '#88e5df');
+  grad.addColorStop(1.0, '#70d6d1');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Subtle zonal banded streaks
+  const prng = mulberry32(777);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  for (let y = 10; y < 246; y += 8) {
+    ctx.fillRect(0, y, 512, 2 + prng() * 4);
+  }
+
+  // Polar methane haze cap
+  ctx.fillStyle = 'rgba(224, 254, 254, 0.25)';
+  ctx.beginPath();
+  ctx.ellipse(256, 12, 140, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+function createNeptuneTexture(): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Deep azure cobalt blue gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0.0, '#1e3a8a');
+  grad.addColorStop(0.3, '#2563eb');
+  grad.addColorStop(0.6, '#1d4ed8');
+  grad.addColorStop(1.0, '#1e3a8a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 256);
+
+  // High-altitude supersonic white methane cirrus cloud streaks
+  const prng = mulberry32(999);
+  ctx.fillStyle = 'rgba(224, 242, 254, 0.45)';
+  for (let i = 0; i < 22; i++) {
+    const cx = prng() * 512;
+    const cy = 40 + prng() * 180;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 35 + prng() * 65, 3 + prng() * 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Great Dark Spot in the Southern Hemisphere
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(290, 160, 22, 13, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.60)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
+function createSunPhotosphereTexture(): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Luminous radial/spherical convection gradient (deep incandescent orange to radiant white-gold)
+  const grad = ctx.createLinearGradient(0, 0, 0, 512);
+  grad.addColorStop(0.0, '#d94b00');
+  grad.addColorStop(0.15, '#ff8000');
+  grad.addColorStop(0.5, '#ffd159');
+  grad.addColorStop(0.85, '#ff8000');
+  grad.addColorStop(1.0, '#d94b00');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1024, 512);
+
+  // High-frequency convective granulation cells
+  const prng = mulberry32(555);
+  ctx.fillStyle = 'rgba(255, 245, 180, 0.20)';
+  for (let i = 0; i < 600; i++) {
+    const cx = prng() * 1024;
+    const cy = prng() * 512;
+    const r = 3 + prng() * 12;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Active region magnetic sunspot clusters (Northern & Southern active bands)
+  const sunspotBands = [185, 325];
+  for (const bandY of sunspotBands) {
+    for (let s = 0; s < 7; s++) {
+      const cx = (s * 150 + 60 + prng() * 50) % 1024;
+      const cy = bandY + (prng() - 0.5) * 45;
+      // Penumbra halo
+      ctx.fillStyle = 'rgba(168, 65, 14, 0.75)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 14 + prng() * 10, 8 + prng() * 6, prng() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+      // Umbra core
+      ctx.fillStyle = '#220800';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 6 + prng() * 4, 3.5 + prng() * 2.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
 export class SolarSystemView {
   public scene: THREE.Scene;
   public camera: THREE.PerspectiveCamera;
@@ -210,6 +449,53 @@ export class SolarSystemView {
   private tugTowline: THREE.Line | null = null;
   private towlineGeometry: THREE.BufferGeometry | null = null;
   private towlinePositions: Float32Array = new Float32Array(6);
+
+  // Automated Mining Rig & Plasma Conversion Plant (Enabler E2)
+  private quarryAsteroidMesh: THREE.Mesh | null = null;
+  private miningRigGroup: THREE.Group | null = null;
+  private miningDrillHead1: THREE.Mesh | null = null;
+  private miningDrillHead2: THREE.Mesh | null = null;
+  private plasmaReactorCore: THREE.Mesh | null = null;
+  private miningLaserBeam: THREE.Mesh | null = null;
+  private miningLaserGlow: THREE.Mesh | null = null;
+  private storageSilos: THREE.Group | null = null;
+
+  // Relativistic Plasma Particle Exhaust Streams (Dual canted 0.3c streams)
+  private plasmaParticles: THREE.Points | null = null;
+  private plasmaPositions: Float32Array | null = null;
+  private plasmaColors: Float32Array | null = null;
+  private plasmaVelocities: Float32Array | null = null;
+  private plasmaLifetimes: Float32Array | null = null;
+  private plasmaMaxLifetimes: Float32Array | null = null;
+  private readonly PLASMA_PARTICLE_COUNT: number = 800;
+
+  // Extended Out-of-Ecliptic Plume Cones (θ = ±5.0°) & Clearance Envelope
+  private tugExtendedPlume1: THREE.Mesh | null = null;
+  private tugExtendedPlume2: THREE.Mesh | null = null;
+  private plumeClearanceEnvelope: THREE.Group | null = null;
+
+  // Dual-Lagrange Hexagonal Heating Swarms & Statite Architecture (Enabler E3)
+  private mirrorGroup: THREE.Group | null = null;
+  private mirrorMesh: THREE.Mesh | null = null;
+  private mirrorSunbeam: THREE.Mesh | null = null;
+  private currentL1Pos: THREE.Vector3 = new THREE.Vector3(9.35, 0, 0);
+
+  private l1HexFlyers: THREE.Mesh[] = [];
+  private l1ElectrochromicRims: THREE.Mesh[] = [];
+  private l1NorthPolarBeam: THREE.Mesh | null = null;
+  private l1SouthPolarBeam: THREE.Mesh | null = null;
+
+  // L2 Night-Side Giant Fixed Hexagonal Concentrator (Anti-Hypercane Reverse Earthshine)
+  private l2SwarmGroup: THREE.Group | null = null;
+  private l2HexFlyers: THREE.Mesh[] = [];
+  private l2ElectrochromicRims: THREE.Mesh[] = [];
+  private l2ReverseEarthshineBeam: THREE.Mesh | null = null;
+  private currentL2Pos: THREE.Vector3 = new THREE.Vector3(11.25, 0, 0);
+
+  // Bypass Solar Transfer Corridor (Rays flowing from L1 past Earth to Giant L2 Mirror)
+  private bypassBeamsGroup: THREE.Group | null = null;
+  private bypassSheath: THREE.Mesh | null = null;
+  private bypassRayLines: THREE.LineSegments | null = null;
 
   // Dynamic Camera Focus & Interactive Raycasting Selection
   private cameraFocus: string = 'system';
@@ -295,6 +581,7 @@ export class SolarSystemView {
     this.setupReferenceRings();
     this.setupAsteroidBelt();
     this.setupTugAndThrusters();
+    this.setupClimateMirror();
     this.setupPointerInteractions();
 
     window.addEventListener('resize', this.onWindowResize);
@@ -587,12 +874,12 @@ export class SolarSystemView {
     const saturnRing = this.createLuminousOrbitRing(SATURN_ORBIT_AU, 0xeab308, 0.26, 0.022);
     this.orbitsGroup.add(saturnRing);
 
-    // 9. Uranus Orbit (19.191 AU) - Soft pale cyan ribbon
-    const uranusRing = this.createLuminousOrbitRing(URANUS_ORBIT_AU, 0x7dd3fc, 0.22, 0.025);
+    // 9. Uranus Orbit (19.191 AU) - Continuous solid cyan-teal ribbon
+    const uranusRing = this.createLuminousOrbitRing(URANUS_ORBIT_AU, 0x2dd4bf, 0.24, 0.024);
     this.orbitsGroup.add(uranusRing);
 
-    // 10. Neptune Orbit (30.07 AU) - Rich royal azure ribbon
-    const neptuneRing = this.createLuminousOrbitRing(NEPTUNE_ORBIT_AU, 0x3b82f6, 0.20, 0.028);
+    // 10. Neptune Orbit (30.07 AU) - Continuous solid deep azure ribbon
+    const neptuneRing = this.createLuminousOrbitRing(NEPTUNE_ORBIT_AU, 0x3b82f6, 0.22, 0.026);
     this.orbitsGroup.add(neptuneRing);
 
     this.scene.add(this.orbitsGroup);
@@ -657,8 +944,7 @@ export class SolarSystemView {
   private setupTugAndThrusters(): void {
     this.tugGroup = new THREE.Group();
 
-    // 1. Ceres Asteroid Body (Dwarf Planet)
-    // Irregular rocky surface
+    // 1. Ceres Asteroid Body (Dwarf Planet Gravity Tractor)
     const ceresGeo = new THREE.DodecahedronGeometry(0.24, 1);
     const pos = ceresGeo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
@@ -679,7 +965,295 @@ export class SolarSystemView {
     const ceresMesh = new THREE.Mesh(ceresGeo, ceresMat);
     this.tugGroup.add(ceresMesh);
 
-    // 2. Central engine gantry.
+    // 2. Automated Industrial Asteroid Mining & Plasma Conversion Plant (Enabler E2)
+    // High-tech modular extraction rig: mechanical rotary core drills, hydraulic excavator jaws,
+    // laser ablation turrets, and an RF plasma arc ionization reactor converting rock into 0.3c propellant.
+    this.miningRigGroup = new THREE.Group();
+    this.miningRigGroup.position.set(-0.42, 0.04, 0.02);
+
+    // Main heavy industrial rig chassis
+    const rigChassisGeo = new THREE.CylinderGeometry(0.10, 0.12, 0.18, 8);
+    const rigChassisMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b, // Industrial slate gunmetal
+      metalness: 0.90,
+      roughness: 0.25
+    });
+    const rigChassis = new THREE.Mesh(rigChassisGeo, rigChassisMat);
+    rigChassis.rotation.z = Math.PI / 2;
+    this.miningRigGroup.add(rigChassis);
+
+    // Industrial armor ribs & hazard warning collars
+    const collarGeo = new THREE.CylinderGeometry(0.122, 0.122, 0.035, 8);
+    const collarMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b, // Industrial hazard amber
+      metalness: 0.70,
+      roughness: 0.30
+    });
+    const collar1 = new THREE.Mesh(collarGeo, collarMat);
+    collar1.rotation.z = Math.PI / 2;
+    collar1.position.set(0.04, 0, 0);
+    this.miningRigGroup.add(collar1);
+
+    const collar2 = new THREE.Mesh(collarGeo, collarMat);
+    collar2.rotation.z = Math.PI / 2;
+    collar2.position.set(-0.04, 0, 0);
+    this.miningRigGroup.add(collar2);
+
+    // Radiator heat-sink fins on the mining plant (dissipating vaporization waste heat)
+    const radGeo = new THREE.BoxGeometry(0.006, 0.15, 0.18);
+    const radMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      metalness: 0.85,
+      roughness: 0.35
+    });
+    const radTop = new THREE.Mesh(radGeo, radMat);
+    radTop.position.set(0, 0.12, 0);
+    this.miningRigGroup.add(radTop);
+
+    const radBottom = new THREE.Mesh(radGeo, radMat);
+    radBottom.position.set(0, -0.12, 0);
+    this.miningRigGroup.add(radBottom);
+
+    // High-pressure cryogenic buffer vessels (spheres and cylinders)
+    const tankGeo = new THREE.SphereGeometry(0.028, 12, 12);
+    const tankMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37, // Thermal gold foil
+      metalness: 0.95,
+      roughness: 0.15
+    });
+    for (let t = 0; t < 4; t++) {
+      const tank = new THREE.Mesh(tankGeo, tankMat);
+      const angle = (t * Math.PI) / 2;
+      tank.position.set(0.02, 0.08 * Math.cos(angle), 0.08 * Math.sin(angle));
+      this.miningRigGroup.add(tank);
+    }
+
+    // Heavy Excavator Clamping Jaws / Piston Booms holding the mined rock
+    const jawMat = new THREE.MeshStandardMaterial({
+      color: 0x475569,
+      metalness: 0.90,
+      roughness: 0.20
+    });
+    for (let j = 0; j < 4; j++) {
+      const jawAngle = (j * Math.PI) / 2 + Math.PI / 4;
+      const armGeo = new THREE.BoxGeometry(0.014, 0.08, 0.014);
+      const arm = new THREE.Mesh(armGeo, jawMat);
+      arm.position.set(-0.10, 0.09 * Math.cos(jawAngle), 0.09 * Math.sin(jawAngle));
+      arm.rotation.z = -Math.PI / 6;
+      this.miningRigGroup.add(arm);
+
+      // Hydraulic piston cylinder
+      const pistonGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.06, 6);
+      const piston = new THREE.Mesh(pistonGeo, jawMat);
+      piston.position.set(-0.06, 0.07 * Math.cos(jawAngle), 0.07 * Math.sin(jawAngle));
+      piston.rotation.z = -Math.PI / 6;
+      this.miningRigGroup.add(piston);
+    }
+
+    // Internal Feedstock Mineral Core being bored and ground into plasma
+    // Shrinks over 9,516 years as mass is extracted and converted
+    const quarryGeo = new THREE.DodecahedronGeometry(0.095, 2);
+    const qpos = quarryGeo.attributes.position;
+    for (let i = 0; i < qpos.count; i++) {
+      const qx = qpos.getX(i);
+      const qy = qpos.getY(i);
+      const qz = qpos.getZ(i);
+      const qnoise = 1.0 + 0.12 * Math.sin(qx * 14.0) * Math.cos(qy * 12.0);
+      qpos.setXYZ(i, qx * qnoise, qy * qnoise, qz * qnoise);
+    }
+    quarryGeo.computeVertexNormals();
+
+    const quarryMat = new THREE.MeshStandardMaterial({
+      color: 0x475569, // Carbonaceous chondrite rock & volatile ice
+      roughness: 0.90,
+      metalness: 0.18,
+      flatShading: true
+    });
+    this.quarryAsteroidMesh = new THREE.Mesh(quarryGeo, quarryMat);
+    this.quarryAsteroidMesh.position.set(-0.13, 0, 0); // Nestled inside the drilling jaws
+    this.miningRigGroup.add(this.quarryAsteroidMesh);
+
+    // Primary High-Torque Tungsten-Carbide Rotary Core Drill Auger
+    const drillGeo = new THREE.ConeGeometry(0.038, 0.11, 8);
+    drillGeo.translate(0, 0.055, 0);
+    const drillMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b, // Tungsten carbide
+      metalness: 0.95,
+      roughness: 0.15
+    });
+    this.miningDrillHead1 = new THREE.Mesh(drillGeo, drillMat);
+    this.miningDrillHead1.rotation.z = Math.PI / 2; // Pointed into the rock core (-X)
+    this.miningDrillHead1.position.set(-0.04, 0.02, 0.01);
+    this.miningRigGroup.add(this.miningDrillHead1);
+
+    // Secondary Articulated Rotary Boring Bit
+    const drill2Geo = new THREE.ConeGeometry(0.025, 0.08, 6);
+    drill2Geo.translate(0, 0.04, 0);
+    this.miningDrillHead2 = new THREE.Mesh(drill2Geo, drillMat);
+    this.miningDrillHead2.rotation.z = Math.PI / 2 + 0.20;
+    this.miningDrillHead2.position.set(-0.04, -0.025, -0.015);
+    this.miningRigGroup.add(this.miningDrillHead2);
+
+    // Active Rotary Rock-Crushing & Micronization Hopper
+    const millGeo = new THREE.CylinderGeometry(0.040, 0.040, 0.07, 12);
+    const millMat = new THREE.MeshStandardMaterial({
+      color: 0x334155,
+      metalness: 0.85,
+      roughness: 0.25
+    });
+    const rockMill = new THREE.Mesh(millGeo, millMat);
+    rockMill.rotation.z = Math.PI / 2;
+    rockMill.position.set(0.02, 0, 0);
+    this.miningRigGroup.add(rockMill);
+
+    // Flash Vaporization & RF Plasma Arc Ionization Generator Core
+    const plasmaCoreGeo = new THREE.CylinderGeometry(0.032, 0.032, 0.065, 12);
+    const plasmaCoreMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending
+    });
+    this.plasmaReactorCore = new THREE.Mesh(plasmaCoreGeo, plasmaCoreMat);
+    this.plasmaReactorCore.rotation.z = Math.PI / 2;
+    this.plasmaReactorCore.position.set(0.08, 0, 0);
+    this.miningRigGroup.add(this.plasmaReactorCore);
+
+    // RF Induction Magnetic Confinement Rings around the plasma core
+    for (let r = 0; r < 3; r++) {
+      const ringGeo = new THREE.TorusGeometry(0.038, 0.005, 8, 16);
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.95, roughness: 0.15 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.y = Math.PI / 2;
+      ring.position.set(0.06 + r * 0.02, 0, 0);
+      this.miningRigGroup.add(ring);
+    }
+
+    this.tugGroup.add(this.miningRigGroup);
+
+    // 3. Heavy-Duty Multi-Pipe Gantry Bridge (Transferring structural load & ionized plasma to Ceres)
+    const bridgeTrussGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.42, 8);
+    const bridgeTrussMat = new THREE.MeshStandardMaterial({
+      color: 0x334155,
+      metalness: 0.88,
+      roughness: 0.20
+    });
+    const bridgeTruss = new THREE.Mesh(bridgeTrussGeo, bridgeTrussMat);
+    bridgeTruss.rotation.z = Math.PI / 2;
+    bridgeTruss.position.set(-0.21, 0.04, 0.02);
+    this.tugGroup.add(bridgeTruss);
+
+    // Dual Insulated High-Pressure Plasma Conduits running along the bridge
+    const pipeGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.42, 8);
+    const pipeMat = new THREE.MeshStandardMaterial({
+      color: 0x0ea5e9, // Glowing plasma conduit
+      metalness: 0.90,
+      roughness: 0.10
+    });
+    const pipe1 = new THREE.Mesh(pipeGeo, pipeMat);
+    pipe1.rotation.z = Math.PI / 2;
+    pipe1.position.set(-0.21, 0.06, 0.035);
+    this.tugGroup.add(pipe1);
+
+    const pipe2 = new THREE.Mesh(pipeGeo, pipeMat);
+    pipe2.rotation.z = Math.PI / 2;
+    pipe2.position.set(-0.21, 0.02, 0.005);
+    this.tugGroup.add(pipe2);
+
+    // Cross-struts on the bridge
+    for (let b = 0; b < 4; b++) {
+      const strutGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.08, 4);
+      const strut = new THREE.Mesh(strutGeo, bridgeTrussMat);
+      strut.position.set(-0.09 - b * 0.08, 0.04, 0.02);
+      strut.rotation.x = Math.PI / 4;
+      this.tugGroup.add(strut);
+    }
+
+    // 4. Automated Laser Ablation Emitter Turret & Active Beam
+    const drillTurretGeo = new THREE.CylinderGeometry(0.020, 0.025, 0.05, 8);
+    const drillTurretMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      metalness: 0.90,
+      roughness: 0.20
+    });
+    const drillTurret = new THREE.Mesh(drillTurretGeo, drillTurretMat);
+    drillTurret.rotation.z = -Math.PI / 2;
+    drillTurret.position.set(-0.48, 0.08, 0.05);
+    this.tugGroup.add(drillTurret);
+
+    // Active Laser Beam
+    const beamGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.09, 8);
+    beamGeo.translate(0, 0.045, 0);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: 0x00ffcc,
+      transparent: true,
+      opacity: 0.85
+    });
+    this.miningLaserBeam = new THREE.Mesh(beamGeo, beamMat);
+    this.miningLaserBeam.rotation.z = Math.PI / 2;
+    this.miningLaserBeam.position.set(-0.48, 0.08, 0.05);
+    this.tugGroup.add(this.miningLaserBeam);
+
+    // Laser Excavation Flare / Vaporization Point
+    const flareGeo = new THREE.SphereGeometry(0.018, 8, 8);
+    const flareMat = new THREE.MeshBasicMaterial({
+      color: 0x66ffdd,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending
+    });
+    this.miningLaserGlow = new THREE.Mesh(flareGeo, flareMat);
+    this.miningLaserGlow.position.set(-0.55, 0.04, 0.02);
+    this.tugGroup.add(this.miningLaserGlow);
+
+    // 5. Reaction Mass Storage Silos / Pressurized Hoppers (Enabler E2)
+    this.storageSilos = new THREE.Group();
+    const siloGeo = new THREE.CylinderGeometry(0.030, 0.030, 0.11, 12);
+    const siloMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37, // Aerospace thermal gold foil
+      metalness: 0.92,
+      roughness: 0.15
+    });
+    for (let s = 0; s < 3; s++) {
+      const silo = new THREE.Mesh(siloGeo, siloMat);
+      silo.rotation.x = Math.PI / 2;
+      silo.position.set(-0.11 - s * 0.065, 0.08, 0.06);
+      this.storageSilos.add(silo);
+
+      // Cryogenic neon level indicator
+      const gaugeGeo = new THREE.PlaneGeometry(0.007, 0.08);
+      const gaugeMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide });
+      const gauge = new THREE.Mesh(gaugeGeo, gaugeMat);
+      gauge.position.set(-0.11 - s * 0.065, 0.112, 0.06);
+      gauge.rotation.x = -Math.PI / 2;
+      this.storageSilos.add(gauge);
+    }
+    this.tugGroup.add(this.storageSilos);
+
+    // 6. Flash Vaporization Chamber (Superheated Injection Core at 3,000 K)
+    const vaporGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.09, 12);
+    const vaporMat = new THREE.MeshStandardMaterial({
+      color: 0xff6600,
+      emissive: 0xff3300,
+      emissiveIntensity: 0.85,
+      metalness: 0.6,
+      roughness: 0.25
+    });
+    const vaporChamber = new THREE.Mesh(vaporGeo, vaporMat);
+    vaporChamber.rotation.x = Math.PI / 2;
+    vaporChamber.position.set(0, 0, 0.16);
+    this.tugGroup.add(vaporChamber);
+
+    // RF Induction Coils around chamber
+    for (let c = 0; c < 2; c++) {
+      const coilGeo = new THREE.TorusGeometry(0.072, 0.006, 8, 20);
+      const coilMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.9, roughness: 0.2 });
+      const coil = new THREE.Mesh(coilGeo, coilMat);
+      coil.position.set(0, 0, 0.13 + c * 0.05);
+      this.tugGroup.add(coil);
+    }
+
+    // 7. Central engine gantry & heat shield
     const gantryGeo = new THREE.CylinderGeometry(0.12, 0.18, 0.16, 8);
     const gantryMat = new THREE.MeshStandardMaterial({
       color: 0x8892b0,
@@ -691,7 +1265,6 @@ export class SolarSystemView {
     gantryMesh.position.set(0, 0, 0.20);
     this.tugGroup.add(gantryMesh);
 
-    // 3. Central heat shield.
     const shieldGeo = new THREE.CylinderGeometry(0.26, 0.26, 0.02, 16);
     const shieldMat = new THREE.MeshStandardMaterial({
       color: 0xd1d5db,
@@ -703,11 +1276,9 @@ export class SolarSystemView {
     shieldMesh.position.set(0, 0, 0.28);
     this.tugGroup.add(shieldMesh);
 
-    // 4. Dual Canted Relativistic Thrusters (Nozzles + Exhaust Plumes)
-    // Plumes exhaust backwards (+Z in local frame) canted ±5° out-of-ecliptic (Y axis)
+    // 8. Dual Canted Relativistic Thrusters (Nozzles + Exhaust Plumes)
     const cantAngleRad = THREE.MathUtils.degToRad(5.0);
 
-    // Nozzle 1 (North canted: +5°)
     const nozzleGeo = new THREE.ConeGeometry(0.05, 0.14, 12, 1, true);
     const nozzleMat = new THREE.MeshStandardMaterial({
       color: 0x222222,
@@ -720,27 +1291,26 @@ export class SolarSystemView {
     nozzle1.position.set(0, 0.09, 0.35);
     this.tugGroup.add(nozzle1);
 
-    // Nozzle 2 (South canted: -5°)
     const nozzle2 = new THREE.Mesh(nozzleGeo, nozzleMat);
     nozzle2.rotation.x = -Math.PI / 2 + cantAngleRad;
     nozzle2.position.set(0, -0.09, 0.35);
     this.tugGroup.add(nozzle2);
 
-    // Short illustrative flames leave a clear gap before the magnified Earth.
+    // Short illustrative flames
     const plumeGeo = new THREE.ConeGeometry(0.04, 0.32, 16, 1, true);
-    plumeGeo.translate(0, -0.16, 0); // apex at 0, expanding to base at -0.32
+    plumeGeo.translate(0, -0.16, 0);
 
     const plumeMat1 = new THREE.MeshBasicMaterial({
-      color: 0x00f0ff,
+      color: 0x00d4ea,
       transparent: true,
-      opacity: 0.60,
+      opacity: 0.28,
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide
     });
     const plumeMat2 = new THREE.MeshBasicMaterial({
-      color: 0x00f0ff,
+      color: 0x00d4ea,
       transparent: true,
-      opacity: 0.60,
+      opacity: 0.28,
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide
     });
@@ -755,7 +1325,172 @@ export class SolarSystemView {
     this.tugThrusterPlume2.position.set(0, -0.09, 0.42);
     this.tugGroup.add(this.tugThrusterPlume2);
 
-    // 5. Reticle Ring Marker around Ceres Tug (makes it easily identifiable)
+    // Extended Out-of-Ecliptic Bi-Conical Plume Corridors (passing safely above/below Earth)
+    // NOTE ON 3D VISUAL SCALING & INTENSITY:
+    // Plume geometry uses a refined, sleek collimated cone (radius 0.11, length 3.2) with soft
+    // translucent ion glow (opacity 0.075) to prevent visually overpowering the scene while
+    // maintaining physical fidelity to the out-of-ecliptic bypass corridor.
+    const visualCantAngleRad = THREE.MathUtils.degToRad(28.0);
+    const extPlumeGeo = new THREE.ConeGeometry(0.11, 3.2, 16, 1, true);
+    extPlumeGeo.translate(0, -1.6, 0); // apex at nozzle mouth, expanding backward past Earth into deep space
+    const extPlumeMat1 = new THREE.MeshBasicMaterial({
+      color: 0x00b4d8,
+      transparent: true,
+      opacity: 0.075,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const extPlumeMat2 = new THREE.MeshBasicMaterial({
+      color: 0x00b4d8,
+      transparent: true,
+      opacity: 0.075,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+
+    this.tugExtendedPlume1 = new THREE.Mesh(extPlumeGeo, extPlumeMat1);
+    this.tugExtendedPlume1.rotation.x = -Math.PI / 2 - visualCantAngleRad;
+    this.tugExtendedPlume1.position.set(0, 0.09, 0.42);
+    this.tugGroup.add(this.tugExtendedPlume1);
+
+    this.tugExtendedPlume2 = new THREE.Mesh(extPlumeGeo.clone(), extPlumeMat2);
+    this.tugExtendedPlume2.rotation.x = -Math.PI / 2 + visualCantAngleRad;
+    this.tugExtendedPlume2.position.set(0, -0.09, 0.42);
+    this.tugGroup.add(this.tugExtendedPlume2);
+
+    // Plume Safe Biosphere Clearance Envelope (visualizing the ±110,696 km safety corridor)
+    this.plumeClearanceEnvelope = new THREE.Group();
+
+    // 1. Out-of-ecliptic clearance rings at Earth encounter plane (Z = 1.40, Y = ±0.61)
+    const clearRingGeo = new THREE.RingGeometry(0.10, 0.12, 32);
+    const clearRingMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.16,
+      side: THREE.DoubleSide
+    });
+    const ringNorth = new THREE.Mesh(clearRingGeo, clearRingMat);
+    ringNorth.position.set(0, 0.61, 1.40);
+    this.plumeClearanceEnvelope.add(ringNorth);
+
+    const ringSouth = new THREE.Mesh(clearRingGeo, clearRingMat);
+    ringSouth.position.set(0, -0.61, 1.40);
+    this.plumeClearanceEnvelope.add(ringSouth);
+
+    // 2. Out-of-ecliptic corridor trajectory lines (connecting nozzles through rings to deep space)
+    const corridorMat = new THREE.LineDashedMaterial({
+      color: 0x00b4d8,
+      dashSize: 0.12,
+      gapSize: 0.08,
+      transparent: true,
+      opacity: 0.12
+    });
+
+    const northPts = [
+      new THREE.Vector3(0, 0.09, 0.42),
+      new THREE.Vector3(0, 0.61, 1.40),
+      new THREE.Vector3(0, 1.25, 2.60)
+    ];
+    const northGeo = new THREE.BufferGeometry().setFromPoints(northPts);
+    const northLine = new THREE.Line(northGeo, corridorMat);
+    northLine.computeLineDistances();
+    this.plumeClearanceEnvelope.add(northLine);
+
+    const southPts = [
+      new THREE.Vector3(0, -0.09, 0.42),
+      new THREE.Vector3(0, -0.61, 1.40),
+      new THREE.Vector3(0, -1.25, 2.60)
+    ];
+    const southGeo = new THREE.BufferGeometry().setFromPoints(southPts);
+    const southLine = new THREE.Line(southGeo, corridorMat);
+    southLine.computeLineDistances();
+    this.plumeClearanceEnvelope.add(southLine);
+
+    // 3. Biosphere Protection Shield Perimeter Ring around Earth (Z = 1.40, radius 0.44)
+    const shieldRingGeo = new THREE.RingGeometry(0.44, 0.455, 48);
+    const shieldRingMat = new THREE.MeshBasicMaterial({
+      color: 0x10b981, // Emerald safety green
+      transparent: true,
+      opacity: 0.18,
+      side: THREE.DoubleSide
+    });
+    const shieldRing = new THREE.Mesh(shieldRingGeo, shieldRingMat);
+    shieldRing.rotation.x = Math.PI / 2;
+    shieldRing.position.set(0, 0, 1.40);
+    this.plumeClearanceEnvelope.add(shieldRing);
+
+    this.tugGroup.add(this.plumeClearanceEnvelope);
+
+    // 9. Relativistic Plasma Particle Stream System (Twin Canted Cones @ 0.3c)
+    const count = this.PLASMA_PARTICLE_COUNT;
+    this.plasmaPositions = new Float32Array(count * 3);
+    this.plasmaColors = new Float32Array(count * 3);
+    this.plasmaVelocities = new Float32Array(count * 3);
+    this.plasmaLifetimes = new Float32Array(count);
+    this.plasmaMaxLifetimes = new Float32Array(count);
+
+    const sinCant = Math.sin(visualCantAngleRad);
+    const cosCant = Math.cos(visualCantAngleRad);
+
+    for (let i = 0; i < count; i++) {
+      const isNorth = i % 2 === 0;
+      const nozzleY = isNorth ? 0.09 : -0.09;
+      const cantSign = isNorth ? 1.0 : -1.0;
+      this.plasmaMaxLifetimes[i] = 0.65 + Math.random() * 0.35;
+      this.plasmaLifetimes[i] = Math.random() * this.plasmaMaxLifetimes[i];
+      const speed = 3.6 + Math.random() * 1.0;
+
+      this.plasmaVelocities[i * 3 + 0] = (Math.random() - 0.5) * 0.04;
+      this.plasmaVelocities[i * 3 + 1] = cantSign * sinCant * speed + (Math.random() - 0.5) * 0.02;
+      this.plasmaVelocities[i * 3 + 2] = cosCant * speed;
+
+      const currentLife = this.plasmaLifetimes[i];
+      this.plasmaPositions[i * 3 + 0] = (Math.random() - 0.5) * 0.02 + this.plasmaVelocities[i * 3 + 0] * currentLife;
+      this.plasmaPositions[i * 3 + 1] = nozzleY + (Math.random() - 0.5) * 0.02 + this.plasmaVelocities[i * 3 + 1] * currentLife;
+      this.plasmaPositions[i * 3 + 2] = 0.42 + this.plasmaVelocities[i * 3 + 2] * currentLife;
+
+      // Safe biosphere check: If initial particle is in Earth envelope, deflect it
+      const pX = this.plasmaPositions[i * 3 + 0];
+      const pY = this.plasmaPositions[i * 3 + 1];
+      const pZ = this.plasmaPositions[i * 3 + 2] - 1.40;
+      if (pX * pX + pY * pY + pZ * pZ < 0.48 * 0.48) {
+        this.plasmaPositions[i * 3 + 1] = cantSign * 0.58;
+      }
+
+      const progress = currentLife / this.plasmaMaxLifetimes[i];
+      if (progress < 0.25) {
+        this.plasmaColors[i * 3 + 0] = 0.35;
+        this.plasmaColors[i * 3 + 1] = 0.65;
+        this.plasmaColors[i * 3 + 2] = 0.85;
+      } else if (progress < 0.65) {
+        this.plasmaColors[i * 3 + 0] = 0.0;
+        this.plasmaColors[i * 3 + 1] = 0.45;
+        this.plasmaColors[i * 3 + 2] = 0.70;
+      } else {
+        this.plasmaColors[i * 3 + 0] = 0.15 * (1.0 - progress);
+        this.plasmaColors[i * 3 + 1] = 0.05 * (1.0 - progress);
+        this.plasmaColors[i * 3 + 2] = 0.35 * (1.0 - progress);
+      }
+    }
+
+    const plasmaGeo = new THREE.BufferGeometry();
+    plasmaGeo.setAttribute('position', new THREE.BufferAttribute(this.plasmaPositions, 3));
+    plasmaGeo.setAttribute('color', new THREE.BufferAttribute(this.plasmaColors, 3));
+
+    const plasmaMat = new THREE.PointsMaterial({
+      size: 0.016,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.40,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    this.plasmaParticles = new THREE.Points(plasmaGeo, plasmaMat);
+    this.tugGroup.add(this.plasmaParticles);
+
+    // 10. Reticle Ring Marker around Ceres Tug (makes it easily identifiable)
     const ringGeo = new THREE.RingGeometry(0.40, 0.44, 32);
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0x00f0ff,
@@ -776,7 +1511,7 @@ export class SolarSystemView {
 
     this.scene.add(this.tugGroup);
 
-    // 6. Gravitational Towline (Earth to Ceres Tug)
+    // 11. Gravitational Towline (Earth to Ceres Tug)
     this.towlineGeometry = new THREE.BufferGeometry();
     this.towlineGeometry.setAttribute('position', new THREE.BufferAttribute(this.towlinePositions, 3));
     const towlineMat = new THREE.LineBasicMaterial({
@@ -787,6 +1522,340 @@ export class SolarSystemView {
     });
     this.tugTowline = new THREE.Line(this.towlineGeometry, towlineMat);
     this.scene.add(this.tugTowline);
+  }
+
+  private setupClimateMirror(): void {
+    // =========================================================================
+    // 1. L1 DAY-SIDE CONCENTRATING HEXAGONAL SWARM (Statite Levitation)
+    // =========================================================================
+    // Tessellation of 19 autonomous kilometer-scale hexagonal flyers (1 center + 6 ring-1 + 12 ring-2)
+    // equipped with electrochromic edges for solar sailboat tacking against photon pressure.
+    this.mirrorGroup = new THREE.Group();
+    this.l1HexFlyers = [];
+    this.l1ElectrochromicRims = [];
+
+    const hexR = 0.042; // individual hexagonal flyer radius
+    const hexSpacing = hexR * Math.sqrt(3); // exact gapless interlocking tessellation distance
+
+    // Calculate 19 interlocking hexagon centers (Axial honeycomb coordinates)
+    const l1HexOffsets: [number, number][] = [
+      [0, 0], // Center flyer
+    ];
+    // Ring 1 (6 flyers)
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * Math.PI) / 3 + Math.PI / 6;
+      l1HexOffsets.push([hexSpacing * Math.cos(angle), hexSpacing * Math.sin(angle)]);
+    }
+    // Ring 2 (12 flyers: 6 corners + 6 edges)
+    for (let i = 0; i < 6; i++) {
+      const angleCorner = (i * Math.PI) / 3 + Math.PI / 6;
+      const cornerX = 2 * hexSpacing * Math.cos(angleCorner);
+      const cornerY = 2 * hexSpacing * Math.sin(angleCorner);
+      l1HexOffsets.push([cornerX, cornerY]);
+
+      const nextCornerAngle = ((i + 1) * Math.PI) / 3 + Math.PI / 6;
+      const midX = (cornerX + 2 * hexSpacing * Math.cos(nextCornerAngle)) * 0.5;
+      const midY = (cornerY + 2 * hexSpacing * Math.sin(nextCornerAngle)) * 0.5;
+      l1HexOffsets.push([midX, midY]);
+    }
+
+    const hexFlyerGeo = new THREE.CircleGeometry(hexR * 0.98, 6);
+    const hexFlyerMat = new THREE.MeshStandardMaterial({
+      color: 0xfffbeb, // High-reflectivity specular gold-platinum gossamer membrane
+      metalness: 0.96,
+      roughness: 0.05,
+      side: THREE.DoubleSide
+    });
+
+    const rimGeo = new THREE.RingGeometry(hexR * 0.88, hexR, 6);
+    const rimMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8, // Cyan electrochromic edge panel for solar sailboat tacking
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85
+    });
+
+    const gimbalNodeGeo = new THREE.SphereGeometry(hexR * 0.16, 8, 8);
+    const gimbalNodeMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+
+    l1HexOffsets.forEach(([ox, oy], idx) => {
+      const flyer = new THREE.Mesh(hexFlyerGeo, hexFlyerMat.clone());
+      flyer.position.set(ox, oy, 0);
+
+      const rim = new THREE.Mesh(rimGeo, rimMat.clone());
+      rim.position.set(ox, oy, 0.001);
+      this.l1ElectrochromicRims.push(rim);
+
+      const gimbal = new THREE.Mesh(gimbalNodeGeo, gimbalNodeMat);
+      gimbal.position.set(ox, oy, 0.003);
+
+      this.mirrorGroup!.add(flyer);
+      this.mirrorGroup!.add(rim);
+      this.mirrorGroup!.add(gimbal);
+      this.l1HexFlyers.push(flyer);
+      if (idx === 0) this.mirrorMesh = flyer;
+    });
+
+    // Virtual formation flying laser metrology grid (inter-flyer lines)
+    const laserLinePositions: number[] = [];
+    for (let i = 0; i < l1HexOffsets.length; i++) {
+      for (let j = i + 1; j < l1HexOffsets.length; j++) {
+        const dx = l1HexOffsets[i][0] - l1HexOffsets[j][0];
+        const dy = l1HexOffsets[i][1] - l1HexOffsets[j][1];
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < hexSpacing * 1.15) {
+          laserLinePositions.push(
+            l1HexOffsets[i][0], l1HexOffsets[i][1], 0.002,
+            l1HexOffsets[j][0], l1HexOffsets[j][1], 0.002
+          );
+        }
+      }
+    }
+    const laserGeo = new THREE.BufferGeometry();
+    laserGeo.setAttribute('position', new THREE.Float32BufferAttribute(laserLinePositions, 3));
+    const laserMat = new THREE.LineBasicMaterial({
+      color: 0x10b981, // Emerald laser metrology alignment beams
+      transparent: true,
+      opacity: 0.55
+    });
+    const laserMesh = new THREE.LineSegments(laserGeo, laserMat);
+    this.mirrorGroup.add(laserMesh);
+
+    // Glowing amber statite perimeter beacon ring
+    const beaconGeo = new THREE.RingGeometry(0.24, 0.26, 32);
+    const beaconMat = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.70
+    });
+    const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+    this.mirrorGroup.add(beacon);
+
+    // -------------------------------------------------------------------------
+    // DYNAMIC TARGETED HEATING BEAMS (Poles & Terminators - Prevents Ocean Boiling)
+    // -------------------------------------------------------------------------
+    // 1. North Polar Concentrator Corridor (Tilted toward Arctic latitudes)
+    const polarBeamGeo = new THREE.CylinderGeometry(0.025, 0.09, 0.65, 16, 1, true);
+    polarBeamGeo.translate(0, 0.325, 0);
+    polarBeamGeo.rotateX(Math.PI / 2);
+
+    const beamMatNorth = new THREE.MeshBasicMaterial({
+      color: 0xffd54f, // Warm solar amber-gold
+      transparent: true,
+      opacity: 0.38,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.l1NorthPolarBeam = new THREE.Mesh(polarBeamGeo, beamMatNorth);
+    this.l1NorthPolarBeam.rotation.x = -0.16; // Gimbaled north toward Arctic circle
+    this.mirrorGroup.add(this.l1NorthPolarBeam);
+
+    // 2. South Polar Concentrator Corridor (Tilted toward Antarctic latitudes)
+    const beamMatSouth = beamMatNorth.clone();
+    this.l1SouthPolarBeam = new THREE.Mesh(polarBeamGeo, beamMatSouth);
+    this.l1SouthPolarBeam.rotation.x = 0.16; // Gimbaled south toward Antarctic circle
+    this.mirrorGroup.add(this.l1SouthPolarBeam);
+
+    // 3. Central & Terminator Diffuser Corridor
+    const centerBeamGeo = new THREE.CylinderGeometry(0.04, 0.22, 0.65, 16, 1, true);
+    centerBeamGeo.translate(0, 0.325, 0);
+    centerBeamGeo.rotateX(Math.PI / 2);
+    const centerBeamMat = new THREE.MeshBasicMaterial({
+      color: 0xffe082,
+      transparent: true,
+      opacity: 0.32,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.mirrorSunbeam = new THREE.Mesh(centerBeamGeo, centerBeamMat);
+    this.mirrorGroup.add(this.mirrorSunbeam);
+
+    this.scene.add(this.mirrorGroup);
+
+    // =========================================================================
+    // 2. L2 NIGHT-SIDE GIANT FIXED HEXAGONAL CONCENTRATOR (Anti-Hypercane Reverse Earthshine)
+    // =========================================================================
+    // Stationed at the Sun-Earth L2 collinear Lagrange point along the Sun-Earth axis.
+    // Built as a colossal, gapless 37-tile hexagonal honeycomb array (significantly larger than L1 and Earth)
+    // that intercepts the wide cylinder of bypass sunlight streaming past Earth
+    // and focuses it backward onto the dark hemisphere, completely eliminating supersonic hyper-canes.
+    this.l2SwarmGroup = new THREE.Group();
+    this.l2HexFlyers = [];
+    this.l2ElectrochromicRims = [];
+
+    const l2HexR = 0.082; // Large hexagonal flyer radius (produces total diameter > 1.2 scene units)
+    const l2HexSpacing = l2HexR * Math.sqrt(3);
+
+    // 37 Interlocking Hexagons in Axial Honeycomb (Center + 3 full concentric rings)
+    const l2HexOffsets: [number, number][] = [];
+    for (let q = -3; q <= 3; q++) {
+      const r1 = Math.max(-3, -q - 3);
+      const r2 = Math.min(3, -q + 3);
+      for (let r = r1; r <= r2; r++) {
+        const x = l2HexSpacing * (q + r / 2);
+        const y = l2HexR * 1.5 * r;
+        l2HexOffsets.push([x, y]);
+      }
+    }
+
+    const l2FlyerGeo = new THREE.CircleGeometry(l2HexR * 0.98, 6);
+    const l2FlyerMat = new THREE.MeshStandardMaterial({
+      color: 0xfef08a, // High-specular reflective gold mirror
+      metalness: 0.97,
+      roughness: 0.04,
+      side: THREE.DoubleSide
+    });
+    const l2RimGeo = new THREE.RingGeometry(l2HexR * 0.88, l2HexR, 6);
+    const l2RimMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8, // Cyan electrochromic edge panel for solar tacking
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85
+    });
+    const l2GimbalGeo = new THREE.SphereGeometry(l2HexR * 0.16, 8, 8);
+    const l2GimbalMat = new THREE.MeshStandardMaterial({
+      color: 0x475569,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+
+    // Parabolic dish curvature: Outer flyers curve slightly toward Earth
+    const maxDist = 3 * l2HexSpacing;
+    l2HexOffsets.forEach(([ox, oy]) => {
+      const dist = Math.sqrt(ox * ox + oy * oy);
+      const dishZ = 0.06 * Math.pow(dist / maxDist, 2);
+
+      const flyer = new THREE.Mesh(l2FlyerGeo, l2FlyerMat.clone());
+      flyer.position.set(ox, oy, dishZ);
+
+      const rim = new THREE.Mesh(l2RimGeo, l2RimMat.clone());
+      rim.position.set(ox, oy, dishZ + 0.001);
+
+      const gimbal = new THREE.Mesh(l2GimbalGeo, l2GimbalMat);
+      gimbal.position.set(ox, oy, dishZ + 0.003);
+
+      this.l2SwarmGroup!.add(flyer);
+      this.l2SwarmGroup!.add(rim);
+      this.l2SwarmGroup!.add(gimbal);
+      this.l2HexFlyers.push(flyer);
+      this.l2ElectrochromicRims.push(rim);
+    });
+
+    // L2 Virtual formation flying laser metrology grid connecting all 37 flyers
+    const l2LaserPositions: number[] = [];
+    for (let i = 0; i < l2HexOffsets.length; i++) {
+      for (let j = i + 1; j < l2HexOffsets.length; j++) {
+        const dx = l2HexOffsets[i][0] - l2HexOffsets[j][0];
+        const dy = l2HexOffsets[i][1] - l2HexOffsets[j][1];
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < l2HexSpacing * 1.15) {
+          const z1 = 0.06 * Math.pow(Math.sqrt(l2HexOffsets[i][0] ** 2 + l2HexOffsets[i][1] ** 2) / maxDist, 2);
+          const z2 = 0.06 * Math.pow(Math.sqrt(l2HexOffsets[j][0] ** 2 + l2HexOffsets[j][1] ** 2) / maxDist, 2);
+          l2LaserPositions.push(
+            l2HexOffsets[i][0], l2HexOffsets[i][1], z1 + 0.002,
+            l2HexOffsets[j][0], l2HexOffsets[j][1], z2 + 0.002
+          );
+        }
+      }
+    }
+    const l2LaserGeo = new THREE.BufferGeometry();
+    l2LaserGeo.setAttribute('position', new THREE.Float32BufferAttribute(l2LaserPositions, 3));
+    const l2LaserMat = new THREE.LineBasicMaterial({
+      color: 0x10b981, // Emerald laser metrology grid
+      transparent: true,
+      opacity: 0.55
+    });
+    const l2LaserMesh = new THREE.LineSegments(l2LaserGeo, l2LaserMat);
+    this.l2SwarmGroup.add(l2LaserMesh);
+
+    // Giant perimeter beacon ring
+    const l2BeaconGeo = new THREE.RingGeometry(0.56, 0.60, 48);
+    const l2BeaconMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8, // Cyan statite control ring
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.75
+    });
+    const l2Beacon = new THREE.Mesh(l2BeaconGeo, l2BeaconMat);
+    l2Beacon.position.set(0, 0, 0.06);
+    this.l2SwarmGroup.add(l2Beacon);
+
+    // Giant Reverse Earthshine Focus Beam: Converges from giant L2 dish (R=0.56) to Earth's night side (R=0.38)
+    const l2BeamGeo = new THREE.CylinderGeometry(0.56, 0.38, 1.25, 32, 1, true);
+    l2BeamGeo.translate(0, 0.625, 0); // apex toward Earth
+    l2BeamGeo.rotateX(Math.PI / 2);
+    const l2BeamMat = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b, // Warm amber reverse Earthshine illumination
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.l2ReverseEarthshineBeam = new THREE.Mesh(l2BeamGeo, l2BeamMat);
+    this.l2SwarmGroup.add(this.l2ReverseEarthshineBeam);
+
+    this.scene.add(this.l2SwarmGroup);
+
+    // =========================================================================
+    // 3. BYPASS SOLAR TRANSFER CORRIDOR (L1 Day Lens -> around Earth -> Giant L2 Mirror)
+    // =========================================================================
+    // A visible sheath and glowing ray corridors demonstrating the sunlight from L1
+    // passing safely around Earth's perimeter and being captured by the giant L2 mirror.
+    this.bypassBeamsGroup = new THREE.Group();
+
+    // Translucent expanding bypass sheath: Starts at L1 (R=0.26), widens around Earth (R=0.48), reaches L2 (R=0.58)
+    const sheathGeo = new THREE.CylinderGeometry(0.26, 0.58, 2.50, 32, 1, true);
+    sheathGeo.rotateX(Math.PI / 2); // Along local Z axis (Sun-Earth axis)
+    const sheathMat = new THREE.MeshBasicMaterial({
+      color: 0xffd54f, // Solar golden-amber
+      transparent: true,
+      opacity: 0.18,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.bypassSheath = new THREE.Mesh(sheathGeo, sheathMat);
+    this.bypassBeamsGroup.add(this.bypassSheath);
+
+    // 8 Longitudinal Bypass Laser Raylines linking L1 perimeter to Giant L2 perimeter
+    const bypassRayPositions: number[] = [];
+    const numRays = 8;
+    for (let i = 0; i < numRays; i++) {
+      const a = (i / numRays) * Math.PI * 2;
+      const x1 = 0.25 * Math.cos(a);
+      const y1 = 0.25 * Math.sin(a);
+      const z1 = -1.25; // At L1
+
+      const xMid = 0.48 * Math.cos(a);
+      const yMid = 0.48 * Math.sin(a);
+      const zMid = 0.0; // Waist clearing Earth
+
+      const x2 = 0.57 * Math.cos(a);
+      const y2 = 0.57 * Math.sin(a);
+      const z2 = 1.25; // At L2
+
+      bypassRayPositions.push(x1, y1, z1, xMid, yMid, zMid);
+      bypassRayPositions.push(xMid, yMid, zMid, x2, y2, z2);
+    }
+    const rayGeo = new THREE.BufferGeometry();
+    rayGeo.setAttribute('position', new THREE.Float32BufferAttribute(bypassRayPositions, 3));
+    const rayMat = new THREE.LineBasicMaterial({
+      color: 0xfbbf24, // Bright amber photon transfer corridors
+      transparent: true,
+      opacity: 0.65
+    });
+    this.bypassRayLines = new THREE.LineSegments(rayGeo, rayMat);
+    this.bypassBeamsGroup.add(this.bypassRayLines);
+
+    this.scene.add(this.bypassBeamsGroup);
   }
 
   public setFramesCache(frames: SimulationFrame[]): void {
@@ -1178,46 +2247,72 @@ export class SolarSystemView {
       mesh.receiveShadow = true;
     } else if (name === 'Uranus') {
       const uranusGroup = new THREE.Group();
-      geometry = new THREE.SphereGeometry(0.45, 48, 48);
-      const uranusTex = loadTexture('/textures/uranus.jpeg');
-      const uranusMat = new THREE.MeshStandardMaterial({
-        ...(uranusTex ? { map: uranusTex } : {}),
-        color: uranusTex ? 0xffffff : 0x7dd3fc,
-        roughness: 0.80,
-        metalness: 0.0
+      const globeGeo = new THREE.SphereGeometry(0.50, 48, 48);
+      const uranusTex = loadTexture('/textures/uranus.jpg', createUranusTexture());
+      const globeMat = new THREE.MeshStandardMaterial({
+        ...(uranusTex ? { map: uranusTex } : { color: 0x6ee7b7 }),
+        roughness: 0.40,
+        metalness: 0.05
       });
-      uranusMat.transparent = false;
-      uranusMat.depthTest = true;
-      uranusMat.depthWrite = true;
-      const uranusMesh = new THREE.Mesh(geometry, uranusMat);
-      uranusMesh.name = 'uranusGlobe';
-      uranusMesh.castShadow = true;
-      uranusMesh.receiveShadow = true;
-      uranusGroup.add(uranusMesh);
+      const globeMesh = new THREE.Mesh(globeGeo, globeMat);
+      globeMesh.name = 'uranusGlobe';
+      uranusGroup.add(globeMesh);
 
-      // Subtle icy ring
-      const ringMesh = createUranusRingMesh(0.45);
+      // Uranus faint, vertical rings (extreme axial tilt: 97.77 deg relative to ecliptic)
+      const ringGeo = new THREE.RingGeometry(0.72, 1.05, 48);
+      const ringMat = new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        transparent: true,
+        opacity: 0.45,
+        side: THREE.DoubleSide,
+        roughness: 0.7,
+        depthWrite: false
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = Math.PI / 2 + THREE.MathUtils.degToRad(97.77);
       uranusGroup.add(ringMesh);
 
-      // Uranus authentic axial tilt: 97.77 degrees
-      uranusGroup.rotation.z = THREE.MathUtils.degToRad(97.77);
-
       mesh = uranusGroup;
-    } else if (name === 'Neptune') {
-      geometry = new THREE.SphereGeometry(0.44, 48, 48);
-      const neptuneTex = loadTexture('/textures/neptune.jpg');
-      const material = new THREE.MeshStandardMaterial({
-        ...(neptuneTex ? { map: neptuneTex } : {}),
-        color: neptuneTex ? 0xffffff : 0x2563eb,
-        roughness: 0.80,
-        metalness: 0.0
-      });
-      material.transparent = false;
-      material.depthTest = true;
-      material.depthWrite = true;
+    } else if (name === 'Titania') {
+      geometry = new THREE.SphereGeometry(0.065, 20, 20);
+      const material = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85, metalness: 0.05 });
       mesh = new THREE.Mesh(geometry, material);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+    } else if (name === 'Oberon') {
+      geometry = new THREE.SphereGeometry(0.060, 20, 20);
+      const material = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.90, metalness: 0.05 });
+      mesh = new THREE.Mesh(geometry, material);
+    } else if (name === 'Neptune') {
+      const neptuneGroup = new THREE.Group();
+      const globeGeo = new THREE.SphereGeometry(0.48, 48, 48);
+      const neptuneTex = loadTexture('/textures/neptune.jpg', createNeptuneTexture());
+      const globeMat = new THREE.MeshStandardMaterial({
+        ...(neptuneTex ? { map: neptuneTex } : { color: 0x2563eb }),
+        roughness: 0.35,
+        metalness: 0.05
+      });
+      const globeMesh = new THREE.Mesh(globeGeo, globeMat);
+      globeMesh.name = 'neptuneGlobe';
+      neptuneGroup.add(globeMesh);
+
+      // Neptune delicate azure ring system (tilt 28.32 deg)
+      const ringGeo = new THREE.RingGeometry(0.68, 0.92, 48);
+      const ringMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide,
+        roughness: 0.7,
+        depthWrite: false
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = Math.PI / 2 + THREE.MathUtils.degToRad(28.32);
+      neptuneGroup.add(ringMesh);
+
+      mesh = neptuneGroup;
+    } else if (name === 'Triton') {
+      geometry = new THREE.SphereGeometry(0.078, 24, 24);
+      const material = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.50, metalness: 0.1 });
+      mesh = new THREE.Mesh(geometry, material);
     } else {
       geometry = new THREE.SphereGeometry(0.2, 16, 16);
       const material = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, emissive: new THREE.Color(0x111111) });
@@ -1306,6 +2401,9 @@ export class SolarSystemView {
         if (globe) globe.rotation.y = signedAngle;
       } else if (pName === 'Uranus') {
         const globe = bodyMesh.getObjectByName('uranusGlobe');
+        if (globe) globe.rotation.y = signedAngle;
+      } else if (pName === 'Neptune') {
+        const globe = bodyMesh.getObjectByName('neptuneGlobe');
         if (globe) globe.rotation.y = signedAngle;
       } else if (pName === 'Sun') {
         const core = bodyMesh.getObjectByName('sunCore');
@@ -1434,6 +2532,41 @@ export class SolarSystemView {
       titanMesh.rotation.y = titanAngle;
     }
 
+    // Uranian Major Moons: Titania & Oberon
+    const uranMesh = this.bodyMeshes.get('Uranus');
+    if (uranMesh) {
+      const titaniaMesh = this.getOrCreateBodyMesh('Titania');
+      const titaniaAngle = (2.0 * Math.PI * time_s) / TITANIA_ORBIT_PERIOD_SECONDS;
+      titaniaMesh.position.set(
+        uranMesh.position.x + 0.75 * Math.cos(titaniaAngle),
+        uranMesh.position.y + 0.75 * 0.98 * Math.sin(titaniaAngle),
+        uranMesh.position.z + 0.75 * 0.20 * Math.sin(titaniaAngle)
+      );
+      titaniaMesh.rotation.y = titaniaAngle;
+
+      const oberonMesh = this.getOrCreateBodyMesh('Oberon');
+      const oberonAngle = (2.0 * Math.PI * time_s) / OBERON_ORBIT_PERIOD_SECONDS;
+      oberonMesh.position.set(
+        uranMesh.position.x + 1.10 * Math.cos(oberonAngle),
+        uranMesh.position.y + 1.10 * 0.98 * Math.sin(oberonAngle),
+        uranMesh.position.z + 1.10 * 0.20 * Math.sin(oberonAngle)
+      );
+      oberonMesh.rotation.y = oberonAngle;
+    }
+
+    // Neptunian Moon: Triton (Retrograde Orbit)
+    const nepMesh = this.bodyMeshes.get('Neptune');
+    if (nepMesh) {
+      const tritonMesh = this.getOrCreateBodyMesh('Triton');
+      const tritonAngle = (2.0 * Math.PI * time_s) / TRITON_ORBIT_PERIOD_SECONDS;
+      tritonMesh.position.set(
+        nepMesh.position.x + 0.85 * Math.cos(tritonAngle),
+        nepMesh.position.y + 0.85 * 0.28 * Math.sin(tritonAngle),
+        nepMesh.position.z + 0.85 * Math.sin(tritonAngle)
+      );
+      tritonMesh.rotation.y = tritonAngle;
+    }
+
     // 5. Position and Orient Ceres Tug and Relativistic Thrusters
     if (earthData) {
       const earthScene = eclipticToScene([earthData.x, earthData.y, earthData.z], [0, 0, 0], SCENE_SCALE_AU);
@@ -1483,6 +2616,32 @@ export class SolarSystemView {
         this.tugThrusterPlume1.visible = this.isThrustingActive;
         this.tugThrusterPlume2.visible = this.isThrustingActive;
       }
+      if (this.tugExtendedPlume1 && this.tugExtendedPlume2) {
+        this.tugExtendedPlume1.visible = this.isThrustingActive;
+        this.tugExtendedPlume2.visible = this.isThrustingActive;
+      }
+      if (this.plumeClearanceEnvelope) {
+        this.plumeClearanceEnvelope.visible = this.isThrustingActive;
+      }
+
+      // Update Quarry Asteroid physical size shrinkage as mass is drilled and flash-vaporized
+      const fuel_spent_kg = frame.tug_telemetry?.propellant_spent_kg ?? 0.0;
+      // Total reference quarry mass = 9.4e20 kg. Expelling 7.51e20 kg over 9,500 yr.
+      const minedFraction = Math.min(0.85, Math.max(0.0, fuel_spent_kg / 9.4e20));
+      const volRemaining = Math.max(0.15, 1.0 - minedFraction);
+      const quarryRadiusScale = Math.pow(volRemaining, 1.0 / 3.0);
+      if (this.quarryAsteroidMesh) {
+        this.quarryAsteroidMesh.scale.set(quarryRadiusScale, quarryRadiusScale, quarryRadiusScale);
+      }
+
+      // Update Mining Laser and Particle visibility based on thruster state
+      if (this.miningLaserBeam && this.miningLaserGlow) {
+        this.miningLaserBeam.visible = this.isThrustingActive;
+        this.miningLaserGlow.visible = this.isThrustingActive;
+      }
+      if (this.plasmaParticles) {
+        this.plasmaParticles.visible = this.isThrustingActive;
+      }
 
       // Update Towline appearance
       if (this.tugTowline) {
@@ -1492,20 +2651,109 @@ export class SolarSystemView {
       }
     }
 
-    // 6. Camera Target Tracking for focused celestial bodies
+    // 6. Update Dual-Lagrange Hexagonal Heating Swarms (L1 Day + Giant L2 Night) & Bypass Solar Rays
+    if (this.mirrorGroup && this.mirrorSunbeam && this.l2SwarmGroup) {
+      const sunToEarth = this.currentEarthPos.clone();
+      const distEarth = sunToEarth.length();
+      if (distEarth > 0.1) {
+        const sunDir = sunToEarth.clone().normalize();
+        const earthData = frame.bodies['Earth'];
+        const r_au = earthData ? Math.sqrt(earthData.x * earthData.x + earthData.y * earthData.y) : 1.0;
+
+        // Hill sphere standoff distance scaling with r_au:
+        // Set standoff d_L to 1.25 scene units, giving generous clearance beyond Earth (R=0.38)
+        const d_l = Math.max(1.10, Math.min(1.50, 1.25 * Math.pow(r_au, 1.0 / 3.0)));
+
+        // Fixed Orthonormal Basis:
+        // - sceneUp is strictly locked to (0, 1, 0) [ecliptic normal]
+        // - lateralAxis is in the ecliptic plane perpendicular to sunDir
+        // - orthogonalUp is in the plane of the mirror strictly parallel to (0, 1, 0)
+        // This mathematically eliminates any roll or rotation on the lens's own normal axis!
+        const sceneUp = new THREE.Vector3(0, 1, 0);
+        let lateralAxis = new THREE.Vector3().crossVectors(sceneUp, sunDir).normalize();
+        if (lateralAxis.lengthSq() < 0.01) {
+          lateralAxis = new THREE.Vector3(1, 0, 0);
+        }
+        const orthogonalUp = new THREE.Vector3().crossVectors(sunDir, lateralAxis).normalize();
+
+        // A. L1 Day Concentrator Swarm Position & Fixed Basis (Sunward of Earth)
+        this.currentL1Pos.copy(this.currentEarthPos).addScaledVector(sunDir, -d_l);
+        this.mirrorGroup.position.copy(this.currentL1Pos);
+        const rotMatL1 = new THREE.Matrix4().makeBasis(lateralAxis, orthogonalUp, sunDir);
+        this.mirrorGroup.setRotationFromMatrix(rotMatL1);
+
+        const boostFraction = Math.max(0.15, Math.min(1.0, (r_au - 1.0) / 1.70));
+        const beamMat = this.mirrorSunbeam.material as THREE.MeshBasicMaterial;
+        beamMat.opacity = 0.25 + 0.35 * boostFraction;
+
+        if (this.l1NorthPolarBeam) {
+          (this.l1NorthPolarBeam.material as THREE.MeshBasicMaterial).opacity = 0.28 + 0.32 * boostFraction;
+        }
+        if (this.l1SouthPolarBeam) {
+          (this.l1SouthPolarBeam.material as THREE.MeshBasicMaterial).opacity = 0.28 + 0.32 * boostFraction;
+        }
+
+        // B. L2 Giant Night-Side Fixed Hexagonal Concentrator (Anti-sunward at L2)
+        // Completely fixed at collinear L2 Lagrange point. No spin, no roll, no rotation on its axis.
+        this.currentL2Pos.copy(this.currentEarthPos).addScaledVector(sunDir, d_l);
+        this.l2SwarmGroup.position.copy(this.currentL2Pos);
+        const rotMatL2 = new THREE.Matrix4().makeBasis(lateralAxis.clone().negate(), orthogonalUp, sunDir.clone().negate());
+        this.l2SwarmGroup.setRotationFromMatrix(rotMatL2);
+
+        if (this.l2ReverseEarthshineBeam) {
+          const l2Mat = this.l2ReverseEarthshineBeam.material as THREE.MeshBasicMaterial;
+          l2Mat.opacity = 0.25 + 0.30 * boostFraction;
+        }
+
+        // C. Bypass Solar Transfer Corridor (Rays flowing from L1 past Earth to Giant L2 Mirror)
+        if (this.bypassBeamsGroup) {
+          this.bypassBeamsGroup.position.copy(this.currentEarthPos);
+          this.bypassBeamsGroup.setRotationFromMatrix(rotMatL1);
+          if (this.bypassSheath) {
+            (this.bypassSheath.material as THREE.MeshBasicMaterial).opacity = 0.15 + 0.15 * boostFraction;
+          }
+          if (this.bypassRayLines) {
+            (this.bypassRayLines.material as THREE.LineBasicMaterial).opacity = 0.50 + 0.30 * boostFraction;
+          }
+        }
+      }
+    }
+
+    // 7. Camera Target Tracking for focused celestial bodies
     if (this.cameraFocus && this.cameraFocus !== 'system') {
       let targetPos: THREE.Vector3 | null = null;
-      if (this.cameraFocus === 'earth_tug' || this.cameraFocus === 'Earth' || this.cameraFocus === 'Tug') {
+      if (this.cameraFocus === 'earth_tug' || this.cameraFocus === 'Earth') {
         targetPos = this.currentEarthPos;
+      } else if (this.cameraFocus === 'Tug') {
+        targetPos = this.tugGroup ? this.tugGroup.position : this.currentEarthPos;
+      } else if (this.cameraFocus === 'L1_Mirror' || this.cameraFocus === 'L1_Swarm' || this.cameraFocus === 'mirror') {
+        targetPos = this.currentL1Pos;
+      } else if (this.cameraFocus === 'L2_Swarm') {
+        targetPos = this.currentL2Pos;
       } else {
         const mesh = this.bodyMeshes.get(this.cameraFocus);
         if (mesh) targetPos = mesh.position;
       }
 
       if (targetPos && this.controls) {
-        const offset = this.camera.position.clone().sub(this.controls.target);
-        this.controls.target.copy(targetPos);
-        this.camera.position.copy(targetPos).add(offset);
+        if (this.cameraFocus === 'L2_Swarm') {
+          // Stable synodic camera framing: tracks L2 from a stationary perspective relative to Sun-Earth axis
+          const sunToEarth = this.currentEarthPos.clone();
+          const sunDir = sunToEarth.length() > 0.1 ? sunToEarth.normalize() : new THREE.Vector3(1, 0, 0);
+          const sceneUp = new THREE.Vector3(0, 1, 0);
+          let lateralAxis = new THREE.Vector3().crossVectors(sceneUp, sunDir).normalize();
+          if (lateralAxis.lengthSq() < 0.01) lateralAxis = new THREE.Vector3(1, 0, 0);
+
+          this.controls.target.copy(targetPos);
+          const camOffset = sunDir.clone().multiplyScalar(1.9)
+            .addScaledVector(sceneUp, 0.95)
+            .addScaledVector(lateralAxis, 1.4);
+          this.camera.position.copy(targetPos).add(camOffset);
+        } else {
+          const offset = this.camera.position.clone().sub(this.controls.target);
+          this.controls.target.copy(targetPos);
+          this.camera.position.copy(targetPos).add(offset);
+        }
       }
     }
 
@@ -1537,7 +2785,35 @@ export class SolarSystemView {
     if (mode === 'system') {
       this.controls.target.set(0, 0, 0);
       this.camera.position.set(0, 72, 72);
-    } else if (mode === 'earth_tug' || mode === 'Tug') {
+    } else if (mode === 'Tug') {
+      const tugPos = this.tugGroup ? this.tugGroup.position : this.currentEarthPos;
+      this.controls.target.copy(tugPos);
+      this.camera.position.set(
+        tugPos.x + 1.2,
+        tugPos.y + 0.7,
+        tugPos.z + 1.4
+      );
+    } else if (mode === 'L1_Mirror' || mode === 'L1_Swarm' || mode === 'mirror') {
+      const targetPos = this.currentL1Pos;
+      this.controls.target.copy(targetPos);
+      this.camera.position.set(
+        targetPos.x + 1.2,
+        targetPos.y + 0.7,
+        targetPos.z + 1.4
+      );
+    } else if (mode === 'L2_Swarm') {
+      const targetPos = this.currentL2Pos;
+      this.controls.target.copy(targetPos);
+      const sunToEarth = this.currentEarthPos.clone();
+      const sunDir = sunToEarth.length() > 0.1 ? sunToEarth.normalize() : new THREE.Vector3(1, 0, 0);
+      const sceneUp = new THREE.Vector3(0, 1, 0);
+      let lateralAxis = new THREE.Vector3().crossVectors(sceneUp, sunDir).normalize();
+      if (lateralAxis.lengthSq() < 0.01) lateralAxis = new THREE.Vector3(1, 0, 0);
+      const camOffset = sunDir.clone().multiplyScalar(1.9)
+        .addScaledVector(sceneUp, 0.95)
+        .addScaledVector(lateralAxis, 1.4);
+      this.camera.position.copy(targetPos).add(camOffset);
+    } else if (mode === 'earth_tug') {
       this.controls.target.copy(this.currentEarthPos);
       this.camera.position.set(
         this.currentEarthPos.x + 3.0,
@@ -1568,7 +2844,10 @@ export class SolarSystemView {
           Jupiter: 3.5,
           Saturn: 3.8,
           Uranus: 3.2,
+          Titania: 0.50,
+          Oberon: 0.50,
           Neptune: 3.2,
+          Triton: 0.50,
           Moon: 0.6,
           Phobos: 0.3,
           Deimos: 0.25,
@@ -1645,8 +2924,11 @@ export class SolarSystemView {
   public getFocusDisplayName(mode: string): string {
     const names: Record<string, string> = {
       system: 'Solar System',
-      earth_tug: 'Earth-Tug',
-      Tug: 'Ceres Tug',
+      earth_tug: 'Earth-Tug Complex',
+      Tug: 'Ceres Tug & Mining Refinery',
+      L1_Mirror: 'L1 Day Concentrator Swarm',
+      L1_Swarm: 'L1 Day Concentrator Swarm',
+      L2_Swarm: 'L2 Night Concentrator Swarm',
       Sun: 'Sun',
       Mercury: 'Mercury',
       Venus: 'Venus',
@@ -1667,7 +2949,10 @@ export class SolarSystemView {
       Tethys: 'Tethys',
       Rhea: 'Rhea',
       Uranus: 'Uranus',
-      Neptune: 'Neptune'
+      Titania: 'Titania',
+      Oberon: 'Oberon',
+      Neptune: 'Neptune',
+      Triton: 'Triton'
     };
     return names[mode] || mode;
   }
@@ -1701,7 +2986,7 @@ export class SolarSystemView {
       this.sunCoronaGlowMaterial.uniforms.uIntensity.value = 0.10;
     }
 
-    // 2. Thruster relativistic plasma pulsation
+    // 2. Thruster relativistic plasma pulsation & high-velocity particle stream
     if (this.isThrustingActive && this.tugThrusterPlume1 && this.tugThrusterPlume2) {
       const pulse1 = 0.85 + 0.15 * Math.sin(this.pulseTime * 20.0);
       const pulse2 = 0.85 + 0.15 * Math.cos(this.pulseTime * 23.0);
@@ -1709,7 +2994,108 @@ export class SolarSystemView {
       this.tugThrusterPlume2.scale.set(pulse2, pulse2, pulse2 * (0.95 + 0.1 * Math.cos(this.pulseTime * 28.0)));
     }
 
-    // 3. Dynamic motion for Asteroid Belt and Cosmic Nebula background
+    // Dynamic Relativistic Exhaust Particle Stream (shooting ions backwards @ 0.3c visual velocity)
+    if (this.plasmaParticles && this.plasmaPositions && this.plasmaVelocities && this.plasmaLifetimes && this.plasmaMaxLifetimes) {
+      if (this.isThrustingActive) {
+        this.plasmaParticles.visible = true;
+        const posAttr = this.plasmaParticles.geometry.getAttribute('position') as THREE.BufferAttribute;
+        const colAttr = this.plasmaParticles.geometry.getAttribute('color') as THREE.BufferAttribute;
+        const visualCantAngleRad = THREE.MathUtils.degToRad(28.0);
+        const sinCant = Math.sin(visualCantAngleRad);
+        const cosCant = Math.cos(visualCantAngleRad);
+        const count = this.PLASMA_PARTICLE_COUNT;
+        const dt = 0.016;
+
+        for (let i = 0; i < count; i++) {
+          this.plasmaLifetimes[i] += dt;
+          if (this.plasmaLifetimes[i] > this.plasmaMaxLifetimes[i]) {
+            // Respawn at canted nozzle throat
+            this.plasmaLifetimes[i] = 0;
+            this.plasmaMaxLifetimes[i] = 0.65 + Math.random() * 0.35;
+            const isNorth = i % 2 === 0;
+            const nozzleY = isNorth ? 0.09 : -0.09;
+            const cantSign = isNorth ? 1.0 : -1.0;
+            const speed = 3.6 + Math.random() * 1.0;
+
+            this.plasmaVelocities[i * 3 + 0] = (Math.random() - 0.5) * 0.05;
+            this.plasmaVelocities[i * 3 + 1] = cantSign * sinCant * speed + (Math.random() - 0.5) * 0.03;
+            this.plasmaVelocities[i * 3 + 2] = cosCant * speed;
+
+            this.plasmaPositions[i * 3 + 0] = (Math.random() - 0.5) * 0.02;
+            this.plasmaPositions[i * 3 + 1] = nozzleY + (Math.random() - 0.5) * 0.02;
+            this.plasmaPositions[i * 3 + 2] = 0.42;
+          } else {
+            // Relativistic transport along out-of-ecliptic canted vector
+            this.plasmaPositions[i * 3 + 0] += this.plasmaVelocities[i * 3 + 0] * dt;
+            this.plasmaPositions[i * 3 + 1] += this.plasmaVelocities[i * 3 + 1] * dt;
+            this.plasmaPositions[i * 3 + 2] += this.plasmaVelocities[i * 3 + 2] * dt;
+
+            // ABSOLUTE BIOSPHERE SAFEGUARD: ZERO IMPINGEMENT ON EARTH
+            // In the tug's local coordinate frame, Earth center is at (0, 0, 1.40).
+            // Earth visual radius is 0.35, atmosphere halo is 0.42.
+            // If any particle ever approaches within 0.48 scene units of Earth,
+            // strictly deflect it outward along the out-of-ecliptic cant corridor.
+            const pX = this.plasmaPositions[i * 3 + 0];
+            const pY = this.plasmaPositions[i * 3 + 1];
+            const pZ = this.plasmaPositions[i * 3 + 2] - 1.40;
+            const distSq = pX * pX + pY * pY + pZ * pZ;
+            const safeRadius = 0.48;
+            if (distSq < safeRadius * safeRadius) {
+              const cantSign = i % 2 === 0 ? 1.0 : -1.0;
+              this.plasmaPositions[i * 3 + 1] = cantSign * (safeRadius + 0.10);
+            }
+          }
+
+          // Exhaust color gradient: Softer subtle electric cyan -> deep blue recombination
+          const progress = this.plasmaLifetimes[i] / this.plasmaMaxLifetimes[i];
+          if (progress < 0.25) {
+            this.plasmaColors[i * 3 + 0] = 0.35;
+            this.plasmaColors[i * 3 + 1] = 0.65;
+            this.plasmaColors[i * 3 + 2] = 0.85;
+          } else if (progress < 0.65) {
+            this.plasmaColors[i * 3 + 0] = 0.0;
+            this.plasmaColors[i * 3 + 1] = 0.45;
+            this.plasmaColors[i * 3 + 2] = 0.70;
+          } else {
+            this.plasmaColors[i * 3 + 0] = 0.15 * (1.0 - progress);
+            this.plasmaColors[i * 3 + 1] = 0.05 * (1.0 - progress);
+            this.plasmaColors[i * 3 + 2] = 0.35 * (1.0 - progress);
+          }
+        }
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+      } else {
+        this.plasmaParticles.visible = false;
+      }
+    }
+
+    // 3. Automated Mining Machine Animation (Rotary Core Drills, Laser Ablation & Plasma Conversion Reactor)
+    if (this.miningDrillHead1) {
+      this.miningDrillHead1.rotation.x += this.isThrustingActive ? 0.24 : 0.04;
+    }
+    if (this.miningDrillHead2) {
+      this.miningDrillHead2.rotation.x -= this.isThrustingActive ? 0.18 : 0.03;
+    }
+    if (this.plasmaReactorCore) {
+      if (this.isThrustingActive) {
+        const pulse = 0.75 + 0.25 * Math.sin(this.pulseTime * 22.0);
+        (this.plasmaReactorCore.material as THREE.MeshBasicMaterial).opacity = 0.85 * pulse;
+        const scale = 0.96 + 0.06 * Math.sin(this.pulseTime * 30.0);
+        this.plasmaReactorCore.scale.set(scale, scale, 1.0);
+      } else {
+        (this.plasmaReactorCore.material as THREE.MeshBasicMaterial).opacity = 0.20;
+      }
+    }
+    if (this.miningLaserBeam && this.miningLaserGlow) {
+      if (this.isThrustingActive) {
+        const pulse = 0.70 + 0.30 * Math.sin(this.pulseTime * 24.0);
+        (this.miningLaserBeam.material as THREE.MeshBasicMaterial).opacity = 0.80 * pulse;
+        const flareScale = 0.85 + 0.35 * Math.sin(this.pulseTime * 32.0);
+        this.miningLaserGlow.scale.set(flareScale, flareScale, flareScale);
+      }
+    }
+
+    // 4. Dynamic motion for Asteroid Belt and Cosmic Nebula background
     if (this.asteroidBeltMesh) {
       this.asteroidBeltMesh.rotation.y += 0.00015;
     }
@@ -1720,6 +3106,49 @@ export class SolarSystemView {
     // 4. Update procedural shader uniforms for Deep Space and Sun Plasma
     if (this.deepSpaceMesh && this.deepSpaceMesh.material instanceof THREE.ShaderMaterial) {
       this.deepSpaceMesh.material.uniforms.uTime.value = this.pulseTime;
+    }
+
+    // 5. Dual Hexagonal Heating Swarms Animation (Polar Beams, Reverse Earthshine, Statite Tacking)
+    // Both L1 (Day) and L2 (Night) Hexagonal Swarms are stationary and fixed at their collinear Lagrange points
+
+    if (this.mirrorSunbeam) {
+      const pulse = 0.94 + 0.06 * Math.sin(this.pulseTime * 14.0);
+      this.mirrorSunbeam.scale.set(pulse, pulse, 1.0);
+    }
+    if (this.l1NorthPolarBeam && this.l1SouthPolarBeam) {
+      const pPulse1 = 0.93 + 0.07 * Math.sin(this.pulseTime * 12.0);
+      const pPulse2 = 0.93 + 0.07 * Math.cos(this.pulseTime * 13.0);
+      this.l1NorthPolarBeam.scale.set(pPulse1, pPulse1, 1.0);
+      this.l1SouthPolarBeam.scale.set(pPulse2, pPulse2, 1.0);
+    }
+    if (this.l2ReverseEarthshineBeam) {
+      const l2Pulse = 0.94 + 0.06 * Math.sin(this.pulseTime * 10.0);
+      this.l2ReverseEarthshineBeam.scale.set(l2Pulse, l2Pulse, 1.0);
+    }
+    if (this.bypassSheath) {
+      const bPulse = 0.96 + 0.04 * Math.sin(this.pulseTime * 11.0);
+      this.bypassSheath.scale.set(bPulse, bPulse, 1.0);
+    }
+
+    // Electrochromic solar tacking trim panel pulsing (statite sailboat trim)
+    const tackPulse = 0.65 + 0.35 * Math.sin(this.pulseTime * 8.0);
+    if (this.l1ElectrochromicRims && Array.isArray(this.l1ElectrochromicRims)) {
+      for (let i = 0; i < this.l1ElectrochromicRims.length; i++) {
+        (this.l1ElectrochromicRims[i].material as THREE.MeshBasicMaterial).opacity = tackPulse;
+      }
+    }
+    if (this.l2ElectrochromicRims && Array.isArray(this.l2ElectrochromicRims)) {
+      for (let i = 0; i < this.l2ElectrochromicRims.length; i++) {
+        (this.l2ElectrochromicRims[i].material as THREE.MeshBasicMaterial).opacity = tackPulse;
+      }
+    }
+
+    // 6. Extended Out-of-Ecliptic Plume Cones pulsation
+    if (this.isThrustingActive && this.tugExtendedPlume1 && this.tugExtendedPlume2) {
+      const epPulse1 = 0.92 + 0.08 * Math.sin(this.pulseTime * 18.0);
+      const epPulse2 = 0.92 + 0.08 * Math.cos(this.pulseTime * 19.0);
+      this.tugExtendedPlume1.scale.set(epPulse1, epPulse1, 1.0);
+      this.tugExtendedPlume2.scale.set(epPulse2, epPulse2, 1.0);
     }
 
     this.controls.update();

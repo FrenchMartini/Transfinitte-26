@@ -704,6 +704,7 @@ def run_full_spiral_simulation(
         max_frames=downsample_frames,
         concept="Ceres Tug",
         thresholds_confirmed=thresholds_confirmed,
+        include_planets=True,
     )
 
     # Run official RulebookValidator Gate (Step 6)

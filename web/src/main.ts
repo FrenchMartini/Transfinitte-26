@@ -34,20 +34,24 @@ class App {
     const urlParams = new URLSearchParams(window.location.search);
     const requestedFile = urlParams.get('file');
 
-    const fileToTry = requestedFile || '/results/replay_ceres_tug.json';
+    const candidates = requestedFile
+      ? [requestedFile]
+      : ['/results/simulation.json', '/results/replay_ceres_tug.json'];
 
-    try {
-      const resp = await fetch(fileToTry);
-      if (resp.ok) {
-        const json = await resp.json();
-        const validation = validateReplayData(json);
-        if (validation.isValid && validation.data) {
-          console.log(`Loaded replay from ${fileToTry} (${validation.data.frames.length} frames).`);
-          return validation.data;
+    for (const fileToTry of candidates) {
+      try {
+        const resp = await fetch(fileToTry);
+        if (resp.ok) {
+          const json = await resp.json();
+          const validation = validateReplayData(json);
+          if (validation.isValid && validation.data) {
+            console.log(`Loaded replay from ${fileToTry} (${validation.data.frames.length} frames).`);
+            return validation.data;
+          }
         }
+      } catch (e) {
+        console.warn(`Failed to fetch ${fileToTry}:`, e);
       }
-    } catch (e) {
-      console.warn(`Failed to fetch ${fileToTry}, falling back to mock:`, e);
     }
 
     console.log('Falling back to built-in mock telemetry.');

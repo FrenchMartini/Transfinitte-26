@@ -8,7 +8,7 @@ function createView() {
   // Use real tug geometry and scene transforms without a WebGL context.
   const scene = new THREE.Scene();
   const bodyMeshes = new Map<string, THREE.Object3D>();
-  for (const name of ['Earth', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']) {
+  for (const name of ['Earth', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']) {
     const body = new THREE.Object3D();
     bodyMeshes.set(name, body);
     scene.add(body);

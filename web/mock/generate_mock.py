@@ -39,15 +39,28 @@ for i in range(FRAME_COUNT):
     x_tug = x_earth + d_au * tx
     y_tug = y_earth + d_au * ty
 
-    # Mars (~1.524 AU)
-    theta_mars = 2.0 * math.pi * (t_yr / (1.524 ** 1.5))
-    x_mars = 1.524 * math.cos(theta_mars)
-    y_mars = 1.524 * math.sin(theta_mars)
-
-    # Jupiter (~5.204 AU)
-    theta_jup = 2.0 * math.pi * (t_yr / (5.204 ** 1.5))
-    x_jup = 5.204 * math.cos(theta_jup)
-    y_jup = 5.204 * math.sin(theta_jup)
+    # Solar System Planets
+    planets_data = {
+        "Mercury": {"r": 0.387098, "period": 0.240846, "v": 47.36, "m": 3.3011e23},
+        "Venus": {"r": 0.723332, "period": 0.615197, "v": 35.02, "m": 4.8675e24},
+        "Mars": {"r": 1.523679, "period": 1.880816, "v": 24.08, "m": 6.4171e23},
+        "Jupiter": {"r": 5.204267, "period": 11.862615, "v": 13.06, "m": 1.8982e27},
+        "Saturn": {"r": 9.5826, "period": 29.4571, "v": 9.68, "m": 5.6834e26},
+        "Uranus": {"r": 19.19126, "period": 84.0110, "v": 6.80, "m": 8.6810e25},
+        "Neptune": {"r": 30.06896, "period": 164.79, "v": 5.43, "m": 1.02413e26},
+    }
+    planets_calc = {}
+    for p_name, p_info in planets_data.items():
+        p_th = 2.0 * math.pi * (t_yr / p_info["period"])
+        planets_calc[p_name] = {
+            "x": float(p_info["r"] * math.cos(p_th)),
+            "y": float(p_info["r"] * math.sin(p_th)),
+            "z": 0.0,
+            "vx": float(-p_info["v"] * math.sin(p_th)),
+            "vy": float(p_info["v"] * math.cos(p_th)),
+            "vz": 0.0,
+            "mass_kg": float(p_info["m"])
+        }
 
     # Failure epoch around year 500
     waste_heat = 0.05 if t_yr < 500.0 else 8.4
@@ -60,36 +73,29 @@ for i in range(FRAME_COUNT):
         "radiator_panels": 2.10
     } if i % 2 == 0 else None
 
+    frame_bodies = {
+        "Sun": {
+            "x": 0.0, "y": 0.0, "z": 0.0,
+            "vx": 0.0, "vy": 0.0, "vz": 0.0,
+            "mass_kg": 1.98847e30
+        },
+        "Earth": {
+            "x": float(x_earth), "y": float(y_earth), "z": 0.0,
+            "vx": float(vx_earth), "vy": float(vy_earth), "vz": 0.0,
+            "mass_kg": 5.9722e24
+        },
+        "Tug": {
+            "x": float(x_tug), "y": float(y_tug), "z": 0.0,
+            "vx": float(vx_earth), "vy": float(vy_earth), "vz": 0.0,
+            "mass_kg": 9.4e20
+        }
+    }
+    frame_bodies.update(planets_calc)
+
     frame = {
         "time_s": float(t_s),
         "step_index": i,
-        "bodies": {
-            "Sun": {
-                "x": 0.0, "y": 0.0, "z": 0.0,
-                "vx": 0.0, "vy": 0.0, "vz": 0.0,
-                "mass_kg": 1.98847e30
-            },
-            "Earth": {
-                "x": float(x_earth), "y": float(y_earth), "z": 0.0,
-                "vx": float(vx_earth), "vy": float(vy_earth), "vz": 0.0,
-                "mass_kg": 5.9722e24
-            },
-            "Tug": {
-                "x": float(x_tug), "y": float(y_tug), "z": 0.0,
-                "vx": float(vx_earth), "vy": float(vy_earth), "vz": 0.0,
-                "mass_kg": 9.4e20
-            },
-            "Mars": {
-                "x": float(x_mars), "y": float(y_mars), "z": 0.0,
-                "vx": float(-24.0 * math.sin(theta_mars)), "vy": float(24.0 * math.cos(theta_mars)), "vz": 0.0,
-                "mass_kg": 6.4171e23
-            },
-            "Jupiter": {
-                "x": float(x_jup), "y": float(y_jup), "z": 0.0,
-                "vx": float(-13.0 * math.sin(theta_jup)), "vy": float(13.0 * math.cos(theta_jup)), "vz": 0.0,
-                "mass_kg": 1.8982e27
-            }
-        },
+        "bodies": frame_bodies,
         "tug_telemetry": {
             "thrust_n": 2.358e17 if fraction < 0.99 else 0.0,
             "tug_earth_distance_m": 1.2701e9,

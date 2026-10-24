@@ -36,6 +36,16 @@ UNITS_DICT: dict[str, str] = {
     "power": "W",
 }
 
+SOLAR_SYSTEM_PLANETS: dict[str, dict[str, float]] = {
+    "Mercury": {"a_au": 0.387098, "period_yr": 0.240846, "mass_kg": 3.3011e23, "v_base_km_s": 47.36},
+    "Venus": {"a_au": 0.723332, "period_yr": 0.615197, "mass_kg": 4.8675e24, "v_base_km_s": 35.02},
+    "Mars": {"a_au": 1.523679, "period_yr": 1.880816, "mass_kg": 6.4171e23, "v_base_km_s": 24.08},
+    "Jupiter": {"a_au": 5.204267, "period_yr": 11.862615, "mass_kg": 1.8982e27, "v_base_km_s": 13.06},
+    "Saturn": {"a_au": 9.5826, "period_yr": 29.4571, "mass_kg": 5.6834e26, "v_base_km_s": 9.68},
+    "Uranus": {"a_au": 19.19126, "period_yr": 84.0110, "mass_kg": 8.6810e25, "v_base_km_s": 6.80},
+    "Neptune": {"a_au": 30.06896, "period_yr": 164.79, "mass_kg": 1.02413e26, "v_base_km_s": 5.43},
+}
+
 
 def compute_config_hash(config_path: Path | str | None = None) -> str:
     """Compute sha256 hex digest of config/base.yaml."""
@@ -66,6 +76,7 @@ def _build_initial_frame_from_config(
     has_tug: bool,
     focus_body: str,
     cfg: dict[str, Any],
+    include_planets: bool = False,
 ) -> dict[str, Any]:
     """Construct exact t=0 initial frame directly from config when Parquet starts at t > 0."""
     init_cfg = cfg.get("initial_conditions", {})
@@ -143,6 +154,19 @@ def _build_initial_frame_from_config(
                 "mass_kg": 0.0,
             }
 
+    if include_planets:
+        for p_name, p_data in SOLAR_SYSTEM_PLANETS.items():
+            if p_name not in bodies_dict:
+                bodies_dict[p_name] = {
+                    "x": float(p_data["a_au"]),
+                    "y": 0.0,
+                    "z": 0.0,
+                    "vx": 0.0,
+                    "vy": float(p_data["v_base_km_s"]),
+                    "vz": 0.0,
+                    "mass_kg": float(p_data["mass_kg"]),
+                }
+
     tug_telemetry = None
     if has_tug:
         half_ang_rad = math.radians(cone_deg)
@@ -202,6 +226,7 @@ def export_parquet_to_replay_json(
     concept: str = "Ceres Tug",
     thresholds_confirmed: bool = False,
     config_path: str | Path | None = None,
+    include_planets: bool = False,
 ) -> dict[str, Any]:
     """Read a simulation Parquet table, decimate to <= max_frames, and write replay JSON."""
     in_path = Path(parquet_path)
@@ -243,7 +268,7 @@ def export_parquet_to_replay_json(
 
     frames: list[dict[str, Any]] = []
     if needs_synthetic_t0:
-        frames.append(_build_initial_frame_from_config(body_names, has_tug, focus_body, cfg))
+        frames.append(_build_initial_frame_from_config(body_names, has_tug, focus_body, cfg, include_planets=include_planets))
 
     for idx in indices:
         t_val = _safe_float(pydict, "t_s", idx, float(idx))
@@ -282,6 +307,28 @@ def export_parquet_to_replay_json(
                 "vz": 0.0 if b_name == focus_body else (raw_vz - focus_vz),
                 "mass_kg": mass_kg,
             }
+
+        if include_planets:
+            t_yr = t_val / (86400.0 * 365.25)
+            for p_name, p_data in SOLAR_SYSTEM_PLANETS.items():
+                if p_name not in bodies_dict:
+                    a_au = p_data["a_au"]
+                    period_yr = p_data["period_yr"]
+                    theta = 2.0 * math.pi * (t_yr / period_yr)
+                    v_mag = p_data["v_base_km_s"]
+                    px = a_au * math.cos(theta)
+                    py = a_au * math.sin(theta)
+                    pvx = -v_mag * math.sin(theta)
+                    pvy = v_mag * math.cos(theta)
+                    bodies_dict[p_name] = {
+                        "x": round(float(px - focus_x), 6),
+                        "y": round(float(py - focus_y), 6),
+                        "z": 0.0,
+                        "vx": round(float(pvx - focus_vx), 4),
+                        "vy": round(float(pvy - focus_vy), 4),
+                        "vz": 0.0,
+                        "mass_kg": float(p_data["mass_kg"]),
+                    }
 
         # Tug telemetry block
         tug_telemetry = None
