@@ -267,6 +267,15 @@ def propagate_orbit(
     }
 
 
+NON_SIMULATED_ACTORS: set[str] = {
+    "ExhaustSink",
+    "PowerPlant",
+    "Exhaust",
+    "Radiation",
+    "Space",
+}
+
+
 class OrbitDriver:
     """N-body orbit propagator using REBOUND IAS15 and Ledger interaction."""
 
@@ -293,7 +302,11 @@ class OrbitDriver:
 
         self._name_to_index: dict[str, int] = {}
 
-        for idx, body in enumerate(state.bodies()):
+        p_idx = 0
+        for body in state.bodies():
+            body_name = str(body.name)
+            if body_name in NON_SIMULATED_ACTORS or body.mass_kg <= 0.0:
+                continue
             self.sim.add(
                 m=float(body.mass_kg),
                 x=float(body.position_m[0]),
@@ -302,9 +315,10 @@ class OrbitDriver:
                 vx=float(body.velocity_m_s[0]),
                 vy=float(body.velocity_m_s[1]),
                 vz=float(body.velocity_m_s[2]),
-                name=str(body.name),
+                name=body_name,
             )
-            self._name_to_index[str(body.name)] = idx
+            self._name_to_index[body_name] = p_idx
+            p_idx += 1
 
         self.sim.t = float(state.t)
 

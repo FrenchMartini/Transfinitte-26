@@ -32,6 +32,10 @@ target_orbit:
   semi_major_axis_au: 2.7
   eccentricity: 0.0
 
+test_probe:
+  mass_kg: 1000.0
+  exhaust_velocity_m_s: 50000.0
+
 seed: 42
 
 output_paths:
