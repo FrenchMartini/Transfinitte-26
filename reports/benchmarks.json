@@ -126,10 +126,10 @@
     {
       "id": 8,
       "name": "Push 10^-8 m/s^2 along velocity, 1 year",
-      "value": 3154.2646968383788,
+      "value": 3170.0967273254396,
       "expected": 3170.0,
       "expected_display": "a grows ~3,170 km",
-      "computed": "+3154.26 km (err: 0.496%)",
+      "computed": "+3170.10 km (err: 0.003%)",
       "tolerance": 0.01,
       "tolerance_display": "1%",
       "source_page": "Page 9",

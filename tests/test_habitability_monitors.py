@@ -133,3 +133,56 @@ def test_habitability_coupler_integration(thresholds):
     row = coupler.step(86400.0)
     assert row["audit_pass"] is True
     assert row["flags_count"] == 0
+
+
+def test_mirror_geometry_and_unexplained_flags_when_disabled(thresholds):
+    """Verify geometric mirror model at 2.7 AU: T_eq with/without mirror and unexplained flags."""
+    from octo.drivers.habitability import compute_mirror_reflected_flux
+
+    r_2_7 = 2.7 * constants.AU
+    mirror_cfg = {
+        "active": True,
+        "area_m2": 8.44e14,
+        "reflectivity": 0.95,
+        "mass_kg": 1.0e11,
+        "position": "L1",
+        "orientation_deg": 0.0,
+    }
+
+    # 1. With mirror:
+    s_reflected = compute_mirror_reflected_flux(r_2_7, mirror_cfg)
+    assert s_reflected > 1100.0  # Delivers ~1174 W/m^2 to compensate 186.7 W/m^2 direct flux
+    s_with_mirror = compute_insolation(r_2_7, mirror_active=True, mirror_config=mirror_cfg)
+    t_eq_with = compute_equilibrium_temperature(s_with_mirror)
+    assert pytest.approx(s_with_mirror, rel=1e-3) == constants.SOLAR_CONSTANT_1AU
+    assert pytest.approx(t_eq_with, abs=1.0) == 254.1
+
+    # 2. Without mirror:
+    s_no_mirror = compute_insolation(r_2_7, mirror_active=False)
+    t_eq_without = compute_equilibrium_temperature(s_no_mirror)
+    # Raw flux drops to 1361 / (2.7^2) = 186.7 W/m^2, T_eq drops to ~154.9 K
+    assert pytest.approx(s_no_mirror, rel=1e-3) == 186.69
+    assert pytest.approx(t_eq_without, abs=1.0) == 154.9
+
+    # 3. HabitabilityDriver evaluates Earth at 2.7 AU without mirror:
+    state = State(t=0.0)
+    state.add_body(BodyState("Sun", constants.GM_SUN / constants.G, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
+    state.add_body(BodyState("Earth", constants.M_EARTH, [r_2_7, 0.0, 0.0], [0.0, 18130.0, 0.0]))
+    driver = HabitabilityDriver(
+        state=state,
+        thresholds=thresholds,
+        config={"climate_mirror": {"active": False}},
+    )
+    flags = driver.evaluate(dt=86400.0)
+    flag_codes = [f.code for f in flags]
+    assert "INSOLATION_OUT_OF_BOUNDS" in flag_codes
+    assert "TEMPERATURE_OUT_OF_BOUNDS" in flag_codes
+
+    # 4. Enabler check: The mirror is NOT in hypothetical_enablers.yaml (only power, belt supply, exhaust accelerator)
+    # So both flags must remain UNEXPLAINED by any enabler
+    registry = FlagRegistry.from_yaml("config/hypothetical_enablers.yaml", thresholds=thresholds)
+    resolved_flags = registry.register_many(flags)
+    assert all(rf.enabler_id is None for rf in resolved_flags)
+    assert registry.has_unresolved_flags() is True
+    assert len(registry.unresolved_flags) == len(flags)
+

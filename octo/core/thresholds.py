@@ -82,6 +82,11 @@ REQUIRED_SCHEMA: dict[str, tuple[str, ...]] = {
         "max_momentum_rel_error",
         "max_mass_rel_error",
     ),
+    "power": ("beam_power_w",),
+    "propulsion": (
+        "max_exhaust_velocity_m_s",
+        "reaction_mass_resupply_kg",
+    ),
 }
 
 
@@ -148,6 +153,12 @@ def load_thresholds(
                     )
 
             value = entry["value"]
+            if isinstance(value, str):
+                try:
+                    value = float(value)
+                    entry["value"] = value
+                except ValueError:
+                    pass
             if not isinstance(value, (int, float, bool)):
                 raise ThresholdValidationError(
                     f"Threshold '{full_key}' field 'value' must be numeric or boolean, got {type(value).__name__}."

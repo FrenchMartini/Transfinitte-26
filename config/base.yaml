@@ -44,6 +44,14 @@ ceres_tug:
 
 reduced_model_validation_tol: 0.01  # ASSUMED: 1% agreement target
 
+climate_mirror:
+  active: true
+  area_m2: 8.44e14  # Geometric collector area at L1 to maintain nominal insolation out to 2.7 AU
+  reflectivity: 0.95
+  mass_kg: 1.0e11   # Lightweight gossamer reflective membrane
+  position: "L1"    # Positioned at Earth-Sun L1 sub-solar point
+  orientation_deg: 0.0  # Normal aligned with Sun-Earth axis
+
 initial_conditions:
   semi_major_axis_au: 1.0
   eccentricity: 0.0

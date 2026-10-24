@@ -369,6 +369,9 @@ def run_and_write_guide_benchmarks(
     sim8 = rebound.Simulation()
     sim8.integrator = "ias15"
     sim8.G = constants.G
+    # IAS15 must know that the additional force depends on particle velocity,
+    # otherwise it omits velocity corrector iterations causing a ~0.5% numerical lag.
+    sim8.force_is_velocity_dependent = 1
     sim8.add(m=m_sun, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
     v0_earth = math.sqrt(constants.G * (m_sun + constants.M_EARTH) / constants.AU)
     sim8.add(m=constants.M_EARTH, x=constants.AU, y=0.0, z=0.0, vx=0.0, vy=v0_earth, vz=0.0)

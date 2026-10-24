@@ -1,6 +1,8 @@
 """Tests for Step 2.3: FlagRegistry and hypothetical enabler resolution."""
 
+from pathlib import Path
 import pytest
+import yaml
 from octo.core.flags import Flag, FlagRegistry, EnablerValidationError
 
 
@@ -161,3 +163,58 @@ def test_duplicate_enabler_ids_raises_error():
     }
     with pytest.raises(EnablerValidationError, match="Duplicate"):
         FlagRegistry(dup_enablers)
+
+
+def test_default_hypothetical_enablers_load_and_validate_cleanly():
+    """Default config/hypothetical_enablers.yaml loads cleanly and all relaxes keys exist in rulebook_thresholds.yaml."""
+    from pathlib import Path
+    import yaml
+    from octo.core.thresholds import load_thresholds
+
+    thresholds = load_thresholds()
+    registry = FlagRegistry.from_yaml("config/hypothetical_enablers.yaml", thresholds=thresholds)
+
+    assert len(registry.enablers) == 3
+    ids = [e.id for e in registry.enablers]
+    assert ids == ["E1", "E2", "E3"]
+
+    # Verify each enabler has units in value, team estimate in sources, and efficiency stated
+    for enabler in registry.enablers:
+        assert enabler.units != ""
+        assert enabler.efficiency != ""
+        assert any("team estimate" in s.lower() for s in enabler.sources)
+
+    # Verify all relaxes keys exist in rulebook_thresholds.yaml
+    valid_keys = {
+        f"{cat}.{k}"
+        for cat, entries in thresholds.items()
+        if isinstance(entries, dict)
+        for k in entries.keys()
+    }
+    for enabler in registry.enablers:
+        for q in enabler.relaxes:
+            assert q in valid_keys, f"Relaxes key '{q}' missing from rulebook_thresholds.yaml"
+
+
+def test_loader_fails_on_unknown_relaxes_key_typo(tmp_path: Path):
+    """The loader must fail with EnablerValidationError when an unknown key (typo) appears in relaxes."""
+    typo_enablers = {
+        "enablers": [
+            {
+                "id": "E1",
+                "name": "Typo Enabler",
+                "relaxes": ["power.beam_power_w_typo"],
+                "value": "1.0e25 W",
+                "units": "W",
+                "efficiency": "1.0",
+                "justification": "Testing typo rejection",
+                "sources": ["team estimate"],
+            }
+        ]
+    }
+    typo_yaml = tmp_path / "hypothetical_enablers_typo.yaml"
+    typo_yaml.write_text(yaml.dump(typo_enablers))
+
+    with pytest.raises(EnablerValidationError, match="unknown threshold key 'power.beam_power_w_typo'"):
+        FlagRegistry.from_yaml(typo_yaml)
+

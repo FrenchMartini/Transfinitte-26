@@ -42,7 +42,7 @@ def test_validator_passes_nominal_mission(thresholds, enabler_registry):
             code="BEAM_POWER_HIGH",
             t=100.0,
             source="power",
-            quantity="power.max_power_w",
+            quantity="power.beam_power_w",
             value=1.095e25,
             limit=1.0e17,
         )

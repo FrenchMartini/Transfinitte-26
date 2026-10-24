@@ -63,7 +63,7 @@
 | **#5** | Solar system, 5 years, no push | `Energy constant (drift < 1e-9)` | `dE / E0: 2.24e-16` | `1e-9` | Page 9 | **PASS** |
 | **#6** | Earth-Moon barycentre period | `365.256 days` | `365.2563 days (err: 0.0003 d)` | `0.1 day` | Page 9 | **PASS** |
 | **#7** | Hohmann 1 -> 1.524 AU | `2.94 + 2.65 km/s, ~259 days` | `2.946 + 2.650 km/s, 258.9 days` | `0.02 km/s; 2 days` | Page 9 | **PASS** |
-| **#8** | Push 10^-8 m/s^2 along velocity, 1 year | `a grows ~3,170 km` | `+3154.26 km (err: 0.496%)` | `1%` | Page 9 | **PASS** |
+| **#8** | Push 10^-8 m/s^2 along velocity, 1 year | `a grows ~3,170 km` | `+3170.10 km (err: 0.003%)` | `1%` | Page 9 | **PASS** |
 | **#9** | Cantilever under self-weight | `M = qL^2/2, w = qL^4/(8EI)` | `M/M_exact = 1.000000, w/w_exact = 1.000000` | `1%` | Page 9 | **PASS** |
 | **#10** | Equilibrium temperature, 1 AU, albedo 0.306 | `~254 K` | `254.04 K (err: 0.04 K)` | `2 K` | Page 9 | **PASS** |
 
@@ -73,6 +73,6 @@
 
 | ID | Name | Relaxes | Capability Bound | Justification |
 |---|---|---|---|---|
-| **E1** | **Near-Sun Beamed Power Link** | `power.max_power_w`, `power.beam_power_w` | `1.096e25` | Near-Sun Dyson swarm collector capturing ~2.85% L_sun and beaming 1.096e25 W to the standoff tug via coherent laser/microwave array. |
-| **E2** | **Relativistic Drive & Belt Supply Pipeline** | `propulsion.max_exhaust_velocity_m_s`, `propulsion.reaction_mass_resupply_kg` | `7.511e20` | Automated asteroid belt extraction pipeline supplying 7.51e20 kg reaction mass to 0.3c relativistic plasma drive. |
-| **E3** | **Deep-Space Radiative Shield & L1 Climate Mirror** | `earth_safety.thermal_shield_attenuation`, `earth_safety.min_insolation_w_m2` | `150.0` | Active shadow shield maintaining 1.0e-5 thermal attenuation and off-axis L1 solar concentrator maintaining 1 AU solar constant insolation on Earth out to 2.7 AU. |
+| **E1** | **Near-Sun Beamed Power Link (power)** | `power.beam_power_w` | `1.096e25 W` | Near-Sun Dyson swarm collector capturing ~2.85% L_sun and beaming 1.096e25 W to the standoff tug via coherent laser/microwave array. |
+| **E2** | **Asteroid Relocation & Mining Pipeline (asteroid and material)** | `propulsion.reaction_mass_resupply_kg` | `7.511e20 kg` | Relocation of Ceres-class asteroid to Earth standoff position and continuous automated reaction-mass extraction pipeline supplying 7.511e20 kg total. |
+| **E3** | **Relativistic Plasma Exhaust Accelerator (exhaust accelerator)** | `propulsion.max_exhaust_velocity_m_s` | `89937737.4 m/s` | 0.3c relativistic ion/plasma accelerator driving 2.501e9 kg/s reaction mass at Lorentz gamma = 1.0483. |

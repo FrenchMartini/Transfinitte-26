@@ -220,3 +220,51 @@ def test_architecture_section2_hand_computed_facts(ref_data: dict):
     # 4. Insolation ratio between 1 AU and 2.7 AU ~ 7 (2.7^2 = 7.29)
     insol_ratio = insolation_ratio(r1, r2)
     assert pytest.approx(insol_ratio, rel=sec2["insolation_ratio_1_to_2_7"]["rel_tol"]) == sec2["insolation_ratio_1_to_2_7"]["value"]
+
+
+def test_b8_tangential_push_sun_only_circular_closed_form():
+    """Verify B8 1-yr 1e-8 m/s^2 tangential push on circular Sun-only orbit matches closed form 2*a_push/n*t."""
+    import math
+    import rebound
+
+    mu_sun = constants.GM_SUN
+    m_sun = mu_sun / constants.G
+    a0 = constants.AU
+    a_push = 1.0e-8
+    t_julian = constants.YEAR
+    n0 = math.sqrt(mu_sun / (a0**3))
+    expected_delta_a_km = (2.0 * a_push / n0 * t_julian) / 1000.0  # 3170.0511 km
+
+    sim = rebound.Simulation()
+    sim.integrator = "ias15"
+    sim.G = constants.G
+    sim.force_is_velocity_dependent = 1
+    sim.add(m=m_sun, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
+    v0 = math.sqrt(mu_sun / a0)
+    sim.add(m=0.0, x=a0, y=0.0, z=0.0, vx=0.0, vy=v0, vz=0.0)
+
+    def _af(sim_ptr):
+        s = sim_ptr.contents
+        ps, pe = s.particles[0], s.particles[1]
+        dvx, dvy = pe.vx - ps.vx, pe.vy - ps.vy
+        v_mag = math.sqrt(dvx * dvx + dvy * dvy)
+        pe.ax += a_push * (dvx / v_mag)
+        pe.ay += a_push * (dvy / v_mag)
+
+    sim.additional_forces = _af
+    sim.integrate(t_julian)
+
+    ps, pe = sim.particles[0], sim.particles[1]
+    dx, dy = pe.x - ps.x, pe.y - ps.y
+    dvx, dvy = pe.vx - ps.vx, pe.vy - ps.vy
+    r = math.sqrt(dx * dx + dy * dy)
+    v = math.sqrt(dvx * dvx + dvy * dvy)
+    eps = 0.5 * v * v - mu_sun / r
+    a_final = -mu_sun / (2.0 * eps)
+    sim_delta_a_km = (a_final - a0) / 1000.0
+
+    # Agreement within 0.01% (actual agreement is ~0.0016% / 16 ppm)
+    rel_diff = abs(sim_delta_a_km - expected_delta_a_km) / expected_delta_a_km
+    assert rel_diff < 1.0e-4
+    assert pytest.approx(sim_delta_a_km, rel=1.0e-4) == expected_delta_a_km
+

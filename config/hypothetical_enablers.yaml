@@ -2,39 +2,42 @@
 #
 # Constraints and schema rules:
 # - At most 3 declared enablers allowed across the entire mission.
-# - Each entry specifies id, name, relaxes (threshold keys), value, justification, and sources.
+# - Each entry specifies id, name, relaxes (threshold keys), value (with units), efficiency, justification, and sources.
 # - Any raised flag in FlagRegistry not attributed to a declared enabler fails the run.
 
 enablers:
   - id: "E1"
-    name: "Near-Sun Beamed Power Link"
+    name: "Near-Sun Beamed Power Link (power)"
     relaxes:
-      - "power.max_power_w"
       - "power.beam_power_w"
-    value: 1.096e25
+    value: "1.096e25 W"
+    units: "W"
+    efficiency: "1.00 (coherent phased-array power transmission)"
     justification: "Near-Sun Dyson swarm collector capturing ~2.85% L_sun and beaming 1.096e25 W to the standoff tug via coherent laser/microwave array."
     sources:
-      - "docs/specification.md"
-      - "docs/decision_gate_evaluation.md"
+      - "team estimate (Dyson swarm ~2.85% solar luminosity collector at 0.05 AU)"
+      - "docs/specification.md Section 2"
 
   - id: "E2"
-    name: "Relativistic Drive & Belt Supply Pipeline"
+    name: "Asteroid Relocation & Mining Pipeline (asteroid and material)"
     relaxes:
-      - "propulsion.max_exhaust_velocity_m_s"
       - "propulsion.reaction_mass_resupply_kg"
-    value: 7.511e20
-    justification: "Automated asteroid belt extraction pipeline supplying 7.51e20 kg reaction mass to 0.3c relativistic plasma drive."
+    value: "7.511e20 kg"
+    units: "kg"
+    efficiency: "1.00 (continuous automated belt mass resupply pipeline)"
+    justification: "Relocation of Ceres-class asteroid to Earth standoff position and continuous automated reaction-mass extraction pipeline supplying 7.511e20 kg total."
     sources:
-      - "docs/specification.md"
-      - "docs/feasibility_corrections.md"
+      - "team estimate (automated asteroid-belt continuous reaction-mass pipeline)"
+      - "docs/feasibility_corrections.md Section 5"
 
   - id: "E3"
-    name: "Deep-Space Radiative Shield & L1 Climate Mirror"
+    name: "Relativistic Plasma Exhaust Accelerator (exhaust accelerator)"
     relaxes:
-      - "earth_safety.thermal_shield_attenuation"
-      - "earth_safety.min_insolation_w_m2"
-    value: 150.0
-    justification: "Active shadow shield maintaining 1.0e-5 thermal attenuation and off-axis L1 solar concentrator maintaining 1 AU solar constant insolation on Earth out to 2.7 AU."
+      - "propulsion.max_exhaust_velocity_m_s"
+    value: "89937737.4 m/s"
+    units: "m/s"
+    efficiency: "0.99 (magnetic nozzle and relativistic ion accelerator)"
+    justification: "0.3c relativistic ion/plasma accelerator driving 2.501e9 kg/s reaction mass at Lorentz gamma = 1.0483."
     sources:
-      - "docs/specification.md"
-      - "docs/decision_gate_evaluation.md"
+      - "team estimate (0.3c relativistic magnetoplasmadynamic / ion accelerator)"
+      - "docs/specification.md Section 2"

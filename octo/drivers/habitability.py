@@ -8,6 +8,7 @@ Habitability and safety contracts:
 - Exhaust and thermal safety: Asserts out-of-ecliptic plume clearance and surface waste heat flux limits.
 """
 
+import copy
 import math
 from typing import Any
 import numpy as np
@@ -19,9 +20,42 @@ from octo.core.state import State
 from octo.core.thresholds import get_threshold_value, load_thresholds
 
 
+def compute_mirror_reflected_flux(
+    orbit_radius_m: float,
+    mirror_config: dict[str, Any] | None = None,
+) -> float:
+    """Compute additional reflected solar flux on Earth from the climate mirror [W/m^2].
+
+    Geometry:
+    - Position: Earth-Sun L1 point (sub-solar point towards Sun, r_mirror = r - d_L1).
+    - Solar flux at mirror: S_mirror = S_0 * (AU / r_mirror)^2.
+    - Intercepted and reflected power: P_refl = S_mirror * area_m2 * reflectivity * cos(orientation_deg).
+    - Distributed over Earth cross-sectional disk: S_added = P_refl / (pi * R_earth^2).
+    """
+    if not mirror_config or not mirror_config.get("active", True):
+        return 0.0
+
+    area_m2 = float(mirror_config.get("area_m2", 8.44e14))
+    reflectivity = float(mirror_config.get("reflectivity", 0.95))
+    orient_deg = float(mirror_config.get("orientation_deg", 0.0))
+    cos_orient = max(0.0, math.cos(math.radians(orient_deg)))
+
+    r = float(orbit_radius_m)
+    # L1 standoff distance: d_L1 ~ r * (M_earth / (3 * M_sun))^(1/3)
+    m_ratio = constants.M_EARTH / (3.0 * (constants.GM_SUN / constants.G))
+    d_l1 = r * (m_ratio ** (1.0 / 3.0))
+    r_mirror = max(r / 2.0, r - d_l1)
+
+    s_at_mirror = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_mirror) ** 2)
+    p_reflected = s_at_mirror * area_m2 * reflectivity * cos_orient
+    earth_disk_area = math.pi * (constants.R_EARTH ** 2)
+    return float(p_reflected / earth_disk_area)
+
+
 def compute_insolation(
     orbit_radius_m: float,
-    mirror_active: bool = False,
+    mirror_active: bool = True,
+    mirror_config: dict[str, Any] | None = None,
     mirror_gain: float | None = None,
 ) -> float:
     """Compute effective solar irradiance at a given heliocentric distance in W/m^2."""
@@ -29,11 +63,28 @@ def compute_insolation(
     if r <= 0.0:
         raise ValueError("orbit_radius_m must be strictly positive.")
     s_raw = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r) ** 2)
-    if mirror_active:
-        if mirror_gain is not None:
-            return s_raw * float(mirror_gain)
-        return max(s_raw, constants.SOLAR_CONSTANT_1AU)
-    return s_raw
+    if not mirror_active:
+        return s_raw
+
+    if mirror_gain is not None:
+        return s_raw * float(mirror_gain)
+
+    cfg = mirror_config
+    if cfg is None:
+        cfg = {
+            "active": True,
+            "area_m2": 8.44e14,
+            "reflectivity": 0.95,
+            "orientation_deg": 0.0,
+        }
+    elif not cfg.get("active", True):
+        return s_raw
+
+    s_added = compute_mirror_reflected_flux(r, cfg)
+    s_total = s_raw + s_added
+
+    # The mirror tracking controller trims tilt/focus so total insolation does not exceed 1 AU nominal
+    return min(s_total, constants.SOLAR_CONSTANT_1AU)
 
 
 def compute_equilibrium_temperature(
@@ -106,10 +157,23 @@ class HabitabilityDriver:
         else:
             self.thresholds = load_thresholds()
 
-        self.l1_mirror_active = bool(self.config.get("l1_mirror_active", True))
+        self.mirror_config = copy.deepcopy(self.config.get("climate_mirror", {}))
+        if "active" not in self.mirror_config and "l1_mirror_active" in self.config:
+            self.mirror_config["active"] = bool(self.config["l1_mirror_active"])
+        elif "active" not in self.mirror_config:
+            self.mirror_config["active"] = True
+
         self.flags: list[Flag] = []
         self._prev_earth_velocity: np.ndarray | None = None
         self._prev_earth_acceleration: np.ndarray | None = None
+
+    @property
+    def l1_mirror_active(self) -> bool:
+        return bool(self.mirror_config.get("active", True))
+
+    @l1_mirror_active.setter
+    def l1_mirror_active(self, val: bool) -> None:
+        self.mirror_config["active"] = bool(val)
 
     def evaluate(self, dt: float) -> list[Flag]:
         """Evaluate habitability and physical safety limits on the current state."""
@@ -124,7 +188,12 @@ class HabitabilityDriver:
         r_earth = float(np.linalg.norm(r_earth_vec))
 
         # 1. Insolation
-        s = compute_insolation(r_earth, mirror_active=self.l1_mirror_active)
+        is_mirror_active = bool(self.mirror_config.get("active", True))
+        s = compute_insolation(
+            r_earth,
+            mirror_active=is_mirror_active,
+            mirror_config=self.mirror_config,
+        )
         min_s = float(get_threshold_value(self.thresholds, "earth_safety", "min_insolation_w_m2"))
         max_s = float(get_threshold_value(self.thresholds, "earth_safety", "max_insolation_w_m2"))
         if s < min_s:

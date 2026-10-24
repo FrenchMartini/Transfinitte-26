@@ -48,6 +48,8 @@ class HypotheticalEnabler:
     value: float
     justification: str
     sources: tuple[str, ...]
+    units: str = ""
+    efficiency: str = ""
 
 
 class FlagRegistry:
@@ -55,7 +57,11 @@ class FlagRegistry:
 
     MAX_ENABLERS = 3
 
-    def __init__(self, enablers_data: dict[str, Any] | list[Any] | tuple[Any, ...] | None = None) -> None:
+    def __init__(
+        self,
+        enablers_data: dict[str, Any] | list[Any] | tuple[Any, ...] | None = None,
+        thresholds: dict[str, Any] | None = None,
+    ) -> None:
         raw_list: list[Any] = []
         if enablers_data is None:
             raw_list = []
@@ -73,6 +79,15 @@ class FlagRegistry:
                 f"At most {self.MAX_ENABLERS} hypothetical enablers are allowed; got {len(raw_list)}."
             )
 
+        # Build valid threshold keys if thresholds are provided
+        valid_threshold_keys: set[str] | None = None
+        if thresholds is not None:
+            valid_threshold_keys = set()
+            for cat, entries in thresholds.items():
+                if isinstance(entries, dict):
+                    for k in entries.keys():
+                        valid_threshold_keys.add(f"{cat}.{k}")
+
         self._enablers: list[HypotheticalEnabler] = []
         seen_ids: set[str] = set()
         for item in raw_list:
@@ -80,6 +95,12 @@ class FlagRegistry:
                 if item.id in seen_ids:
                     raise EnablerValidationError(f"Duplicate enabler id {item.id!r}.")
                 seen_ids.add(item.id)
+                if valid_threshold_keys is not None:
+                    for q in item.relaxes:
+                        if q not in valid_threshold_keys:
+                            raise EnablerValidationError(
+                                f"Enabler '{item.id}' relaxes unknown threshold key '{q}' not found in rulebook_thresholds.yaml."
+                            )
                 self._enablers.append(item)
                 continue
             if not isinstance(item, dict):
@@ -95,25 +116,65 @@ class FlagRegistry:
             seen_ids.add(enabler_id)
             if not isinstance(item["relaxes"], list) or not item["relaxes"]:
                 raise EnablerValidationError(f"Enabler '{enabler_id}' field 'relaxes' must be a non-empty list.")
+
+            relaxes_tuple = tuple(str(q) for q in item["relaxes"])
+            if valid_threshold_keys is not None:
+                for q in relaxes_tuple:
+                    if q not in valid_threshold_keys:
+                        raise EnablerValidationError(
+                            f"Enabler '{enabler_id}' relaxes unknown threshold key '{q}' not found in rulebook_thresholds.yaml."
+                        )
+
+            # Parse numeric value and units
+            val_raw = item["value"]
+            units_field = str(item.get("units", "")).strip()
+            if isinstance(val_raw, (int, float)):
+                num_val = float(val_raw)
+                val_units = units_field
+            elif isinstance(val_raw, str):
+                parts = val_raw.strip().split(maxsplit=1)
+                try:
+                    num_val = float(parts[0])
+                    val_units = units_field or (parts[1] if len(parts) > 1 else "")
+                except ValueError:
+                    raise EnablerValidationError(
+                        f"Enabler '{enabler_id}' value {val_raw!r} cannot be parsed as numeric."
+                    )
+            else:
+                raise EnablerValidationError(
+                    f"Enabler '{enabler_id}' value must be numeric or string with units."
+                )
+
+            efficiency_field = str(item.get("efficiency", "")).strip()
+
             self._enablers.append(
                 HypotheticalEnabler(
                     id=enabler_id,
                     name=str(item["name"]),
-                    relaxes=tuple(str(q) for q in item["relaxes"]),
-                    value=float(item["value"]),
+                    relaxes=relaxes_tuple,
+                    value=num_val,
                     justification=str(item["justification"]),
                     sources=tuple(str(s) for s in item["sources"]),
+                    units=val_units,
+                    efficiency=efficiency_field,
                 )
             )
 
         self._flags: list[Flag] = []
 
     @classmethod
-    def from_yaml(cls, path: str | Path) -> "FlagRegistry":
-        """Load hypothetical_enablers.yaml and return a FlagRegistry."""
+    def from_yaml(
+        cls,
+        path: str | Path,
+        thresholds: dict[str, Any] | None = None,
+    ) -> "FlagRegistry":
+        """Load hypothetical_enablers.yaml, verify every relaxes key against thresholds, and return a FlagRegistry."""
         p = Path(path)
         data = yaml.safe_load(p.read_text())
-        return cls(data)
+        if thresholds is None:
+            from octo.core.thresholds import load_thresholds
+            thresholds = load_thresholds()
+        return cls(data, thresholds=thresholds)
 
     @property
     def enablers(self) -> tuple[HypotheticalEnabler, ...]:
