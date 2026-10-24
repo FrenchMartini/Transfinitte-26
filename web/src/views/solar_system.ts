@@ -16,6 +16,14 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { SimulationFrame } from '../types';
 import { eclipticToScene } from '../coords';
 import { interpolateFrame } from '../interpolation';
+import { createDeepSpaceMaterial } from '../shaders/deep_space';
+import {
+  createSunPlasmaMaterial,
+  createSunHotCoreMaterial,
+  createSunOuterPlasmaMaterial,
+  createSunCoronaMaterial,
+  createSunCoronaGlowMaterial
+} from '../shaders/sun_plasma';
 import {
   SCENE_SCALE_AU,
   TARGET_ORBIT_AU,
@@ -58,6 +66,14 @@ const JUPITER_PERIOD_YR = 11.862;
 const SATURN_ORBIT_AU = 9.582;
 const SATURN_PERIOD_YR = 29.457;
 
+const URANUS_ORBIT_AU = 19.191;
+const URANUS_PERIOD_YR = 84.01;
+const URANUS_ROTATION_PERIOD_SECONDS = -17.24 * 3600;
+
+const NEPTUNE_ORBIT_AU = 30.07;
+const NEPTUNE_PERIOD_YR = 164.79;
+const NEPTUNE_ROTATION_PERIOD_SECONDS = 16.11 * 3600;
+
 const MAX_TRAIL_POINTS = 3000;
 
 // Deterministic PRNG (Mulberry32) for reproducible asteroid belt generation
@@ -71,232 +87,98 @@ function mulberry32(a: number) {
 }
 
 const textureLoader = typeof document !== 'undefined' ? new THREE.TextureLoader() : null;
+const textureCache = new Map<string, THREE.Texture>();
 
 function loadTexture(url: string, fallbackTexture: THREE.Texture | null = null): THREE.Texture | null {
   if (!textureLoader || typeof document === 'undefined') return fallbackTexture;
+  if (textureCache.has(url)) return textureCache.get(url)!;
   try {
-    const tex = textureLoader.load(url, undefined, undefined, () => {
-      // Graceful fallback if texture fails to load
-    });
+    const tex = textureLoader.load(
+      url,
+      (loadedTex) => {
+        loadedTex.colorSpace = THREE.SRGBColorSpace;
+        loadedTex.generateMipmaps = true;
+        loadedTex.minFilter = THREE.LinearMipmapLinearFilter;
+        loadedTex.magFilter = THREE.LinearFilter;
+        loadedTex.needsUpdate = true;
+      },
+      undefined,
+      (err) => {
+        console.warn('Failed to load texture:', url, err);
+      }
+    );
     tex.colorSpace = THREE.SRGBColorSpace;
+    textureCache.set(url, tex);
     return tex;
   } catch {
     return fallbackTexture;
   }
 }
 
-function createEarthTexture(): THREE.CanvasTexture | null {
-  if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
+function createSaturnRingMesh(saturnRadius: number = 0.65): THREE.Mesh {
+  const innerR = saturnRadius * 1.25;
+  const outerR = saturnRadius * 2.38;
+  const ringGeo = new THREE.RingGeometry(innerR, outerR, 128, 16);
 
-  // Rich layered ocean gradient
-  const oceanGrad = ctx.createLinearGradient(0, 0, 0, 256);
-  oceanGrad.addColorStop(0.0, '#0a2342');
-  oceanGrad.addColorStop(0.2, '#124574');
-  oceanGrad.addColorStop(0.5, '#195e99');
-  oceanGrad.addColorStop(0.8, '#124574');
-  oceanGrad.addColorStop(1.0, '#0a2342');
-  ctx.fillStyle = oceanGrad;
-  ctx.fillRect(0, 0, 512, 256);
+  // Remap UV coordinates radially so u represents radial distance across the ring
+  const pos = ringGeo.attributes.position;
+  const uv = ringGeo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const r = Math.sqrt(x * x + y * y);
+    const u = (r - innerR) / (outerR - innerR);
+    uv.setXY(i, u, 0.5);
+  }
+  uv.needsUpdate = true;
 
-  // Continental landmasses
-  const prng = mulberry32(777);
-  ctx.fillStyle = '#2b6e4e'; // Verdant temperate continents
-  for (let i = 0; i < 48; i++) {
-    const cx = prng() * 512;
-    const cy = 40 + prng() * 175;
-    const rw = 16 + prng() * 48;
-    const rh = 10 + prng() * 32;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, rw, rh, prng() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Arid desert interior
-    if (prng() > 0.45) {
-      ctx.fillStyle = '#c5a059';
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, rw * 0.42, rh * 0.42, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#2b6e4e';
-    }
+  const ringTex = loadTexture('/textures/saturn_ring.png');
+  if (ringTex) {
+    ringTex.wrapS = THREE.ClampToEdgeWrapping;
+    ringTex.wrapT = THREE.ClampToEdgeWrapping;
   }
 
-  // Polar Ice Caps (North and South poles)
-  ctx.fillStyle = '#f8fafc';
-  ctx.beginPath();
-  ctx.ellipse(256, 8, 256, 14, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(256, 248, 256, 14, 0, 0, Math.PI * 2);
-  ctx.fill();
+  const ringMat = new THREE.MeshStandardMaterial({
+    ...(ringTex ? { map: ringTex } : { color: 0xd4af37 }),
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.96,
+    roughness: 0.80,
+    metalness: 0.05,
+    depthTest: true,
+    depthWrite: false
+  });
 
-  // Swirling atmospheric white clouds
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.32)';
-  for (let i = 0; i < 35; i++) {
-    const cx = prng() * 512;
-    const cy = 25 + prng() * 206;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, 35 + prng() * 65, 6 + prng() * 10, 0.15, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  return texture;
+  const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+  ringMesh.name = 'saturnRing';
+  ringMesh.rotation.x = Math.PI / 2;
+  ringMesh.castShadow = true;
+  ringMesh.receiveShadow = true;
+  return ringMesh;
 }
 
-function createMarsTexture(): THREE.CanvasTexture | null {
-  if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
+function createUranusRingMesh(uranusRadius: number = 0.45): THREE.Mesh {
+  const innerR = uranusRadius * 1.40;
+  const outerR = uranusRadius * 1.85;
+  const ringGeo = new THREE.RingGeometry(innerR, outerR, 96, 4);
 
-  // Martian rust-red gradient
-  const baseGrad = ctx.createLinearGradient(0, 0, 0, 256);
-  baseGrad.addColorStop(0.0, '#a33917');
-  baseGrad.addColorStop(0.5, '#c95125');
-  baseGrad.addColorStop(1.0, '#a33917');
-  ctx.fillStyle = baseGrad;
-  ctx.fillRect(0, 0, 512, 256);
+  const ringMat = new THREE.MeshStandardMaterial({
+    color: 0xa5f3fc,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.28,
+    roughness: 0.70,
+    metalness: 0.20,
+    depthTest: true,
+    depthWrite: false
+  });
 
-  // Dark volcanic basalt maria (Syrtis Major, Acidalia Planitia)
-  const prng = mulberry32(888);
-  ctx.fillStyle = 'rgba(70, 22, 10, 0.45)';
-  for (let i = 0; i < 30; i++) {
-    const cx = prng() * 512;
-    const cy = 50 + prng() * 156;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, 25 + prng() * 55, 12 + prng() * 28, prng() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Brilliant North & South Polar Ice Caps
-  ctx.fillStyle = '#f8fafc';
-  ctx.beginPath();
-  ctx.ellipse(256, 6, 80, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(256, 250, 65, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  return texture;
-}
-
-function createJupiterTexture(): THREE.CanvasTexture | null {
-  if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-
-  const bands = [
-    { pos: 0.00, color: '#f5ede3' },
-    { pos: 0.10, color: '#c49a6c' },
-    { pos: 0.20, color: '#ecdcc8' },
-    { pos: 0.32, color: '#9c5333' },
-    { pos: 0.44, color: '#f7ede2' },
-    { pos: 0.52, color: '#e8af67' },
-    { pos: 0.60, color: '#8b3d22' },
-    { pos: 0.70, color: '#f2e7d5' },
-    { pos: 0.80, color: '#b06d48' },
-    { pos: 0.90, color: '#e2d5c3' },
-    { pos: 1.00, color: '#c29a75' }
-  ];
-
-  const gradient = ctx.createLinearGradient(0, 0, 0, 256);
-  bands.forEach((b) => gradient.addColorStop(b.pos, b.color));
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 512, 256);
-
-  // Subtle turbulent cloud noise bands
-  const prng = mulberry32(101);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-  for (let y = 8; y < 248; y += 4) {
-    ctx.fillRect(0, y, 512, 2 + prng() * 3);
-  }
-  ctx.fillStyle = 'rgba(80, 30, 15, 0.09)';
-  for (let y = 14; y < 242; y += 6) {
-    ctx.fillRect(0, y, 512, 2 + prng() * 3);
-  }
-
-  // Great Red Spot in the South Tropical Zone
-  ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(320, 158, 26, 15, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#b84328';
-  ctx.fill();
-  ctx.restore();
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  return texture;
-}
-
-function createSunPhotosphereTexture(): THREE.CanvasTexture | null {
-  if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 512;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-
-  // Luminous radial/spherical convection gradient (deep incandescent orange to radiant white-gold)
-  const grad = ctx.createLinearGradient(0, 0, 0, 512);
-  grad.addColorStop(0.0, '#d94b00');
-  grad.addColorStop(0.15, '#ff8000');
-  grad.addColorStop(0.5, '#ffd159');
-  grad.addColorStop(0.85, '#ff8000');
-  grad.addColorStop(1.0, '#d94b00');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 1024, 512);
-
-  // High-frequency convective granulation cells
-  const prng = mulberry32(555);
-  ctx.fillStyle = 'rgba(255, 245, 180, 0.20)';
-  for (let i = 0; i < 600; i++) {
-    const cx = prng() * 1024;
-    const cy = prng() * 512;
-    const r = 3 + prng() * 12;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Active region magnetic sunspot clusters (Northern & Southern active bands)
-  const sunspotBands = [185, 325];
-  for (const bandY of sunspotBands) {
-    for (let s = 0; s < 7; s++) {
-      const cx = (s * 150 + 60 + prng() * 50) % 1024;
-      const cy = bandY + (prng() - 0.5) * 45;
-      // Penumbra halo
-      ctx.fillStyle = 'rgba(168, 65, 14, 0.75)';
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, 14 + prng() * 10, 8 + prng() * 6, prng() * Math.PI, 0, Math.PI * 2);
-      ctx.fill();
-      // Umbra core
-      ctx.fillStyle = '#220800';
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, 6 + prng() * 4, 3.5 + prng() * 2.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  return texture;
+  const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+  ringMesh.name = 'uranusRing';
+  ringMesh.rotation.x = Math.PI / 2;
+  ringMesh.castShadow = false;
+  ringMesh.receiveShadow = true;
+  return ringMesh;
 }
 
 export class SolarSystemView {
@@ -309,18 +191,17 @@ export class SolarSystemView {
   private asteroidBeltMesh: THREE.InstancedMesh | null = null;
   private ceresMarker: THREE.Mesh | null = null;
   private cosmicNebulaPoints: THREE.Points | null = null;
+  private deepSpaceMesh: THREE.Mesh | null = null;
+  // Sun Visual Layers (Matching akshuvo101/3d-solar-system-visualizer)
+  private sunCoreMesh: THREE.Mesh | null = null;
+  private sunPlasmaMaterial: THREE.ShaderMaterial | null = null;
+  private sunHotCoreMesh: THREE.Mesh | null = null;
+  private sunOuterMesh: THREE.Mesh | null = null;
+  private sunCoronaMaterial: THREE.ShaderMaterial | null = null;
+  private sunCoronaGlowMaterial: THREE.ShaderMaterial | null = null;
 
   // Luminous Orbit Trajectories Group (Toggleable)
   public orbitsGroup: THREE.Group = new THREE.Group();
-
-  // Dynamic Magnetic Prominence Loops and Solar Flares
-  private solarProminences: {
-    mesh: THREE.Mesh;
-    mat: THREE.MeshBasicMaterial;
-    baseOpacity: number;
-    phase: number;
-    speed: number;
-  }[] = [];
 
   // Prominent Ceres Tug & Thrusters
   private tugGroup: THREE.Group | null = null;
@@ -339,6 +220,7 @@ export class SolarSystemView {
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private pointer: THREE.Vector2 = new THREE.Vector2();
   public onFocusChange?: (targetName: string, displayName: string) => void;
+  public onBodySelected?: (bodyName: string) => void;
 
   // Dynamic Traversed Trail (drawn only behind Earth as it traverses)
   private trailLine: THREE.Line | null = null;
@@ -351,12 +233,11 @@ export class SolarSystemView {
     this.scene = new THREE.Scene();
 
     const aspect = container.clientWidth / container.clientHeight;
-    this.camera = new THREE.PerspectiveCamera(45, aspect, 0.01, 5000);
+    this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 4000);
     this.camera.position.set(0, 72, 72); // Comfortable framing showing all planets out to Jupiter/Saturn
 
     let renderer: THREE.WebGLRenderer | null = null;
     const configs: THREE.WebGLRendererParameters[] = [
-      { antialias: true, logarithmicDepthBuffer: true, powerPreference: 'default' },
       { antialias: true, logarithmicDepthBuffer: false, powerPreference: 'default' },
       { antialias: false, logarithmicDepthBuffer: false }
     ];
@@ -377,6 +258,8 @@ export class SolarSystemView {
 
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(this.renderer.domElement);
 
     this.renderer.domElement.addEventListener('webglcontextlost', (e) => {
@@ -426,14 +309,21 @@ export class SolarSystemView {
   };
 
   private setupLighting(): void {
-    // 1. Natural, gentle omnidirectional ambient space fill (eliminates pitch-black shadows)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.70);
+    // 1. Physically authentic deep-space ambient fill (22% starlight fill)
+    // Ensures that the hemisphere facing away from the Sun is naturally in night shadow,
+    // while terrain and atmospheric silhouettes remain discernible without black voids.
+    const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.22);
     this.scene.add(ambientLight);
 
-    // 2. Primary Sun illumination radiating from the central solar body at (0, 0, 0)
-    // NOTE: Removed camera flashlight headlight to eliminate artificial specular glare on Earth!
-    const sunLight = new THREE.PointLight(0xfffaec, 4.5, 0, 0.0);
+    // 2. Primary omnidirectional solar point light radiating radially from Sun at (0, 0, 0)
+    // Powers daytime illumination on the sun-facing side of all planetary bodies.
+    const sunLight = new THREE.PointLight(0xfff8ea, 18.0, 0, 0.0);
     sunLight.position.set(0, 0, 0);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.bias = -0.0002;
+    sunLight.shadow.radius = 2;
     this.scene.add(sunLight);
   }
 
@@ -472,11 +362,13 @@ export class SolarSystemView {
       size: 1.8,
       vertexColors: true,
       sizeAttenuation: false,
-      transparent: true,
-      opacity: 0.85
+      transparent: false,
+      depthTest: true,
+      depthWrite: false
     });
 
     const starfield = new THREE.Points(geometry, material);
+    starfield.renderOrder = -10;
     this.scene.add(starfield);
 
     // Deep space luminous cosmic nebula clouds
@@ -515,11 +407,24 @@ export class SolarSystemView {
       sizeAttenuation: true,
       transparent: true,
       opacity: 0.35,
-      blending: THREE.AdditiveBlending
+      blending: THREE.AdditiveBlending,
+      depthTest: true,
+      depthWrite: false
     });
 
     this.cosmicNebulaPoints = new THREE.Points(nebGeo, nebMat);
+    this.cosmicNebulaPoints.renderOrder = -9;
     this.scene.add(this.cosmicNebulaPoints);
+
+    // Procedural deep space cosmic nebula background sphere
+    try {
+      const deepSpaceGeo = new THREE.SphereGeometry(2500, 32, 32);
+      const deepSpaceMat = createDeepSpaceMaterial();
+      this.deepSpaceMesh = new THREE.Mesh(deepSpaceGeo, deepSpaceMat);
+      this.scene.add(this.deepSpaceMesh);
+    } catch (e) {
+      console.warn('Deep space procedural shader fallback:', e);
+    }
   }
 
   /**
@@ -590,6 +495,7 @@ export class SolarSystemView {
 
       if (targetName) {
         this.setCameraFocus(targetName);
+        if (this.onBodySelected) this.onBodySelected(targetName);
         return;
       }
     }
@@ -635,9 +541,11 @@ export class SolarSystemView {
       side: THREE.DoubleSide,
       transparent: true,
       opacity: opacity,
+      depthTest: true,
       depthWrite: false
     });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.renderOrder = 0;
     ringMesh.rotation.x = Math.PI / 2; // Lie flat in X-Z ecliptic plane
     group.add(ringMesh);
 
@@ -678,6 +586,14 @@ export class SolarSystemView {
     // 8. Saturn Orbit (9.582 AU) - Continuous solid golden-ochre ribbon
     const saturnRing = this.createLuminousOrbitRing(SATURN_ORBIT_AU, 0xeab308, 0.26, 0.022);
     this.orbitsGroup.add(saturnRing);
+
+    // 9. Uranus Orbit (19.191 AU) - Soft pale cyan ribbon
+    const uranusRing = this.createLuminousOrbitRing(URANUS_ORBIT_AU, 0x7dd3fc, 0.22, 0.025);
+    this.orbitsGroup.add(uranusRing);
+
+    // 10. Neptune Orbit (30.07 AU) - Rich royal azure ribbon
+    const neptuneRing = this.createLuminousOrbitRing(NEPTUNE_ORBIT_AU, 0x3b82f6, 0.20, 0.028);
+    this.orbitsGroup.add(neptuneRing);
 
     this.scene.add(this.orbitsGroup);
   }
@@ -851,6 +767,13 @@ export class SolarSystemView {
     ringMesh.rotation.x = Math.PI / 2;
     this.tugGroup.add(ringMesh);
 
+    this.tugGroup.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+      }
+    });
+
     this.scene.add(this.tugGroup);
 
     // 6. Gravitational Towline (Earth to Ceres Tug)
@@ -941,160 +864,137 @@ export class SolarSystemView {
 
     if (name === 'Sun') {
       const sunGroup = new THREE.Group();
-      geometry = new THREE.SphereGeometry(1.0, 48, 48);
-      const sunTex = loadTexture('/textures/sun.jpg', createSunPhotosphereTexture());
-      const material = new THREE.MeshBasicMaterial(
-        sunTex ? { map: sunTex } : { color: 0xfffae0 }
-      );
-      const sunCoreMesh = new THREE.Mesh(geometry, material);
-      sunCoreMesh.name = 'sunCore';
-      sunGroup.add(sunCoreMesh);
 
-      // Subtle chromospheric limb rim (thin edge darkening, NO blinding fuzzy glow ball)
-      const chromoGeo = new THREE.SphereGeometry(1.012, 36, 36);
-      const chromoMat = new THREE.MeshBasicMaterial({
-        color: 0xff7700,
-        transparent: true,
-        opacity: 0.28,
-        side: THREE.BackSide,
-        depthWrite: false
-      });
-      sunGroup.add(new THREE.Mesh(chromoGeo, chromoMat));
+      // 1. Core Solar Plasma Surface (exact 3D FBM + active magnetic regions from reference repo)
+      geometry = new THREE.SphereGeometry(1.0, 64, 64);
+      this.sunPlasmaMaterial = createSunPlasmaMaterial();
+      this.sunCoreMesh = new THREE.Mesh(geometry, this.sunPlasmaMaterial);
+      this.sunCoreMesh.name = 'sunCore';
+      this.sunCoreMesh.renderOrder = 1;
+      sunGroup.add(this.sunCoreMesh);
 
-      // Realistic 3D Magnetic Prominence Loops / Coronal Arches
-      // Modeled after NASA SDO/AIA 304 Angstrom magnetic loops anchored on the solar photosphere
-      this.solarProminences = [];
-      const prng = mulberry32(404);
-      const loopCount = 12;
+      // 2. Hot Inner Energy Shell (radius 4.48 / 5.45 = 0.822)
+      const hotCoreGeo = new THREE.SphereGeometry(0.822, 48, 48);
+      const hotCoreMat = createSunHotCoreMaterial();
+      this.sunHotCoreMesh = new THREE.Mesh(hotCoreGeo, hotCoreMat);
+      this.sunHotCoreMesh.name = 'sunHotCore';
+      sunGroup.add(this.sunHotCoreMesh);
 
-      for (let i = 0; i < loopCount; i++) {
-        const theta1 = (i / loopCount) * Math.PI * 2 + (prng() - 0.5) * 0.2;
-        const phi = (prng() - 0.5) * 1.0; // within active sunspot latitudes (±30°)
-        const dTheta = 0.15 + prng() * 0.18; // span of the loop
-        const theta2 = theta1 + dTheta;
+      // 3. Outer Plasma Shell (radius 4.72 / 5.45 = 0.866)
+      const outerGeo = new THREE.SphereGeometry(0.866, 32, 32);
+      const outerMat = createSunOuterPlasmaMaterial();
+      this.sunOuterMesh = new THREE.Mesh(outerGeo, outerMat);
+      this.sunOuterMesh.name = 'sunOuter';
+      sunGroup.add(this.sunOuterMesh);
 
-        const p0 = new THREE.Vector3(
-          Math.cos(phi) * Math.cos(theta1),
-          Math.sin(phi),
-          Math.cos(phi) * Math.sin(theta1)
-        ).normalize();
+      // 4. Dynamic Turbulent Corona (radius 6.05 / 5.45 = 1.110)
+      const coronaGeo = new THREE.SphereGeometry(1.110, 64, 64);
+      this.sunCoronaMaterial = createSunCoronaMaterial();
+      const coronaMesh = new THREE.Mesh(coronaGeo, this.sunCoronaMaterial);
+      coronaMesh.name = 'sunCorona';
+      sunGroup.add(coronaMesh);
 
-        const p2 = new THREE.Vector3(
-          Math.cos(phi) * Math.cos(theta2),
-          Math.sin(phi + (prng() - 0.5) * 0.1),
-          Math.cos(phi) * Math.sin(theta2)
-        ).normalize();
-
-        // Apex loops out into space
-        const apexHeight = 1.10 + prng() * 0.18; // 1.10 to 1.28 solar radii
-        const apex = p0.clone().add(p2).multiplyScalar(0.5).normalize().multiplyScalar(apexHeight);
-        apex.y += (prng() - 0.5) * 0.12; // Helical magnetic twist
-
-        const curve = new THREE.QuadraticBezierCurve3(p0, apex, p2);
-        const tubeRadius = 0.010 + prng() * 0.008;
-        const tubeGeo = new THREE.TubeGeometry(curve, 20, tubeRadius, 6, false);
-
-        const flameColors = [0xff3300, 0xff5500, 0xff7700, 0xff9900, 0xffaa11];
-        const col = flameColors[Math.floor(prng() * flameColors.length)];
-        const tubeMat = new THREE.MeshBasicMaterial({
-          color: col,
-          transparent: true,
-          opacity: 0.80,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false
-        });
-
-        const loopMesh = new THREE.Mesh(tubeGeo, tubeMat);
-        sunGroup.add(loopMesh);
-
-        this.solarProminences.push({
-          mesh: loopMesh,
-          mat: tubeMat,
-          baseOpacity: 0.75 + prng() * 0.20,
-          phase: prng() * Math.PI * 2,
-          speed: 1.5 + prng() * 2.0
-        });
-      }
-
-      // 4 Dynamic Solar Flare Eruption Spikes on the solar limb
-      for (let f = 0; f < 4; f++) {
-        const flareAngle = (f / 4) * Math.PI * 2 + 0.35;
-        const flareDir = new THREE.Vector3(Math.cos(flareAngle), (prng() - 0.5) * 0.4, Math.sin(flareAngle)).normalize();
-
-        const spikeGeo = new THREE.ConeGeometry(0.045, 0.26, 12, 1, true);
-        spikeGeo.translate(0, 0.13, 0);
-        const spikeMat = new THREE.MeshBasicMaterial({
-          color: 0xff4500,
-          transparent: true,
-          opacity: 0.70,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-          side: THREE.DoubleSide
-        });
-        const spikeMesh = new THREE.Mesh(spikeGeo, spikeMat);
-        spikeMesh.position.copy(flareDir.clone().multiplyScalar(1.0));
-        spikeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), flareDir);
-        sunGroup.add(spikeMesh);
-
-        this.solarProminences.push({
-          mesh: spikeMesh,
-          mat: spikeMat,
-          baseOpacity: 0.65,
-          phase: f * 1.5,
-          speed: 3.0
-        });
-      }
+      // 5. Soft Outer Corona Glow (radius 6.35 / 5.45 = 1.165)
+      const coronaGlowGeo = new THREE.SphereGeometry(1.165, 48, 48);
+      this.sunCoronaGlowMaterial = createSunCoronaGlowMaterial();
+      const coronaGlowMesh = new THREE.Mesh(coronaGlowGeo, this.sunCoronaGlowMaterial);
+      coronaGlowMesh.name = 'sunCoronaGlow';
+      sunGroup.add(coronaGlowMesh);
 
       mesh = sunGroup;
     } else if (name === 'Mercury') {
-      geometry = new THREE.SphereGeometry(0.22, 32, 32);
-      const mercTex = loadTexture('/textures/mercury.jpg');
+      geometry = new THREE.SphereGeometry(0.22, 48, 48);
+      const tex = loadTexture('/textures/mercury.jpeg');
       const material = new THREE.MeshStandardMaterial({
-        ...(mercTex ? { map: mercTex } : { color: 0xc4c7cc }),
-        roughness: 0.85,
-        metalness: 0.1
-      });
-      mesh = new THREE.Mesh(geometry, material);
-    } else if (name === 'Venus') {
-      geometry = new THREE.SphereGeometry(0.34, 32, 32);
-      const venusTex = loadTexture('/textures/venus.jpg');
-      const material = new THREE.MeshStandardMaterial({
-        ...(venusTex ? { map: venusTex } : { color: 0xfff0b3 }),
-        roughness: 0.45,
+        ...(tex ? { map: tex } : {}),
+        color: tex ? 0xffffff : 0x94a3b8,
+        roughness: 0.90,
         metalness: 0.05
       });
+      material.transparent = false;
+      material.depthTest = true;
+      material.depthWrite = true;
       mesh = new THREE.Mesh(geometry, material);
-    } else if (name === 'Earth') {
-      geometry = new THREE.SphereGeometry(0.38, 48, 48);
-      const earthTex = loadTexture('/textures/earth_day.jpg', createEarthTexture());
-      // Non-reflective, photorealistic planetary material (Apollo / DSCOVR look)
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    } else if (name === 'Venus') {
+      geometry = new THREE.SphereGeometry(0.34, 48, 48);
+      const tex = loadTexture('/textures/venus.jpeg');
       const material = new THREE.MeshStandardMaterial({
-        ...(earthTex ? { map: earthTex } : { color: 0x2277ff }),
-        roughness: 0.88,
+        ...(tex ? { map: tex } : {}),
+        color: tex ? 0xffffff : 0xfde047,
+        roughness: 0.82,
         metalness: 0.0
       });
+      material.transparent = false;
+      material.depthTest = true;
+      material.depthWrite = true;
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    } else if (name === 'Earth') {
+      geometry = new THREE.SphereGeometry(0.38, 64, 64);
+      const tex = loadTexture('/textures/earth.jpg');
+      const material = new THREE.MeshStandardMaterial({
+        ...(tex ? { map: tex } : {}),
+        color: tex ? 0xffffff : 0x1d4ed8,
+        roughness: 0.85,
+        metalness: 0.05
+      });
+      material.transparent = false;
+      material.depthTest = true;
+      material.depthWrite = true;
+      mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
 
-      // Atmospheric Clouds Layer
+      // Atmospheric Clouds Layer: Lit by Sun on day side, dark on night side!
       const cloudsTex = loadTexture('/textures/earth_clouds.png');
-      const cloudsGeo = new THREE.SphereGeometry(0.385, 36, 36);
+      const cloudsGeo = new THREE.SphereGeometry(0.384, 64, 64);
       const cloudsMat = new THREE.MeshStandardMaterial({
-        ...(cloudsTex ? { map: cloudsTex } : { color: 0xffffff }),
+        ...(cloudsTex ? { map: cloudsTex } : {}),
+        color: 0xffffff,
         transparent: true,
-        opacity: 0.38,
+        opacity: 0.45,
         depthWrite: false,
-        roughness: 0.95
+        roughness: 0.95,
+        metalness: 0.0
       });
       const cloudsMesh = new THREE.Mesh(cloudsGeo, cloudsMat);
       cloudsMesh.name = 'earthClouds';
+      cloudsMesh.castShadow = false;
+      cloudsMesh.receiveShadow = true;
       mesh.add(cloudsMesh);
 
-      // Rayleigh Atmospheric Scattering Blue Halo
-      const atmoGeo = new THREE.SphereGeometry(0.41, 32, 32);
-      const atmoMat = new THREE.MeshBasicMaterial({
-        color: 0x60a5fa,
+      // Rayleigh Atmospheric Scattering Blue Halo: Only visible on sun-facing limb, dark on night side!
+      const atmoGeo = new THREE.SphereGeometry(0.408, 48, 48);
+      const atmoMat = new THREE.ShaderMaterial({
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vWorldPosition;
+          void main() {
+            vNormal = normalize(mat3(modelMatrix) * normal);
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorldPosition = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          varying vec3 vNormal;
+          varying vec3 vWorldPosition;
+          void main() {
+            vec3 sunDir = normalize(-vWorldPosition);
+            vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+            float sunDot = dot(vNormal, sunDir);
+            float sunFacing = smoothstep(-0.15, 0.35, sunDot);
+            float rim = 1.0 - max(0.0, dot(vNormal, viewDir));
+            rim = pow(rim, 2.8);
+            vec3 atmoColor = vec3(0.35, 0.68, 1.0);
+            float alpha = rim * 0.70 * sunFacing;
+            gl_FragColor = vec4(atmoColor, alpha);
+          }
+        `,
         transparent: true,
-        opacity: 0.25,
         blending: THREE.AdditiveBlending,
         side: THREE.BackSide,
         depthWrite: false
@@ -1102,23 +1002,35 @@ export class SolarSystemView {
       const atmoMesh = new THREE.Mesh(atmoGeo, atmoMat);
       mesh.add(atmoMesh);
     } else if (name === 'Moon') {
-      geometry = new THREE.SphereGeometry(0.11, 28, 28);
-      const moonTex = loadTexture('/textures/moon.jpg');
+      geometry = new THREE.SphereGeometry(0.11, 48, 48);
+      const tex = loadTexture('/textures/moon.jpg');
       const material = new THREE.MeshStandardMaterial({
-        ...(moonTex ? { map: moonTex } : { color: 0xcccccc }),
-        roughness: 0.90,
+        ...(tex ? { map: tex } : {}),
+        color: tex ? 0xffffff : 0x94a3b8,
+        roughness: 0.92,
         metalness: 0.05
       });
+      material.transparent = false;
+      material.depthTest = true;
+      material.depthWrite = true;
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Mars') {
-      geometry = new THREE.SphereGeometry(0.28, 32, 32);
-      const marsTex = loadTexture('/textures/mars.jpg', createMarsTexture());
+      geometry = new THREE.SphereGeometry(0.28, 48, 48);
+      const tex = loadTexture('/textures/mars.jpg');
       const material = new THREE.MeshStandardMaterial({
-        ...(marsTex ? { map: marsTex } : { color: 0xcc5522 }),
-        roughness: 0.70,
-        metalness: 0.08
+        ...(tex ? { map: tex } : {}),
+        color: tex ? 0xffffff : 0xc2410c,
+        roughness: 0.85,
+        metalness: 0.05
       });
+      material.transparent = false;
+      material.depthTest = true;
+      material.depthWrite = true;
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Phobos') {
       geometry = new THREE.DodecahedronGeometry(0.038, 1);
       const material = new THREE.MeshStandardMaterial({
@@ -1128,6 +1040,8 @@ export class SolarSystemView {
         flatShading: true
       });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Deimos') {
       geometry = new THREE.DodecahedronGeometry(0.026, 1);
       const material = new THREE.MeshStandardMaterial({
@@ -1137,15 +1051,23 @@ export class SolarSystemView {
         flatShading: true
       });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Jupiter') {
-      geometry = new THREE.SphereGeometry(0.78, 48, 48);
-      const jupTex = loadTexture('/textures/jupiter.jpg', createJupiterTexture());
+      geometry = new THREE.SphereGeometry(0.78, 64, 64);
+      const tex = loadTexture('/textures/jupiter.jpg');
       const material = new THREE.MeshStandardMaterial({
-        ...(jupTex ? { map: jupTex } : { color: 0xd4a373 }),
-        roughness: 0.45,
-        metalness: 0.05
+        ...(tex ? { map: tex } : {}),
+        color: tex ? 0xffffff : 0xd97706,
+        roughness: 0.70,
+        metalness: 0.0
       });
+      material.transparent = false;
+      material.depthTest = true;
+      material.depthWrite = true;
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Io') {
       geometry = new THREE.SphereGeometry(0.075, 24, 24);
       const material = new THREE.MeshStandardMaterial({
@@ -1154,6 +1076,8 @@ export class SolarSystemView {
         metalness: 0.1
       });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Europa') {
       geometry = new THREE.SphereGeometry(0.068, 24, 24);
       const material = new THREE.MeshStandardMaterial({
@@ -1162,6 +1086,8 @@ export class SolarSystemView {
         metalness: 0.05
       });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Ganymede') {
       geometry = new THREE.SphereGeometry(0.108, 28, 28);
       const material = new THREE.MeshStandardMaterial({
@@ -1170,6 +1096,8 @@ export class SolarSystemView {
         metalness: 0.05
       });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Callisto') {
       geometry = new THREE.SphereGeometry(0.095, 24, 24);
       const material = new THREE.MeshStandardMaterial({
@@ -1178,34 +1106,34 @@ export class SolarSystemView {
         metalness: 0.05
       });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Saturn') {
       const saturnGroup = new THREE.Group();
 
-      const globeGeo = new THREE.SphereGeometry(0.65, 48, 48);
+      const globeGeo = new THREE.SphereGeometry(0.65, 64, 64);
       const saturnTex = loadTexture('/textures/saturn.jpg');
       const globeMat = new THREE.MeshStandardMaterial({
-        ...(saturnTex ? { map: saturnTex } : { color: 0xf6d89b }),
-        roughness: 0.50,
+        ...(saturnTex ? { map: saturnTex } : {}),
+        color: saturnTex ? 0xffffff : 0xeab308,
+        roughness: 0.75,
         metalness: 0.05
       });
+      globeMat.transparent = false;
+      globeMat.depthTest = true;
+      globeMat.depthWrite = true;
       const globeMesh = new THREE.Mesh(globeGeo, globeMat);
       globeMesh.name = 'saturnGlobe';
+      globeMesh.castShadow = true;
+      globeMesh.receiveShadow = true;
       saturnGroup.add(globeMesh);
 
-      // Saturnian Majestic Ring System (axial tilt 26.73 deg)
-      const ringGeo = new THREE.RingGeometry(0.95, 1.85, 64);
-      const ringTex = loadTexture('/textures/saturn_ring.png');
-      const ringMat = new THREE.MeshStandardMaterial({
-        ...(ringTex ? { map: ringTex } : { color: 0xe2c688 }),
-        transparent: true,
-        opacity: 0.92,
-        side: THREE.DoubleSide,
-        roughness: 0.6,
-        depthWrite: false
-      });
-      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.rotation.x = Math.PI / 2 + THREE.MathUtils.degToRad(26.73);
+      // Photorealistic Saturnian Ring with radial Cassini division & Encke gap
+      const ringMesh = createSaturnRingMesh(0.65);
       saturnGroup.add(ringMesh);
+
+      // Saturn authentic axial tilt: 26.73 degrees
+      saturnGroup.rotation.z = THREE.MathUtils.degToRad(26.73);
 
       mesh = saturnGroup;
     } else if (name === 'Enceladus') {
@@ -1216,6 +1144,8 @@ export class SolarSystemView {
         metalness: 0.0
       });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Tethys') {
       geometry = new THREE.SphereGeometry(0.050, 20, 20);
       const material = new THREE.MeshStandardMaterial({
@@ -1224,6 +1154,8 @@ export class SolarSystemView {
         metalness: 0.05
       });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Rhea') {
       geometry = new THREE.SphereGeometry(0.062, 24, 24);
       const material = new THREE.MeshStandardMaterial({
@@ -1232,6 +1164,8 @@ export class SolarSystemView {
         metalness: 0.05
       });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else if (name === 'Titan') {
       geometry = new THREE.SphereGeometry(0.112, 28, 28);
       const material = new THREE.MeshStandardMaterial({
@@ -1240,10 +1174,60 @@ export class SolarSystemView {
         metalness: 0.0
       });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    } else if (name === 'Uranus') {
+      const uranusGroup = new THREE.Group();
+      geometry = new THREE.SphereGeometry(0.45, 48, 48);
+      const uranusTex = loadTexture('/textures/uranus.jpeg');
+      const uranusMat = new THREE.MeshStandardMaterial({
+        ...(uranusTex ? { map: uranusTex } : {}),
+        color: uranusTex ? 0xffffff : 0x7dd3fc,
+        roughness: 0.80,
+        metalness: 0.0
+      });
+      uranusMat.transparent = false;
+      uranusMat.depthTest = true;
+      uranusMat.depthWrite = true;
+      const uranusMesh = new THREE.Mesh(geometry, uranusMat);
+      uranusMesh.name = 'uranusGlobe';
+      uranusMesh.castShadow = true;
+      uranusMesh.receiveShadow = true;
+      uranusGroup.add(uranusMesh);
+
+      // Subtle icy ring
+      const ringMesh = createUranusRingMesh(0.45);
+      uranusGroup.add(ringMesh);
+
+      // Uranus authentic axial tilt: 97.77 degrees
+      uranusGroup.rotation.z = THREE.MathUtils.degToRad(97.77);
+
+      mesh = uranusGroup;
+    } else if (name === 'Neptune') {
+      geometry = new THREE.SphereGeometry(0.44, 48, 48);
+      const neptuneTex = loadTexture('/textures/neptune.jpg');
+      const material = new THREE.MeshStandardMaterial({
+        ...(neptuneTex ? { map: neptuneTex } : {}),
+        color: neptuneTex ? 0xffffff : 0x2563eb,
+        roughness: 0.80,
+        metalness: 0.0
+      });
+      material.transparent = false;
+      material.depthTest = true;
+      material.depthWrite = true;
+      mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
     } else {
       geometry = new THREE.SphereGeometry(0.2, 16, 16);
-      const material = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, emissive: new THREE.Color(0x222222) });
+      const material = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, emissive: new THREE.Color(0x111111) });
       mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    }
+
+    if (mesh) {
+      mesh.renderOrder = 1;
     }
 
     this.scene.add(mesh);
@@ -1278,7 +1262,9 @@ export class SolarSystemView {
       Venus: { r: VENUS_ORBIT_AU, periodYr: VENUS_PERIOD_YR },
       Mars: { r: MARS_ORBIT_AU, periodYr: MARS_PERIOD_YR },
       Jupiter: { r: JUPITER_ORBIT_AU, periodYr: JUPITER_PERIOD_YR },
-      Saturn: { r: SATURN_ORBIT_AU, periodYr: SATURN_PERIOD_YR }
+      Saturn: { r: SATURN_ORBIT_AU, periodYr: SATURN_PERIOD_YR },
+      Uranus: { r: URANUS_ORBIT_AU, periodYr: URANUS_PERIOD_YR },
+      Neptune: { r: NEPTUNE_ORBIT_AU, periodYr: NEPTUNE_PERIOD_YR }
     };
 
     for (const [pName, pConfig] of Object.entries(planets)) {
@@ -1301,6 +1287,8 @@ export class SolarSystemView {
       Mars: MARS_ROTATION_PERIOD_SECONDS,
       Jupiter: JUPITER_ROTATION_PERIOD_SECONDS,
       Saturn: SATURN_ROTATION_PERIOD_SECONDS,
+      Uranus: URANUS_ROTATION_PERIOD_SECONDS,
+      Neptune: NEPTUNE_ROTATION_PERIOD_SECONDS,
       Sun: SUN_ROTATION_PERIOD_SECONDS,
       Moon: MOON_ROTATION_PERIOD_SECONDS
     };
@@ -1315,6 +1303,9 @@ export class SolarSystemView {
 
       if (pName === 'Saturn') {
         const globe = bodyMesh.getObjectByName('saturnGlobe');
+        if (globe) globe.rotation.y = signedAngle;
+      } else if (pName === 'Uranus') {
+        const globe = bodyMesh.getObjectByName('uranusGlobe');
         if (globe) globe.rotation.y = signedAngle;
       } else if (pName === 'Sun') {
         const core = bodyMesh.getObjectByName('sunCore');
@@ -1553,6 +1544,9 @@ export class SolarSystemView {
         this.currentEarthPos.y + 2.2,
         this.currentEarthPos.z + 3.8
       );
+    } else if (mode === 'AsteroidBelt') {
+      this.controls.target.set(0, 0, 0);
+      this.camera.position.set(22, 14, 22);
     } else {
       let targetPos: THREE.Vector3 | null = null;
       if (mode === 'Earth') {
@@ -1569,9 +1563,12 @@ export class SolarSystemView {
           Mercury: 1.2,
           Venus: 1.5,
           Earth: 2.2,
+          Tug: 1.2,
           Mars: 1.5,
           Jupiter: 3.5,
           Saturn: 3.8,
+          Uranus: 3.2,
+          Neptune: 3.2,
           Moon: 0.6,
           Phobos: 0.3,
           Deimos: 0.25,
@@ -1585,7 +1582,30 @@ export class SolarSystemView {
           Rhea: 0.45
         };
         const dist = distMap[mode] ?? 2.0;
-        this.camera.position.set(targetPos.x + dist * 0.8, targetPos.y + dist * 0.5, targetPos.z + dist * 1.0);
+
+        if (mode === 'Sun') {
+          this.camera.position.set(0, dist * 0.5, dist);
+        } else {
+          // Calculate unit vector toward the Sun in the ecliptic X-Z plane
+          const toSun = new THREE.Vector3().subVectors(new THREE.Vector3(0, 0, 0), targetPos);
+          toSun.y = 0;
+          if (toSun.lengthSq() < 1e-4) {
+            toSun.set(1, 0, 0);
+          } else {
+            toSun.normalize();
+          }
+
+          // Perpendicular tangent vector in ecliptic plane
+          const tangent = new THREE.Vector3(-toSun.z, 0, toSun.x).normalize();
+
+          // 45-degree elevated terminator angle:
+          // Reveals both the brightly sunlit day hemisphere and gracefully shaded night hemisphere
+          this.camera.position.set(
+            targetPos.x + toSun.x * dist * 0.65 + tangent.x * dist * 0.75,
+            targetPos.y + dist * 0.38,
+            targetPos.z + toSun.z * dist * 0.65 + tangent.z * dist * 0.75
+          );
+        }
       }
     }
     this.controls.update();
@@ -1593,6 +1613,23 @@ export class SolarSystemView {
     if (this.onFocusChange) {
       this.onFocusChange(mode, this.getFocusDisplayName(mode));
     }
+    if (this.onBodySelected) {
+      this.onBodySelected(mode);
+    }
+  }
+
+  public zoomIn(): void {
+    const dir = new THREE.Vector3().subVectors(this.camera.position, this.controls.target);
+    dir.multiplyScalar(0.75);
+    this.camera.position.addVectors(this.controls.target, dir);
+    this.controls.update();
+  }
+
+  public zoomOut(): void {
+    const dir = new THREE.Vector3().subVectors(this.camera.position, this.controls.target);
+    dir.multiplyScalar(1.33);
+    this.camera.position.addVectors(this.controls.target, dir);
+    this.controls.update();
   }
 
   public toggleCameraFocus(): string {
@@ -1609,6 +1646,7 @@ export class SolarSystemView {
     const names: Record<string, string> = {
       system: 'Solar System',
       earth_tug: 'Earth-Tug',
+      Tug: 'Ceres Tug',
       Sun: 'Sun',
       Mercury: 'Mercury',
       Venus: 'Venus',
@@ -1617,6 +1655,7 @@ export class SolarSystemView {
       Mars: 'Mars',
       Phobos: 'Phobos',
       Deimos: 'Deimos',
+      AsteroidBelt: 'Asteroid Belt',
       Jupiter: 'Jupiter',
       Io: 'Io',
       Europa: 'Europa',
@@ -1626,22 +1665,40 @@ export class SolarSystemView {
       Titan: 'Titan',
       Enceladus: 'Enceladus',
       Tethys: 'Tethys',
-      Rhea: 'Rhea'
+      Rhea: 'Rhea',
+      Uranus: 'Uranus',
+      Neptune: 'Neptune'
     };
     return names[mode] || mode;
   }
 
   public render(): void {
-    this.pulseTime += 0.05;
+    this.pulseTime += 0.02;
 
-    // 1. Animate realistic solar magnetic prominence loops and limb flare eruptions
-    if (this.solarProminences && this.solarProminences.length > 0) {
-      for (const p of this.solarProminences) {
-        const pulse = Math.sin(this.pulseTime * p.speed + p.phase);
-        p.mat.opacity = p.baseOpacity * (0.8 + 0.2 * pulse);
-        const s = 1.0 + 0.03 * pulse;
-        p.mesh.scale.set(s, s, s);
-      }
+    // 1. Sun dynamic procedural animation (stable physical radius, smooth plasma convection)
+    const t = this.pulseTime;
+
+    if (this.sunPlasmaMaterial) {
+      this.sunPlasmaMaterial.uniforms.uTime.value = t;
+    }
+    if (this.sunCoreMesh) {
+      this.sunCoreMesh.scale.setScalar(1.0);
+      this.sunCoreMesh.rotation.y += 0.0015;
+      this.sunCoreMesh.rotation.x += 0.0002;
+    }
+    if (this.sunHotCoreMesh) {
+      this.sunHotCoreMesh.scale.setScalar(1.0);
+      this.sunHotCoreMesh.rotation.y += 0.001;
+    }
+    if (this.sunOuterMesh) {
+      this.sunOuterMesh.scale.setScalar(1.0);
+      this.sunOuterMesh.rotation.y -= 0.0008;
+    }
+    if (this.sunCoronaMaterial) {
+      this.sunCoronaMaterial.uniforms.uTime.value = t;
+    }
+    if (this.sunCoronaGlowMaterial) {
+      this.sunCoronaGlowMaterial.uniforms.uIntensity.value = 0.10;
     }
 
     // 2. Thruster relativistic plasma pulsation
@@ -1658,6 +1715,11 @@ export class SolarSystemView {
     }
     if (this.cosmicNebulaPoints) {
       this.cosmicNebulaPoints.rotation.y += 0.00003;
+    }
+
+    // 4. Update procedural shader uniforms for Deep Space and Sun Plasma
+    if (this.deepSpaceMesh && this.deepSpaceMesh.material instanceof THREE.ShaderMaterial) {
+      this.deepSpaceMesh.material.uniforms.uTime.value = this.pulseTime;
     }
 
     this.controls.update();

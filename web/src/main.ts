@@ -9,6 +9,7 @@ import { interpolateFrame } from './interpolation';
 import { SolarSystemView } from './views/solar_system';
 import { TimelineController, TimelineState } from './timeline';
 import { UIManager } from './ui';
+import { AudioManager } from './audio';
 import mockData from '../mock/replay_mock.json';
 
 class App {
@@ -16,6 +17,7 @@ class App {
   private solarSystemView!: SolarSystemView;
   private timeline!: TimelineController;
   private uiManager!: UIManager;
+  private audioManager!: AudioManager;
   private replayData!: ReplayData;
 
   constructor() {
@@ -65,6 +67,11 @@ class App {
       }
     }
 
+    if (this.audioManager) {
+      this.audioManager.dispose();
+    }
+    this.audioManager = new AudioManager();
+
     this.container.innerHTML = '';
 
     // 2. Initialize Timeline
@@ -109,12 +116,22 @@ class App {
       },
       (target: string) => {
         this.solarSystemView?.setCameraFocus(target);
-      }
+      },
+      () => {
+        this.solarSystemView?.zoomIn();
+      },
+      () => {
+        this.solarSystemView?.zoomOut();
+      },
+      this.audioManager
     );
 
     if (viewReady && this.solarSystemView) {
       this.solarSystemView.onFocusChange = (_targetName: string, displayName: string) => {
         this.uiManager.setFocusButtonLabel(displayName);
+      };
+      this.solarSystemView.onBodySelected = (bodyName: string) => {
+        this.uiManager.selectPlanet(bodyName, true);
       };
     }
 

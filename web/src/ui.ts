@@ -3,9 +3,12 @@
  *
  * Professional Aerospace Mission Control Interface featuring:
  *   - Glassmorphic command header with clean SVG telemetry iconography
- *   - Full-range speed controller: 1 day/s to 500 yr/s with logarithmic slider,
- *     presets, and direct numeric manual entry with unit selector
- *   - Flight dynamics telemetry HUD console
+ *   - Visualizer inspiration: Left Celestial Sidebar Navigation (all 8 planets + Sun, Moon, Tug, Asteroid Belt)
+ *   - Cinematic Planet Info Card with auto-rotating slides, facts, and mission telemetry
+ *   - Dual-channel ambient cosmic audio & celestial narration voiceovers
+ *   - Quick right-side speed pill column (0.1× to 500×) + bottom logarithmic continuous slider
+ *   - Floating zoom & navigation reset controls
+ *   - Flight dynamics telemetry HUD console (F3)
  *   - Verified Hackathon validation benchmarks inspector (10/10 PASS)
  *   - Drag-and-drop JSON/OCTO telemetry loader and error handling
  */
@@ -23,6 +26,8 @@ import {
   speedToManualValues,
   SpeedUnit
 } from './playback_speed';
+import { CELESTIAL_BODIES, CELESTIAL_LIST, CelestialBodyInfo } from './planet_data';
+import { AudioManager } from './audio';
 
 // Professional SVG Icons
 const ICON_PLAY = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>`;
@@ -40,6 +45,22 @@ const ICON_WARNING = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none
 const ICON_ORBIT = `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="16" cy="16" r="13" stroke="rgba(56, 189, 248, 0.4)" stroke-dasharray="3 2"/><ellipse cx="16" cy="16" rx="13" ry="5.5" stroke="#38bdf8" transform="rotate(-28 16 16)"/><circle cx="16" cy="16" r="3" fill="#38bdf8"/></svg>`;
 const ICON_ORBIT_TOGGLE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="3 2"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-30 12 12)"/></svg>`;
 
+const ICON_MUSIC_ON = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`;
+const ICON_MUSIC_OFF = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`;
+const ICON_NARRATION_ON = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
+const ICON_NARRATION_OFF = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
+
+const ICON_ZOOM_IN = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`;
+const ICON_ZOOM_OUT = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>`;
+const ICON_RESET = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>`;
+
+interface InfoSlide {
+  badge: string;
+  title: string;
+  subtitle: string;
+  contentHtml: string;
+}
+
 export class UIManager {
   private container: HTMLElement;
   private timeline: TimelineController;
@@ -47,6 +68,9 @@ export class UIManager {
   private onToggleFocus?: () => string;
   private onToggleOrbits?: () => boolean;
   private onSelectTarget?: (target: string) => void;
+  private onZoomIn?: () => void;
+  private onZoomOut?: () => void;
+  private audioManager?: AudioManager;
 
   private bannerEl!: HTMLElement;
   private timePrimaryEl!: HTMLElement;
@@ -57,7 +81,7 @@ export class UIManager {
   private btnStepFwd!: HTMLButtonElement;
   private scrubberEl!: HTMLInputElement;
 
-  // Multi-unit speed controls (day, week, month, year + slider + manual)
+  // Multi-unit speed controls
   private speedSliderEl!: HTMLInputElement;
   private speedNumberInputEl!: HTMLInputElement;
   private speedUnitSelectEl!: HTMLSelectElement;
@@ -71,7 +95,7 @@ export class UIManager {
 
   // Flight Dynamics Telemetry Console
   private hudEl!: HTMLElement;
-  private isHudVisible: boolean = true;
+  private isHudVisible: boolean = false;
   private btnToggleHud!: HTMLButtonElement;
   private btnToggleOrbits!: HTMLButtonElement;
   private btnToggleFocus!: HTMLButtonElement;
@@ -79,13 +103,37 @@ export class UIManager {
   private btnBenchmarks!: HTMLButtonElement;
   private benchmarksModalEl!: HTMLElement;
 
+  // Visualizer Inspiration Components
+  private sidebarEl!: HTMLElement;
+  private sidebarItemBtns: Map<string, HTMLButtonElement> = new Map();
+  private btnMobileSidebar!: HTMLButtonElement;
+
+  private planetInfoCardEl!: HTMLElement;
+  private currentPlanetName: string = 'Earth';
+  private currentSlideIndex: number = 0;
+  private planetSlides: InfoSlide[] = [];
+  private slideTimer: any = null;
+
+  private speedPillsColEl!: HTMLElement;
+  private speedPillBtns: HTMLButtonElement[] = [];
+
+  private zoomControlsEl!: HTMLElement;
+
+  private liveClockPrimaryEl!: HTMLElement;
+  private liveClockSecondaryEl!: HTMLElement;
+  private btnMusicEl!: HTMLButtonElement;
+  private btnNarrationEl!: HTMLButtonElement;
+
   constructor(
     container: HTMLElement,
     timeline: TimelineController,
     onFileLoaded: (data: ReplayData) => void,
     onToggleFocus?: () => string,
     onToggleOrbits?: () => boolean,
-    onSelectTarget?: (target: string) => void
+    onSelectTarget?: (target: string) => void,
+    onZoomIn?: () => void,
+    onZoomOut?: () => void,
+    audioManager?: AudioManager
   ) {
     this.container = container;
     this.timeline = timeline;
@@ -93,23 +141,21 @@ export class UIManager {
     this.onToggleFocus = onToggleFocus;
     this.onToggleOrbits = onToggleOrbits;
     this.onSelectTarget = onSelectTarget;
+    this.onZoomIn = onZoomIn;
+    this.onZoomOut = onZoomOut;
+    this.audioManager = audioManager;
 
     this.buildDOM();
     this.attachEventListeners();
     this.updateThresholdBanner();
     this.updateMarkers();
+    this.selectPlanet('Earth', false);
   }
 
   private buildDOM(): void {
-    // 1. Persistent Threshold Banner (Restyled as Aerospace Status Notice)
+    // 1. Persistent Threshold Banner (Removed from home UI per user request)
     this.bannerEl = document.createElement('div');
-    this.bannerEl.className = 'threshold-banner';
-    this.bannerEl.innerHTML = `
-      <span class="banner-icon">${ICON_WARNING}</span>
-      <span class="banner-title">Physical Thresholds Pending Competition Confirmation</span>
-      <span class="banner-chip">Rulebook Assumption Rules Enforced</span>
-    `;
-    this.container.appendChild(this.bannerEl);
+    this.bannerEl.className = 'threshold-banner hidden';
 
     // 2. Aerospace Mission Command Navigation Bar
     const topNav = document.createElement('div');
@@ -130,7 +176,7 @@ export class UIManager {
         <div id="failure-indicator" class="failure-indicator" style="display: none;">
           ${ICON_WARNING} <span id="failure-text">0 Anomalies</span>
         </div>
-        <button id="btn-toggle-hud" class="btn-pill active" title="Flight Dynamics Telemetry Console (F3 or M)">
+        <button id="btn-toggle-hud" class="btn-pill" title="Flight Dynamics Telemetry Console (F3 or M)">
           ${ICON_TELEMETRY} <span>Flight Telemetry</span>
         </button>
         <button id="btn-toggle-orbits" class="btn-pill active" title="Toggle Reference Orbit Trajectories (O)">
@@ -158,17 +204,13 @@ export class UIManager {
               <button class="target-item-btn" data-target="Phobos">🪨 Phobos (Mars)</button>
               <button class="target-item-btn" data-target="Deimos">🪨 Deimos (Mars)</button>
             </div>
-            <div class="target-section-title">Gas Giants & Major Moons</div>
+            <div class="target-section-title">Outer Planets & Belts</div>
             <div class="target-button-grid">
+              <button class="target-item-btn" data-target="AsteroidBelt">🪨 Asteroid Belt</button>
               <button class="target-item-btn" data-target="Jupiter">🟠 Jupiter</button>
-              <button class="target-item-btn" data-target="Io">🌋 Io (Jupiter)</button>
-              <button class="target-item-btn" data-target="Europa">❄️ Europa (Jupiter)</button>
-              <button class="target-item-btn" data-target="Ganymede">🌑 Ganymede (Jupiter)</button>
-              <button class="target-item-btn" data-target="Callisto">🌑 Callisto (Jupiter)</button>
               <button class="target-item-btn" data-target="Saturn">🪐 Saturn (Rings)</button>
-              <button class="target-item-btn" data-target="Titan">🟠 Titan (Saturn)</button>
-              <button class="target-item-btn" data-target="Enceladus">❄️ Enceladus (Saturn)</button>
-              <button class="target-item-btn" data-target="Rhea">⚪ Rhea (Saturn)</button>
+              <button class="target-item-btn" data-target="Uranus">🔷 Uranus</button>
+              <button class="target-item-btn" data-target="Neptune">🔵 Neptune</button>
             </div>
           </div>
         </div>
@@ -181,17 +223,72 @@ export class UIManager {
         <button id="btn-load-mock" class="btn-pill" title="Load Reference Telemetry Dataset">
           ${ICON_SAMPLE} <span>Sample Mission</span>
         </button>
+
+        <div class="top-right-group">
+          <div class="live-mission-clock" id="live-mission-clock">
+            <span class="clock-primary" id="clock-primary">Year 0.00</span>
+            <span class="clock-secondary" id="clock-secondary">T = 0.0 Gs</span>
+          </div>
+          <button id="btn-toggle-music" class="btn-audio" title="Ambient Space Music">
+            ${ICON_MUSIC_OFF} <span id="label-music">Music OFF</span>
+          </button>
+          <button id="btn-toggle-narration" class="btn-audio active" title="Planetary Narration Audio">
+            ${ICON_NARRATION_ON} <span id="label-narration">Narration ON</span>
+          </button>
+        </div>
       </div>
     `;
     this.container.appendChild(topNav);
 
-    // 3. Flight Dynamics Monospaced Telemetry HUD Console
+    // 3. Left Celestial Navigation Sidebar (Removed from UI per user request)
+    this.btnMobileSidebar = document.createElement('button');
+    this.sidebarEl = document.createElement('nav');
+
+    // 4. Cinematic Planet Info Floating Card
+    this.planetInfoCardEl = document.createElement('div');
+    this.planetInfoCardEl.className = 'planet-info-card';
+    this.planetInfoCardEl.innerHTML = `
+      <div class="planet-info-header">
+        <span class="planet-info-badge" id="info-badge">PLANET PROFILE</span>
+        <button class="planet-info-close" id="btn-close-planet-info" title="Close Profile">✕</button>
+      </div>
+      <div class="planet-info-title-block">
+        <div class="planet-info-title" id="info-title">Earth</div>
+        <div class="planet-info-subtitle" id="info-subtitle">Living Terrestrial Planet</div>
+      </div>
+      <div class="planet-slide-container" id="planet-slide-container">
+        <!-- Slide content dynamically populated -->
+      </div>
+      <div class="slide-nav-bar">
+        <button class="slide-nav-btn" id="btn-prev-slide">◀ Prev</button>
+        <div class="slide-nav-dots" id="slide-dots"></div>
+        <button class="slide-nav-btn" id="btn-next-slide">Next ▶</button>
+      </div>
+    `;
+    this.container.appendChild(this.planetInfoCardEl);
+
+    // 5. Right Playback Speed Multipliers Column (Removed from UI per user request)
+    this.speedPillsColEl = document.createElement('div');
+    this.speedPillsColEl.className = 'speed-pills-col hidden';
+    this.speedPillBtns = [];
+
+    // 6. Floating Zoom Controls
+    this.zoomControlsEl = document.createElement('div');
+    this.zoomControlsEl.className = 'zoom-controls';
+    this.zoomControlsEl.innerHTML = `
+      <button class="zoom-btn" id="btn-zoom-in" title="Zoom In (+)">${ICON_ZOOM_IN}</button>
+      <button class="zoom-btn" id="btn-zoom-out" title="Zoom Out (-)">${ICON_ZOOM_OUT}</button>
+      <button class="zoom-btn" id="btn-zoom-reset" title="Reset View">${ICON_RESET}</button>
+    `;
+    this.container.appendChild(this.zoomControlsEl);
+
+    // 7. Flight Dynamics Monospaced Telemetry HUD Console
     this.hudEl = document.createElement('div');
     this.hudEl.id = 'minecraft-f3-hud';
-    this.hudEl.className = 'minecraft-f3-hud';
+    this.hudEl.className = 'minecraft-f3-hud hidden';
     this.container.appendChild(this.hudEl);
 
-    // 4. Coordinate & Calibration Scale Matrix (Refined Card)
+    // 8. Coordinate & Calibration Scale Matrix
     const scaleCard = document.createElement('div');
     scaleCard.className = 'scene-badges-container';
     scaleCard.innerHTML = `
@@ -210,7 +307,7 @@ export class UIManager {
     `;
     this.container.appendChild(scaleCard);
 
-    // 5. Timeline Transport & Multi-Unit Playback Controller
+    // 9. Timeline Transport & Multi-Unit Playback Controller
     const initialManual = speedToManualValues(this.timeline.speedYearsPerSec);
     const timelineBar = document.createElement('div');
     timelineBar.className = 'timeline-bar';
@@ -264,7 +361,7 @@ export class UIManager {
     `;
     this.container.appendChild(timelineBar);
 
-    // 6. Drag-and-drop Overlay
+    // 10. Drag-and-drop Overlay
     this.dropzoneOverlayEl = document.createElement('div');
     this.dropzoneOverlayEl.className = 'dropzone-overlay hidden';
     this.dropzoneOverlayEl.innerHTML = `
@@ -273,7 +370,7 @@ export class UIManager {
     `;
     this.container.appendChild(this.dropzoneOverlayEl);
 
-    // 7. Error Modal
+    // 11. Error Modal
     this.errorModalEl = document.createElement('div');
     this.errorModalEl.className = 'error-modal hidden';
     this.errorModalEl.innerHTML = `
@@ -283,7 +380,7 @@ export class UIManager {
     `;
     this.container.appendChild(this.errorModalEl);
 
-    // 8. Hackathon Section 6 Validation Benchmarks Modal
+    // 12. Hackathon Section 6 Validation Benchmarks Modal
     this.benchmarksModalEl = document.createElement('div');
     this.benchmarksModalEl.className = 'benchmarks-modal hidden';
     const { results, passedCount, totalCount } = runAllBenchmarks();
@@ -352,6 +449,11 @@ export class UIManager {
     this.targetDropdownEl = topNav.querySelector('#target-dropdown')!;
     this.btnBenchmarks = topNav.querySelector('#btn-benchmarks')!;
     this.errorMsgEl = this.errorModalEl.querySelector('#error-msg')!;
+
+    this.liveClockPrimaryEl = topNav.querySelector('#clock-primary')!;
+    this.liveClockSecondaryEl = topNav.querySelector('#clock-secondary')!;
+    this.btnMusicEl = topNav.querySelector('#btn-toggle-music')!;
+    this.btnNarrationEl = topNav.querySelector('#btn-toggle-narration')!;
   }
 
   private attachEventListeners(): void {
@@ -416,6 +518,86 @@ export class UIManager {
       });
     });
 
+    // Right Speed Column Pills
+    this.speedPillBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const speed = parseFloat(btn.dataset.speed || '1');
+        this.timeline.setSpeedYearsPerSec(speed);
+        this.speedSliderEl.value = String(speedToSlider(speed));
+        this.syncManualInputsFromSpeed(speed);
+        this.highlightMatchingPreset(speed);
+        this.speedPillBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Sidebar navigation clicks
+    this.sidebarItemBtns.forEach((btn, key) => {
+      btn.addEventListener('click', () => {
+        this.selectPlanet(key, true);
+        if (this.onSelectTarget) {
+          this.onSelectTarget(key);
+        }
+        this.sidebarEl.classList.remove('mobile-open');
+      });
+    });
+
+    // Mobile sidebar toggle
+    this.btnMobileSidebar.addEventListener('click', () => {
+      this.sidebarEl.classList.toggle('mobile-open');
+    });
+
+    // Zoom buttons
+    this.container.querySelector('#btn-zoom-in')?.addEventListener('click', () => {
+      if (this.onZoomIn) this.onZoomIn();
+    });
+    this.container.querySelector('#btn-zoom-out')?.addEventListener('click', () => {
+      if (this.onZoomOut) this.onZoomOut();
+    });
+    this.container.querySelector('#btn-zoom-reset')?.addEventListener('click', () => {
+      if (this.onSelectTarget) this.onSelectTarget('system');
+      this.setFocusButtonLabel('Solar System');
+    });
+
+    // Audio controls
+    this.btnMusicEl.addEventListener('click', () => {
+      if (this.audioManager) {
+        const isOn = this.audioManager.toggleMusic();
+        this.btnMusicEl.innerHTML = `${isOn ? ICON_MUSIC_ON : ICON_MUSIC_OFF} <span>${isOn ? 'Music ON' : 'Music OFF'}</span>`;
+        if (isOn) {
+          this.btnMusicEl.classList.add('active');
+        } else {
+          this.btnMusicEl.classList.remove('active');
+        }
+      }
+    });
+
+    this.btnNarrationEl.addEventListener('click', () => {
+      if (this.audioManager) {
+        const isOn = this.audioManager.toggleNarration();
+        this.btnNarrationEl.innerHTML = `${isOn ? ICON_NARRATION_ON : ICON_NARRATION_OFF} <span>${isOn ? 'Narration ON' : 'Narration OFF'}</span>`;
+        if (isOn) {
+          this.btnNarrationEl.classList.add('active');
+        } else {
+          this.btnNarrationEl.classList.remove('active');
+        }
+      }
+    });
+
+    // Planet Info Card Close & Navigation
+    this.container.querySelector('#btn-close-planet-info')?.addEventListener('click', () => {
+      this.planetInfoCardEl.classList.add('hidden');
+      this.stopSlideTimer();
+    });
+
+    this.container.querySelector('#btn-prev-slide')?.addEventListener('click', () => {
+      this.prevSlide();
+    });
+
+    this.container.querySelector('#btn-next-slide')?.addEventListener('click', () => {
+      this.nextSlide();
+    });
+
     // File loading buttons
     const btnLoadFile = this.container.querySelector('#btn-load-file');
     const fileInput = document.createElement('input');
@@ -458,124 +640,278 @@ export class UIManager {
       this.errorModalEl.classList.add('hidden');
     });
 
-    // Top-bar HUD, Orbits, Focus, and Benchmarks buttons
-    this.btnToggleHud.addEventListener('click', () => this.toggleHud());
-    this.btnToggleOrbits.addEventListener('click', () => this.toggleOrbits());
-
-    // Toggle celestial target dropdown menu
-    this.btnToggleFocus.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.targetDropdownEl.classList.toggle('hidden');
-    });
-
-    const targetBtns = this.targetDropdownEl.querySelectorAll('.target-item-btn');
-    targetBtns.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const target = (btn as HTMLElement).dataset.target;
-        if (target) {
-          if (this.onSelectTarget) {
-            this.onSelectTarget(target);
-          } else if (this.onToggleFocus) {
-            this.onToggleFocus();
-          }
-          this.setFocusButtonLabel(target);
-          this.targetDropdownEl.classList.add('hidden');
-        }
-      });
-    });
-
-    // Dismiss target dropdown if clicked outside
-    window.addEventListener('click', (e) => {
-      if (!this.targetDropdownEl.contains(e.target as Node) && e.target !== this.btnToggleFocus) {
-        this.targetDropdownEl.classList.add('hidden');
-      }
-    });
-
+    // Benchmarks Modal Toggle
     this.btnBenchmarks.addEventListener('click', () => {
-      this.benchmarksModalEl.classList.toggle('hidden');
+      this.benchmarksModalEl.classList.remove('hidden');
     });
     this.benchmarksModalEl.querySelector('#btn-close-benchmarks')?.addEventListener('click', () => {
       this.benchmarksModalEl.classList.add('hidden');
     });
 
-    // Keyboard controls
-    window.addEventListener('keydown', (e) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) {
-        return; // Don't intercept typing in inputs
+    // HUD and Orbits toggles
+    this.btnToggleHud.addEventListener('click', () => this.toggleHud());
+    this.btnToggleOrbits.addEventListener('click', () => {
+      if (this.onToggleOrbits) {
+        const visible = this.onToggleOrbits();
+        const label = this.btnToggleOrbits.querySelector('#orbits-btn-label');
+        if (label) label.textContent = visible ? 'Orbits: ON' : 'Orbits: OFF';
+        if (visible) this.btnToggleOrbits.classList.add('active');
+        else this.btnToggleOrbits.classList.remove('active');
       }
+    });
+
+    // Camera Focus Target Dropdown
+    this.btnToggleFocus.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.targetDropdownEl.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!this.btnToggleFocus.contains(e.target as Node) && !this.targetDropdownEl.contains(e.target as Node)) {
+        this.targetDropdownEl.classList.add('hidden');
+      }
+    });
+
+    this.targetDropdownEl.querySelectorAll('.target-item-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = (btn as HTMLElement).dataset.target;
+        if (target) {
+          if (this.onSelectTarget) {
+            this.onSelectTarget(target);
+          }
+          this.selectPlanet(target, true);
+        }
+        this.targetDropdownEl.classList.add('hidden');
+      });
+    });
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+
       if (e.code === 'Space') {
         e.preventDefault();
         this.timeline.togglePlay();
-      } else if (e.code === 'ArrowRight') {
-        e.preventDefault();
-        this.timeline.seekTime_s(this.timeline.currentTime_s + 10.0 * YEAR_SECONDS);
       } else if (e.code === 'ArrowLeft') {
         e.preventDefault();
         this.timeline.seekTime_s(this.timeline.currentTime_s - 10.0 * YEAR_SECONDS);
-      } else if (e.code === 'F3' || e.code === 'KeyM') {
+      } else if (e.code === 'ArrowRight') {
         e.preventDefault();
-        this.toggleHud();
-      } else if (e.code === 'KeyO') {
-        e.preventDefault();
-        this.toggleOrbits();
-      } else if (e.code === 'KeyF') {
+        this.timeline.seekTime_s(this.timeline.currentTime_s + 10.0 * YEAR_SECONDS);
+      } else if (e.code === 'KeyF' || e.code === 'KeyC') {
         e.preventDefault();
         if (this.onToggleFocus) {
-          const mode = this.onToggleFocus();
-          this.setFocusButtonLabel(mode);
+          const newTarget = this.onToggleFocus();
+          this.setFocusButtonLabel(newTarget === 'system' ? 'Solar System' : 'Earth-Tug');
+          this.selectPlanet(newTarget === 'system' ? 'Sun' : 'Earth', false);
         }
+      } else if (e.code === 'KeyO') {
+        e.preventDefault();
+        this.btnToggleOrbits.click();
+      } else if (e.code === 'KeyM' || e.code === 'F3') {
+        e.preventDefault();
+        this.toggleHud();
       }
     });
   }
 
-  public toggleOrbits(): boolean {
-    if (this.onToggleOrbits) {
-      const isVisible = this.onToggleOrbits();
-      const labelSpan = this.btnToggleOrbits.querySelector('#orbits-btn-label');
-      if (labelSpan) {
-        labelSpan.textContent = isVisible ? 'Orbits: ON' : 'Orbits: OFF';
+  public selectPlanet(bodyName: string, playNarration: boolean = true): void {
+    const key = bodyName === 'earth_tug' ? 'Tug' : bodyName;
+    const info = CELESTIAL_BODIES[key] || CELESTIAL_BODIES['Earth'];
+    this.currentPlanetName = key;
+    this.currentSlideIndex = 0;
+
+    // Update active state in sidebar
+    this.sidebarItemBtns.forEach((btn, bKey) => {
+      if (bKey === key) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
       }
-      this.btnToggleOrbits.classList.toggle('active', isVisible);
-      return isVisible;
+    });
+
+    // Update Header Focus label
+    this.setFocusButtonLabel(info.displayName.split(' (')[0]);
+
+    // Build Slides for Planet Info Card
+    this.buildPlanetSlides(key, info);
+    this.renderCurrentSlide();
+    this.planetInfoCardEl.classList.remove('hidden');
+    this.startSlideTimer();
+
+    // Play narration voiceover
+    if (playNarration && this.audioManager && this.audioManager.isNarrationOn()) {
+      this.audioManager.playNarration(key);
     }
-    return true;
   }
 
-  public setFocusButtonLabel(mode: string): void {
-    const labelSpan = this.btnToggleFocus.querySelector('#focus-btn-label');
-    if (!labelSpan) return;
+  private buildPlanetSlides(key: string, info: CelestialBodyInfo): void {
+    const isTarget = key === 'Earth';
+    const isTug = key === 'Tug';
 
-    const names: Record<string, string> = {
-      system: 'Solar System',
-      earth_tug: 'Earth-Tug',
-      Sun: 'Sun',
-      Mercury: 'Mercury',
-      Venus: 'Venus',
-      Earth: 'Earth',
-      Moon: 'Moon',
-      Mars: 'Mars',
-      Phobos: 'Phobos',
-      Deimos: 'Deimos',
-      Jupiter: 'Jupiter',
-      Io: 'Io',
-      Europa: 'Europa',
-      Ganymede: 'Ganymede',
-      Callisto: 'Callisto',
-      Saturn: 'Saturn',
-      Titan: 'Titan',
-      Enceladus: 'Enceladus',
-      Tethys: 'Tethys',
-      Rhea: 'Rhea'
-    };
-    const displayName = names[mode] || mode;
-    labelSpan.textContent = `Target: ${displayName}`;
+    this.planetSlides = [
+      // Slide 1: Overview
+      {
+        badge: isTarget ? 'MISSION TARGET' : isTug ? 'PROPULSION HUB' : 'CELESTIAL BODY',
+        title: info.displayName.split(' (')[0],
+        subtitle: info.type,
+        contentHtml: `
+          <div class="planet-info-fact">
+            ${info.fact}
+          </div>
+          <div class="planet-stats-grid" style="margin-top: 8px;">
+            <div class="planet-stat-box">
+              <span class="planet-stat-label">Radius</span>
+              <span class="planet-stat-value">${info.radiusKm.toLocaleString()} km</span>
+            </div>
+            <div class="planet-stat-box">
+              <span class="planet-stat-label">Mass</span>
+              <span class="planet-stat-value">${info.massKg} kg</span>
+            </div>
+          </div>
+        `
+      },
+      // Slide 2: Physical & Gravity Parameters
+      {
+        badge: 'PHYSICAL DYNAMICS',
+        title: 'Gravity & Surface',
+        subtitle: `${info.displayName} Specifications`,
+        contentHtml: `
+          <div class="planet-stats-grid">
+            <div class="planet-stat-box">
+              <span class="planet-stat-label">Surface Gravity</span>
+              <span class="planet-stat-value">${info.gravityMps2} m/s²</span>
+            </div>
+            <div class="planet-stat-box">
+              <span class="planet-stat-label">Temperature</span>
+              <span class="planet-stat-value">${info.temperature}</span>
+            </div>
+            <div class="planet-stat-box">
+              <span class="planet-stat-label">Day Length</span>
+              <span class="planet-stat-value">${info.dayLength}</span>
+            </div>
+            <div class="planet-stat-box">
+              <span class="planet-stat-label">Moons / Rings</span>
+              <span class="planet-stat-value">${info.moons} Natural Moons</span>
+            </div>
+          </div>
+          <div class="planet-info-note" style="margin-top: 8px;">
+            ${info.gravityNote}
+          </div>
+        `
+      },
+      // Slide 3: Orbit & Mission Dynamics
+      {
+        badge: 'ORBITAL DYNAMICS',
+        title: 'Heliocentric Track',
+        subtitle: `Orbital Speed: ${info.orbitalSpeedKmh.toLocaleString()} km/h`,
+        contentHtml: `
+          <div class="planet-stats-grid">
+            <div class="planet-stat-box">
+              <span class="planet-stat-label">Orbital Period</span>
+              <span class="planet-stat-value">${info.yearLength}</span>
+            </div>
+            <div class="planet-stat-box">
+              <span class="planet-stat-label">Velocity</span>
+              <span class="planet-stat-value">${(info.orbitalSpeedKmh / 3600).toFixed(1)} km/s</span>
+            </div>
+            ${
+              isTarget
+                ? `
+            <div class="planet-stat-box" style="grid-column: span 2;">
+              <span class="planet-stat-label">Migration Progress</span>
+              <span class="planet-stat-value" id="info-dyn-progress">1.0000 AU → 2.7000 AU (0.0%)</span>
+            </div>
+            `
+                : isTug
+                ? `
+            <div class="planet-stat-box" style="grid-column: span 2;">
+              <span class="planet-stat-label">Relativistic Thrust</span>
+              <span class="planet-stat-value">2.33 × 10¹⁷ N (0.3c Exhaust)</span>
+            </div>
+            `
+                : `
+            <div class="planet-stat-box" style="grid-column: span 2;">
+              <span class="planet-stat-label">Heliocentric Domain</span>
+              <span class="planet-stat-value">Stable Keplerian Trajectory</span>
+            </div>
+            `
+            }
+          </div>
+        `
+      }
+    ];
+  }
 
-    if (mode === 'system') {
-      this.btnToggleFocus.classList.remove('active');
-    } else {
-      this.btnToggleFocus.classList.add('active');
+  private renderCurrentSlide(): void {
+    if (this.planetSlides.length === 0) return;
+    const slide = this.planetSlides[this.currentSlideIndex];
+
+    const badgeEl = this.planetInfoCardEl.querySelector('#info-badge');
+    const titleEl = this.planetInfoCardEl.querySelector('#info-title');
+    const subtitleEl = this.planetInfoCardEl.querySelector('#info-subtitle');
+    const containerEl = this.planetInfoCardEl.querySelector('#planet-slide-container');
+    const dotsEl = this.planetInfoCardEl.querySelector('#slide-dots');
+
+    if (badgeEl) badgeEl.textContent = slide.badge;
+    if (titleEl) titleEl.textContent = slide.title;
+    if (subtitleEl) subtitleEl.textContent = slide.subtitle;
+
+    if (containerEl) {
+      containerEl.innerHTML = `<div class="cinematic-slide">${slide.contentHtml}</div>`;
     }
+
+    if (dotsEl) {
+      dotsEl.innerHTML = this.planetSlides
+        .map(
+          (_, i) =>
+            `<span class="slide-dot ${i === this.currentSlideIndex ? 'active' : ''}" data-index="${i}"></span>`
+        )
+        .join('');
+
+      dotsEl.querySelectorAll('.slide-dot').forEach((dot) => {
+        dot.addEventListener('click', (e) => {
+          const idx = parseInt((e.target as HTMLElement).dataset.index || '0');
+          this.currentSlideIndex = idx;
+          this.renderCurrentSlide();
+          this.startSlideTimer();
+        });
+      });
+    }
+  }
+
+  public nextSlide(): void {
+    if (this.planetSlides.length === 0) return;
+    this.currentSlideIndex = (this.currentSlideIndex + 1) % this.planetSlides.length;
+    this.renderCurrentSlide();
+    this.startSlideTimer();
+  }
+
+  public prevSlide(): void {
+    if (this.planetSlides.length === 0) return;
+    this.currentSlideIndex =
+      (this.currentSlideIndex - 1 + this.planetSlides.length) % this.planetSlides.length;
+    this.renderCurrentSlide();
+    this.startSlideTimer();
+  }
+
+  private startSlideTimer(): void {
+    this.stopSlideTimer();
+    this.slideTimer = setInterval(() => {
+      this.nextSlide();
+    }, 7500);
+  }
+
+  private stopSlideTimer(): void {
+    if (this.slideTimer) {
+      clearInterval(this.slideTimer);
+      this.slideTimer = null;
+    }
+  }
+
+  public setFocusButtonLabel(label: string): void {
+    const el = this.btnToggleFocus.querySelector('#focus-btn-label');
+    if (el) el.textContent = `Target: ${label}`;
   }
 
   private syncManualInputsFromSpeed(speed: number): void {
@@ -592,6 +928,16 @@ export class UIManager {
       const val = parseFloat(btn.dataset.val || '1');
       const targetSpeed = parseManualSpeed(val, unit);
       const isMatch = Math.abs(speed - targetSpeed) / targetSpeed < 0.05;
+      if (isMatch) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    this.speedPillBtns.forEach((btn) => {
+      const val = parseFloat(btn.dataset.speed || '1');
+      const isMatch = Math.abs(speed - val) / val < 0.05;
       if (isMatch) {
         btn.classList.add('active');
       } else {
@@ -670,13 +1016,9 @@ export class UIManager {
     this.hudEl.innerHTML = htmlLines.join('');
   }
 
-  public updateThresholdBanner(meta?: { thresholds_confirmed?: boolean }): void {
-    const show = shouldShowThresholdBanner(meta);
-    if (show) {
-      this.bannerEl.classList.remove('hidden');
-    } else {
-      this.bannerEl.classList.add('hidden');
-    }
+  public updateThresholdBanner(_meta?: { thresholds_confirmed?: boolean }): void {
+    // Banner permanently removed from home UI per user specification
+    this.bannerEl.classList.add('hidden');
   }
 
   public updateMarkers(): void {
@@ -722,12 +1064,27 @@ export class UIManager {
     const currentYear = state.currentYear.toFixed(2);
     const totalYears = (state.duration_s / YEAR_SECONDS).toFixed(2);
     this.timePrimaryEl.textContent = `Year ${currentYear} / ${totalYears}`;
-
     this.timeSecondaryEl.textContent = `Frame ${state.currentFrameIndex + 1} / ${totalFrames} | ${(state.currentTime_s / 1e9).toFixed(2)} Gs`;
+
+    if (this.liveClockPrimaryEl) {
+      this.liveClockPrimaryEl.textContent = `Year ${currentYear}`;
+    }
+    if (this.liveClockSecondaryEl) {
+      const frac = state.duration_s > 0 ? ((state.currentTime_s / state.duration_s) * 100).toFixed(1) : '0.0';
+      this.liveClockSecondaryEl.textContent = `${frac}% • ${(state.currentTime_s / 1e9).toFixed(2)} Gs`;
+    }
 
     if (state.duration_s > 0) {
       const frac = state.currentTime_s / state.duration_s;
       this.scrubberEl.value = String(Math.round(frac * 1000));
+    }
+
+    // Dynamic Earth migration progress update inside Planet Info Card
+    const dynProgressEl = this.planetInfoCardEl.querySelector('#info-dyn-progress');
+    if (dynProgressEl && this.currentPlanetName === 'Earth') {
+      const frac = state.duration_s > 0 ? (state.currentTime_s / state.duration_s) : 0;
+      const currentAU = 1.0 + frac * 1.70;
+      dynProgressEl.textContent = `Current a: ${currentAU.toFixed(4)} AU (${(frac * 100).toFixed(1)}%)`;
     }
   }
 }
