@@ -1,0 +1,50 @@
+# ==============================================================================
+# Octo-Earth Ceres Tug Option B Configuration (Compact Standoff)
+# ==============================================================================
+# Matches compact standoff d = 6.84e8 m (0.457 R_Hill) with consistent mass:
+# M_tug = F_req * d^2 / (G * M_earth) = 2.726e20 kg (29% Ceres mass / Vesta-class).
+# ==============================================================================
+mode: "averaged"
+time_span_years: 10000.0
+macro_step_s: 86400.0
+
+integrator:
+  rtol: 1.0e-12
+  atol: 1.0e-9
+
+drivers:
+  - "power"
+  - "propulsion"
+  - "orbit"
+  - "structure"
+  - "habitability"
+
+propulsion:
+  variant: "ceres_gravity_tug"
+  exhaust_velocity_m_s: 89937737.4  # 0.3c
+  mass_flow_kg_s: 2.501e9
+  power_w: 1.085e25
+  efficiency: 1.0
+
+ceres_tug:
+  mass_kg: 2.7261e20  # Reduced mass matching compact standoff
+  exhaust_velocity_m_s: 89937737.4  # 0.3c
+  beam_power_w: 1.0e25
+  cone_half_angle_deg: 5.0
+  waste_heat_fraction: 0.01  # ASSUMED
+  standoff_distance_m: 6.84e8  # 0.4570 R_Hill
+  standoff_tolerance_m: 1.0e7
+  station_keeping_kp: 1.0e-5
+  station_keeping_kd: 1.0e-2
+  balance_tolerance_rel: 0.05
+
+initial_conditions:
+  semi_major_axis_au: 1.0
+  eccentricity: 0.0
+  inclination_rad: 0.0
+
+target_orbit:
+  semi_major_axis_au: 2.7
+  eccentricity: 0.0
+
+seed: 42

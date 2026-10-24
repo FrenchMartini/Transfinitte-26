@@ -19,20 +19,21 @@ drivers:
 propulsion:
   variant: "ceres_gravity_tug"
   exhaust_velocity_m_s: 89937737.4  # 0.3c
-  mass_flow_kg_s: 2.3e9
-  power_w: 1.0e25
+  mass_flow_kg_s: 2.501e9  # Adopted for 9,500 yr arrival with cant/yaw margin
+  power_w: 1.085e25
   efficiency: 1.0
 
 ceres_tug:
-  mass_kg: 9.4e20
+  mass_kg: 9.4e20  # Constant mass (propellant resupplied, part of enabler E2)
   exhaust_velocity_m_s: 89937737.4  # 0.3c
   beam_power_w: 1.0e25
   cone_half_angle_deg: 5.0
   waste_heat_fraction: 0.01  # ASSUMED
-  standoff_distance_m: 6.84e8  # d = sqrt(G * M_tug / a_earth)
+  standoff_distance_m: 1.2701e9  # d = sqrt(G * M_tug / a_earth) for M_tug=9.4e20 kg (Option A)
   standoff_tolerance_m: 1.0e7
   station_keeping_kp: 1.0e-5
   station_keeping_kd: 1.0e-2
+  balance_tolerance_rel: 0.05
 
 initial_conditions:
   semi_major_axis_au: 1.0
