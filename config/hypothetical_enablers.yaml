@@ -10,12 +10,12 @@ enablers:
     name: "Near-Sun Beamed Power Link (power)"
     relaxes:
       - "power.beam_power_w"
-    value: 1.096e+25
+    value: 1.6e+25
     units: "W"
-    efficiency: "1.00 (coherent phased-array power transmission)"
-    justification: "Near-Sun Dyson swarm collector capturing ~2.85% L_sun and beaming 1.096e25 W to the standoff tug via coherent laser/microwave array."
+    efficiency: "1.00 (coherent phased-array power transmission sized to 1.6e25 W peak controller demand)"
+    justification: "Near-Sun Dyson swarm collector capturing ~4.16% L_sun and beaming up to 1.6e25 W peak power to the standoff tug via coherent laser/microwave array to support nominal 1.085e25 W jet power plus transient station-keeping control authority."
     sources:
-      - "team estimate (Dyson swarm ~2.85% solar luminosity collector at 0.05 AU)"
+      - "team estimate (Dyson swarm ~4.16% solar luminosity collector at 0.05 AU sized for peak controller demand)"
       - "docs/specification.md Section 2"
 
   - id: "E2"
