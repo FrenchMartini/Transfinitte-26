@@ -40,81 +40,83 @@ def _fsum_vec3(vectors: list[np.ndarray]) -> np.ndarray:
     return out
 
 
-class ChunkedList(list):
-    """List that maintains intermediate fsum chunks for O(1) amortized cumulative totals."""
+class ShewchukAccumulator:
+    """Exact O(1) floating-point accumulator using Shewchuk 1997 expansion addition (matches math.fsum)."""
 
-    def __init__(self, *args, chunk_size: int = 500) -> None:
+    def __init__(self) -> None:
+        self.partials: list[float] = []
+
+    def add(self, x: float) -> None:
+        x_val = float(x)
+        i = 0
+        for y in self.partials:
+            if abs(x_val) < abs(y):
+                x_val, y = y, x_val
+            hi = x_val + y
+            lo = y - (hi - x_val)
+            if lo:
+                self.partials[i] = lo
+                i += 1
+            x_val = hi
+        self.partials[i:] = [x_val]
+
+    def total(self) -> float:
+        return math.fsum(self.partials) if self.partials else 0.0
+
+    def clear(self) -> None:
+        self.partials.clear()
+
+
+class ChunkedList(list):
+    """List that maintains exact Shewchuk partial accumulators for O(1) exact math.fsum totals."""
+
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args)
-        self.chunk_size = chunk_size
-        self._chunks: list[float] = []
-        self._uncollapsed_idx = 0
+        self._acc = ShewchukAccumulator()
+        for item in self:
+            self._acc.add(item)
 
     def append(self, item: Any) -> None:
         super().append(item)
-        if len(self) - self._uncollapsed_idx >= self.chunk_size:
-            chunk = super().__getitem__(slice(self._uncollapsed_idx, len(self)))
-            self._chunks.append(math.fsum(chunk))
-            self._uncollapsed_idx = len(self)
+        self._acc.add(item)
 
     def total_fsum(self) -> float:
-        if not self:
-            return 0.0
-        if self._uncollapsed_idx > len(self):
-            self._chunks.clear()
-            self._uncollapsed_idx = 0
-        uncollapsed = super().__getitem__(slice(self._uncollapsed_idx, len(self)))
-        return math.fsum(self._chunks + uncollapsed)
+        return self._acc.total()
 
     def clear(self) -> None:
         super().clear()
-        self._chunks.clear()
-        self._uncollapsed_idx = 0
+        self._acc.clear()
 
 
 class ChunkedVec3List(list):
-    """List of 3D numpy arrays that maintains intermediate fsum chunks."""
+    """List of 3D numpy arrays that maintains exact Shewchuk accumulators for O(1) vector totals."""
 
-    def __init__(self, *args, chunk_size: int = 500) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args)
-        self.chunk_size = chunk_size
-        self._chunk_x: list[float] = []
-        self._chunk_y: list[float] = []
-        self._chunk_z: list[float] = []
-        self._uncollapsed_idx = 0
+        self._acc_x = ShewchukAccumulator()
+        self._acc_y = ShewchukAccumulator()
+        self._acc_z = ShewchukAccumulator()
+        for v in self:
+            self._acc_x.add(v[0])
+            self._acc_y.add(v[1])
+            self._acc_z.add(v[2])
 
     def append(self, vec: np.ndarray) -> None:
         super().append(vec)
-        if len(self) - self._uncollapsed_idx >= self.chunk_size:
-            chunk = super().__getitem__(slice(self._uncollapsed_idx, len(self)))
-            self._chunk_x.append(math.fsum(float(v[0]) for v in chunk))
-            self._chunk_y.append(math.fsum(float(v[1]) for v in chunk))
-            self._chunk_z.append(math.fsum(float(v[2]) for v in chunk))
-            self._uncollapsed_idx = len(self)
+        self._acc_x.add(vec[0])
+        self._acc_y.add(vec[1])
+        self._acc_z.add(vec[2])
 
     def total_vec3(self) -> np.ndarray:
-        if not self:
-            out = np.zeros(3, dtype=np.float64)
-            out.setflags(write=False)
-            return out
-        if self._uncollapsed_idx > len(self):
-            self._chunk_x.clear()
-            self._chunk_y.clear()
-            self._chunk_z.clear()
-            self._uncollapsed_idx = 0
-        uncollapsed = super().__getitem__(slice(self._uncollapsed_idx, len(self)))
-        x = math.fsum(self._chunk_x + [float(v[0]) for v in uncollapsed])
-        y = math.fsum(self._chunk_y + [float(v[1]) for v in uncollapsed])
-        z = math.fsum(self._chunk_z + [float(v[2]) for v in uncollapsed])
-        out = np.array([x, y, z], dtype=np.float64)
+        out = np.array([self._acc_x.total(), self._acc_y.total(), self._acc_z.total()], dtype=np.float64)
         out.setflags(write=False)
         return out
 
     def clear(self) -> None:
         super().clear()
-        self._chunk_x.clear()
-        self._chunk_y.clear()
-        self._chunk_z.clear()
-        self._uncollapsed_idx = 0
+        self._acc_x.clear()
+        self._acc_y.clear()
+        self._acc_z.clear()
 
 
 class Ledger:

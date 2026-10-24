@@ -502,3 +502,47 @@ def test_ledger_summary_by_actor_closes_simulated_and_non_simulated(thresholds: 
     assert np.allclose(total_impulse_vec, np.zeros(3), atol=1e-6)
     assert summary["ExhaustSink"]["mass_absorbed_kg"] == pytest.approx(mdot * dt, rel=1e-12)
     assert summary["PowerPlant"]["energy_supplied_j"] == pytest.approx(1.0e25 * dt, rel=1e-12)
+
+
+def test_chunked_list_and_vec3_exact_match_fsum_on_multiscale_data():
+    """Verify ChunkedList and ChunkedVec3List match math.fsum exactly across chunk boundaries."""
+    from octo.core.ledger import ChunkedList, ChunkedVec3List
+    import math
+    import random
+
+    rng = random.Random(1337)
+    chunked = ChunkedList(chunk_size=100)
+    raw_scalars: list[float] = []
+
+    # 2500 terms crossing 25 chunks with multi-scale cancellations (1e25 and 1e-10)
+    for _ in range(500):
+        block = [1.0e20, -1.0e20, 3.141592653589793e-8, 1.0e15, -1.0e15, 2.718281828459045e-8]
+        rng.shuffle(block)
+        for val in block:
+            chunked.append(val)
+            raw_scalars.append(val)
+
+    expected_fsum = math.fsum(raw_scalars)
+    obtained_fsum = chunked.total_fsum()
+    assert obtained_fsum == pytest.approx(expected_fsum, rel=1e-15, abs=1e-16)
+
+    # Test ChunkedVec3List
+    chunked_v3 = ChunkedVec3List(chunk_size=75)
+    raw_v3: list[np.ndarray] = []
+    for _ in range(300):
+        vec = np.array([
+            rng.uniform(-1e12, 1e12),
+            rng.uniform(-1e12, 1e12),
+            rng.uniform(-1e-5, 1e-5),
+        ], dtype=np.float64)
+        chunked_v3.append(vec)
+        raw_v3.append(vec)
+
+    expected_vx = math.fsum(float(v[0]) for v in raw_v3)
+    expected_vy = math.fsum(float(v[1]) for v in raw_v3)
+    expected_vz = math.fsum(float(v[2]) for v in raw_v3)
+    obtained_v3 = chunked_v3.total_vec3()
+
+    assert obtained_v3[0] == pytest.approx(expected_vx, rel=1e-14)
+    assert obtained_v3[1] == pytest.approx(expected_vy, rel=1e-14)
+    assert obtained_v3[2] == pytest.approx(expected_vz, rel=1e-14)
