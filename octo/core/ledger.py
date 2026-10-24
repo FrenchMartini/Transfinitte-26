@@ -63,6 +63,7 @@ class Ledger:
         # Per-step force and torque accumulators (list of vectors per component for math.fsum)
         self._step_forces: dict[ComponentId, list[np.ndarray]] = {}
         self._step_torques: dict[ComponentId, list[np.ndarray]] = {}
+        self._step_exchanges: list[Exchange] = []
         self.begin_step()
 
         # Running cumulative histories (stored as lists of floats/vectors for exact math.fsum)
@@ -92,6 +93,7 @@ class Ledger:
         for sink in EXHAUST_SINK_IDS:
             self._step_forces[sink] = []
             self._step_torques[sink] = []
+        self._step_exchanges = []
 
     def _validate_component(self, comp_id: ComponentId) -> None:
         if comp_id is None or (isinstance(comp_id, str) and not comp_id.strip()):
@@ -141,6 +143,7 @@ class Ledger:
 
         self._step_forces[exchange.b].append(f_on_b)
         self._step_forces[exchange.a].append(f_on_a)
+        self._step_exchanges.append(exchange)
 
         # 2. Book torque r x F on b and r x (-F) on a
         tau_on_b = np.cross(pt, f_on_b)
@@ -183,10 +186,25 @@ class Ledger:
             v_ex_sq = float(np.dot(v_exhaust_inertial, v_exhaust_inertial))
             self._exhaust_ke_terms.append(0.5 * dm * v_ex_sq)
 
-    def net_force_on(self, component_id: ComponentId) -> np.ndarray:
-        """Return read-only net force vector [N] on `component_id` in the current step."""
+    def net_force_on(
+        self,
+        component_id: ComponentId,
+        exclude_sources: set[ComponentId] | None = None,
+    ) -> np.ndarray:
+        """Return read-only net force vector [N] on `component_id` in the current step.
+
+        If `exclude_sources` is provided, omits exchanges where the other component is in `exclude_sources`.
+        """
         self._validate_component(component_id)
-        return _fsum_vec3(self._step_forces[component_id])
+        if exclude_sources is None:
+            return _fsum_vec3(self._step_forces[component_id])
+        matching_forces: list[np.ndarray] = []
+        for ex in self._step_exchanges:
+            if ex.b == component_id and ex.a not in exclude_sources:
+                matching_forces.append(ex.force_on_b)
+            elif ex.a == component_id and ex.b not in exclude_sources:
+                matching_forces.append(ex.reaction_on_a)
+        return _fsum_vec3(matching_forces)
 
     def net_torque_on(self, component_id: ComponentId) -> np.ndarray:
         """Return read-only net torque vector [N*m] on `component_id` about origin in the current step."""

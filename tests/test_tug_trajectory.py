@@ -51,20 +51,23 @@ def test_closed_form_spiral_trajectory_100_500_1000_years(base_config: dict, ref
     r0 = constants.AU
     v0 = math.sqrt(mu_sun / r0)
 
-    # 1. Theoretical benchmark with no losses
+    # 1. Theoretical benchmark WITH cant (5 deg) and yaw (8.6 deg) losses
     F_nominal = 2.208e17
-    a_noloss = F_nominal / m_earth
+    cant_factor = math.cos(math.radians(5.0))
+    yaw_factor = math.cos(math.radians(8.6))
+    f_eff = F_nominal * cant_factor * yaw_factor
+    a_eff = f_eff / m_earth
 
-    # At 1000 years with no losses, expected ~ 1.083 AU
+    # At 1000 years with losses, expected ~ 1.0818 AU (not 1.0832)
     t_1000yr = 1000.0 * constants.YEAR
-    v_1000 = v0 - a_noloss * t_1000yr
-    r_1000_noloss = (mu_sun / (v_1000**2)) / constants.AU
-    assert pytest.approx(r_1000_noloss, rel=rel_tol) == bench["earth_a_1000yr_au"]
+    v_1000 = v0 - a_eff * t_1000yr
+    r_1000 = (mu_sun / (v_1000**2)) / constants.AU
+    assert pytest.approx(r_1000, rel=rel_tol) == bench["earth_a_1000yr_au"]
 
     # 2. Benchmarks at 100, 500, 1000 years
     for yr, key in [(100, "earth_a_100yr_au"), (500, "earth_a_500yr_au"), (1000, "earth_a_1000yr_au")]:
         t = yr * constants.YEAR
-        v = v0 - a_noloss * t
+        v = v0 - a_eff * t
         r_au = (mu_sun / (v**2)) / constants.AU
         assert pytest.approx(r_au, rel=rel_tol) == bench[key]
 

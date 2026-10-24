@@ -303,9 +303,13 @@ class OrbitDriver:
         self._name_to_index: dict[str, int] = {}
 
         p_idx = 0
+        is_averaged_mode = self.config.get("mode") == "averaged"
+
         for body in state.bodies():
             body_name = str(body.name)
             if body_name in NON_SIMULATED_ACTORS or body.mass_kg <= 0.0:
+                continue
+            if is_averaged_mode and body_name not in {"Sun", "Earth"}:
                 continue
             self.sim.add(
                 m=float(body.mass_kg),
@@ -326,6 +330,8 @@ class OrbitDriver:
             self._setup_additional_forces()
 
     def _setup_additional_forces(self) -> None:
+        is_averaged_mode = self.config.get("mode") == "averaged"
+
         def af_callback(sim_pointer: Any) -> None:
             if self.ledger is None:
                 return
@@ -337,7 +343,10 @@ class OrbitDriver:
                     p_name = p_name.decode("utf-8")
                 if p_name and p.m > 0.0:
                     try:
-                        f_net = self.ledger.net_force_on(p_name)
+                        if is_averaged_mode:
+                            f_net = self.ledger.net_force_on(p_name, exclude_sources={"Sun"})
+                        else:
+                            f_net = self.ledger.net_force_on(p_name)
                     except Exception:
                         continue
                     p.ax += float(f_net[0]) / p.m

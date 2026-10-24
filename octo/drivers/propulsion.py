@@ -189,16 +189,32 @@ class CeresTugDriver:
             self.last_thrust_n = 0.0
             return
 
-        # Standoff vector from Earth to Tug
-        d_vec = r_tug - r_earth
-        d_mag = float(np.linalg.norm(d_vec))
-        if d_mag == 0.0:
-            return
-        d_hat = d_vec / d_mag
+        # Mode check: in averaged/reduced mode, tug is placed along track at Earth + d
+        is_averaged_mode = self.config.get("mode") == "averaged"
+        if is_averaged_mode:
+            r_earth_hat = r_earth / r_earth_mag if r_earth_mag > 0.0 else np.array([1.0, 0.0, 0.0])
+            t_hat = np.array([-r_earth_hat[1], r_earth_hat[0], 0.0], dtype=np.float64)
+            tug.position_m = r_earth + self.d_target * t_hat
+            tug.velocity_m_s = v_earth.copy()
+            r_tug = tug.position_m
+            v_tug = tug.velocity_m_s
+            d_vec = self.d_target * t_hat
+            d_mag = self.d_target
+            d_hat = t_hat
+            d_dot = 0.0
+            delta_f = 0.0
+        else:
+            # Standoff vector from Earth to Tug
+            d_vec = r_tug - r_earth
+            d_mag = float(np.linalg.norm(d_vec))
+            if d_mag == 0.0:
+                return
+            d_hat = d_vec / d_mag
 
-        # Relative velocity along line of separation
-        v_rel = v_tug - v_earth
-        d_dot = float(np.dot(d_vec, v_rel) / d_mag)
+            # Relative velocity along line of separation
+            v_rel = v_tug - v_earth
+            d_dot = float(np.dot(d_vec, v_rel) / d_mag)
+            delta_f = self.compute_station_keeping_thrust(d_mag, self.d_target, d_dot)
 
         # 1. Mutual gravitational pull between Earth and Tug
         f_grav_mag = float(constants.G * earth.mass_kg * tug.mass_kg / (d_mag**2))
@@ -211,8 +227,7 @@ class CeresTugDriver:
         # 2. Required forward thrust on the tug (pull + accelerate with Earth)
         f_nominal = f_grav_mag + tug.mass_kg * a_earth
 
-        # 3. Station-keeping PD controller correction
-        delta_f = self.compute_station_keeping_thrust(d_mag, self.d_target, d_dot)
+        # 3. Station-keeping thrust
         f_forward = max(0.0, f_nominal + delta_f)
 
         # 4. Plume canting compensation (two-cone split)
@@ -239,9 +254,11 @@ class CeresTugDriver:
 
         self.last_thrust_n = float(np.linalg.norm(f_thrust_vec))
 
-        # Mass depletion over dt
+        # Mass accounting: propellant resupplied under Enabler E2
         dm = mdot * dt
-        tug.mass_kg = max(0.0, tug.mass_kg - dm)
+        resupply = self.config.get("ceres_tug", {}).get("resupply_propellant", True)
+        if not resupply:
+            tug.mass_kg = max(0.0, tug.mass_kg - dm)
         self.total_propellant_spent_kg += dm
 
         # Relative exhaust velocity vector (opposite to thrust direction)
@@ -253,14 +270,14 @@ class CeresTugDriver:
 
         # 7. Book all Exchanges with explicit counterparties if ledger present
         if self.ledger is not None:
-            # Flow 1: Gravity pair between Tug and Earth
+            # Flow 1: Gravity pair between Tug and Earth (pull on Earth is force_on_b)
             self.ledger.book(
                 Exchange(
                     t=self.state.t,
-                    a="Earth",
-                    b="Tug",
-                    force_on_b=f_grav_on_tug,
-                    point=tug.position_m,
+                    a="Tug",
+                    b="Earth",
+                    force_on_b=f_grav_on_earth,
+                    point=earth.position_m,
                     owner="propulsion",
                 ),
                 dt=dt,

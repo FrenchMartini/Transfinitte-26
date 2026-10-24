@@ -86,11 +86,14 @@
     }
   },
   "spiral_trajectory_benchmark": {
-    "earth_a_100yr_au": 1.0076,
-    "earth_a_500yr_au": 1.0401,
-    "earth_a_1000yr_au": 1.0832,
-    "rel_tol": 5.0e-3,
+    "earth_a_100yr_au": 1.0078,
+    "earth_a_500yr_au": 1.0397,
+    "earth_a_1000yr_au": 1.0818,
+    "earth_a_100yr_adopted_au": 1.0083,
+    "earth_a_500yr_adopted_au": 1.0425,
+    "earth_a_1000yr_adopted_au": 1.0878,
+    "rel_tol": 1.0e-3,
     "status": "ASSUMED",
-    "source": "Independent closed-form constant tangential thrust v = v0 - (F_eff/M)*t, r = GM/v^2"
+    "source": "Independent closed-form slow spiral with cant (5 deg) and yaw (8.6 deg) losses (tools/closed_form_spiral.py)"
   }
 }
