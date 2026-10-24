@@ -50,7 +50,36 @@ export const ASSUMED_BEAM_CANT_DEG = 5.0; // Dual out-of-ecliptic relativistic t
 // Visual Scene Scales (in Scene Units where 1 AU = 10 units for depth resolution)
 export const SCENE_SCALE_AU = 10.0;
 
-// Playback months are one twelfth of a Julian year.
-export const MIN_PLAYBACK_SPEED_YEARS_PER_SEC = 1 / 12;
-export const MAX_PLAYBACK_SPEED_YEARS_PER_SEC = 500;
-export const DEFAULT_PLAYBACK_SPEED_YEARS_PER_SEC = MIN_PLAYBACK_SPEED_YEARS_PER_SEC;
+// Planetary Axial Rotation Periods in Seconds (IAU / NASA Planetary Fact Sheets)
+export const MERCURY_ROTATION_PERIOD_SECONDS = 58.6462 * 86400.0; // 58.65 days
+export const VENUS_ROTATION_PERIOD_SECONDS = -243.018 * 86400.0; // 243 days (retrograde)
+export const MOON_ROTATION_PERIOD_SECONDS = 27.32166 * 86400.0; // 27.32 days (tidally locked)
+export const MARS_ROTATION_PERIOD_SECONDS = 1.025957 * 86400.0; // 24.62 hours
+export const JUPITER_ROTATION_PERIOD_SECONDS = 0.41354 * 86400.0; // 9.93 hours
+export const SATURN_ROTATION_PERIOD_SECONDS = 0.44401 * 86400.0; // 10.66 hours
+export const SUN_ROTATION_PERIOD_SECONDS = 27.0 * 86400.0; // 27 days differential equatorial
+
+// Moon Orbital Periods in Seconds (IAU / NASA Fact Sheets)
+export const PHOBOS_ORBIT_PERIOD_SECONDS = 0.31891 * 86400.0; // 7.65 hours
+export const DEIMOS_ORBIT_PERIOD_SECONDS = 1.26244 * 86400.0; // 30.30 hours
+
+export const IO_ORBIT_PERIOD_SECONDS = 1.769138 * 86400.0; // 1.77 days
+export const EUROPA_ORBIT_PERIOD_SECONDS = 3.551181 * 86400.0; // 3.55 days
+export const GANYMEDE_ORBIT_PERIOD_SECONDS = 7.154553 * 86400.0; // 7.15 days
+export const CALLISTO_ORBIT_PERIOD_SECONDS = 16.689018 * 86400.0; // 16.69 days
+
+export const TITAN_ORBIT_PERIOD_SECONDS = 15.94542 * 86400.0; // 15.95 days
+export const ENCELADUS_ORBIT_PERIOD_SECONDS = 1.370218 * 86400.0; // 1.37 days
+export const TETHYS_ORBIT_PERIOD_SECONDS = 1.887802 * 86400.0; // 1.89 days
+export const RHEA_ORBIT_PERIOD_SECONDS = 4.517500 * 86400.0; // 4.52 days
+
+// Playback Speed Units in Years Per Real Second
+export const SPEED_DAY_YEARS_PER_SEC = 1.0 / 365.25; // ~0.002738 yr/s (1 day / real second)
+export const SPEED_WEEK_YEARS_PER_SEC = 7.0 / 365.25; // ~0.019165 yr/s (1 week / real second)
+export const SPEED_MONTH_YEARS_PER_SEC = 1.0 / 12.0; // ~0.083333 yr/s (1 month / real second)
+export const SPEED_YEAR_YEARS_PER_SEC = 1.0; // 1.0 yr/s (1 year / real second)
+
+export const MIN_PLAYBACK_SPEED_YEARS_PER_SEC = SPEED_DAY_YEARS_PER_SEC; // Min speed: 1 day/s
+export const MAX_PLAYBACK_SPEED_YEARS_PER_SEC = 500.0; // Max speed: 500 yr/s
+export const DEFAULT_PLAYBACK_SPEED_YEARS_PER_SEC = SPEED_MONTH_YEARS_PER_SEC; // Default: 1 month/s
+

@@ -24,7 +24,24 @@ import {
   ASTEROID_BELT_OUTER_AU,
   CERES_SEMI_MAJOR_AXIS_AU,
   EARTH_ROTATION_PERIOD_SECONDS,
-  YEAR_SECONDS
+  MERCURY_ROTATION_PERIOD_SECONDS,
+  VENUS_ROTATION_PERIOD_SECONDS,
+  MOON_ROTATION_PERIOD_SECONDS,
+  MARS_ROTATION_PERIOD_SECONDS,
+  JUPITER_ROTATION_PERIOD_SECONDS,
+  SATURN_ROTATION_PERIOD_SECONDS,
+  SUN_ROTATION_PERIOD_SECONDS,
+  YEAR_SECONDS,
+  PHOBOS_ORBIT_PERIOD_SECONDS,
+  DEIMOS_ORBIT_PERIOD_SECONDS,
+  IO_ORBIT_PERIOD_SECONDS,
+  EUROPA_ORBIT_PERIOD_SECONDS,
+  GANYMEDE_ORBIT_PERIOD_SECONDS,
+  CALLISTO_ORBIT_PERIOD_SECONDS,
+  TITAN_ORBIT_PERIOD_SECONDS,
+  ENCELADUS_ORBIT_PERIOD_SECONDS,
+  TETHYS_ORBIT_PERIOD_SECONDS,
+  RHEA_ORBIT_PERIOD_SECONDS
 } from '../config';
 
 const MERCURY_ORBIT_AU = 0.387;
@@ -51,6 +68,21 @@ function mulberry32(a: number) {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+const textureLoader = typeof document !== 'undefined' ? new THREE.TextureLoader() : null;
+
+function loadTexture(url: string, fallbackTexture: THREE.Texture | null = null): THREE.Texture | null {
+  if (!textureLoader || typeof document === 'undefined') return fallbackTexture;
+  try {
+    const tex = textureLoader.load(url, undefined, undefined, () => {
+      // Graceful fallback if texture fails to load
+    });
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  } catch {
+    return fallbackTexture;
+  }
 }
 
 function createEarthTexture(): THREE.CanvasTexture | null {
@@ -212,6 +244,61 @@ function createJupiterTexture(): THREE.CanvasTexture | null {
   return texture;
 }
 
+function createSunPhotosphereTexture(): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  // Luminous radial/spherical convection gradient (deep incandescent orange to radiant white-gold)
+  const grad = ctx.createLinearGradient(0, 0, 0, 512);
+  grad.addColorStop(0.0, '#d94b00');
+  grad.addColorStop(0.15, '#ff8000');
+  grad.addColorStop(0.5, '#ffd159');
+  grad.addColorStop(0.85, '#ff8000');
+  grad.addColorStop(1.0, '#d94b00');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1024, 512);
+
+  // High-frequency convective granulation cells
+  const prng = mulberry32(555);
+  ctx.fillStyle = 'rgba(255, 245, 180, 0.20)';
+  for (let i = 0; i < 600; i++) {
+    const cx = prng() * 1024;
+    const cy = prng() * 512;
+    const r = 3 + prng() * 12;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Active region magnetic sunspot clusters (Northern & Southern active bands)
+  const sunspotBands = [185, 325];
+  for (const bandY of sunspotBands) {
+    for (let s = 0; s < 7; s++) {
+      const cx = (s * 150 + 60 + prng() * 50) % 1024;
+      const cy = bandY + (prng() - 0.5) * 45;
+      // Penumbra halo
+      ctx.fillStyle = 'rgba(168, 65, 14, 0.75)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 14 + prng() * 10, 8 + prng() * 6, prng() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+      // Umbra core
+      ctx.fillStyle = '#220800';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 6 + prng() * 4, 3.5 + prng() * 2.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
 export class SolarSystemView {
   public scene: THREE.Scene;
   public camera: THREE.PerspectiveCamera;
@@ -221,8 +308,19 @@ export class SolarSystemView {
   private bodyMeshes: Map<string, THREE.Object3D> = new Map();
   private asteroidBeltMesh: THREE.InstancedMesh | null = null;
   private ceresMarker: THREE.Mesh | null = null;
-  private sunCoronaMesh: THREE.Mesh | null = null;
   private cosmicNebulaPoints: THREE.Points | null = null;
+
+  // Luminous Orbit Trajectories Group (Toggleable)
+  public orbitsGroup: THREE.Group = new THREE.Group();
+
+  // Dynamic Magnetic Prominence Loops and Solar Flares
+  private solarProminences: {
+    mesh: THREE.Mesh;
+    mat: THREE.MeshBasicMaterial;
+    baseOpacity: number;
+    phase: number;
+    speed: number;
+  }[] = [];
 
   // Prominent Ceres Tug & Thrusters
   private tugGroup: THREE.Group | null = null;
@@ -231,10 +329,16 @@ export class SolarSystemView {
   private tugTowline: THREE.Line | null = null;
   private towlineGeometry: THREE.BufferGeometry | null = null;
   private towlinePositions: Float32Array = new Float32Array(6);
-  private cameraFocus: 'system' | 'earth_tug' = 'system';
+
+  // Dynamic Camera Focus & Interactive Raycasting Selection
+  private cameraFocus: string = 'system';
   private currentEarthPos: THREE.Vector3 = new THREE.Vector3(10, 0, 0);
   private isThrustingActive: boolean = false;
   private pulseTime: number = 0;
+
+  private raycaster: THREE.Raycaster = new THREE.Raycaster();
+  private pointer: THREE.Vector2 = new THREE.Vector2();
+  public onFocusChange?: (targetName: string, displayName: string) => void;
 
   // Dynamic Traversed Trail (drawn only behind Earth as it traverses)
   private trailLine: THREE.Line | null = null;
@@ -250,14 +354,35 @@ export class SolarSystemView {
     this.camera = new THREE.PerspectiveCamera(45, aspect, 0.01, 5000);
     this.camera.position.set(0, 72, 72); // Comfortable framing showing all planets out to Jupiter/Saturn
 
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      logarithmicDepthBuffer: true,
-      powerPreference: 'high-performance'
-    });
+    let renderer: THREE.WebGLRenderer | null = null;
+    const configs: THREE.WebGLRendererParameters[] = [
+      { antialias: true, logarithmicDepthBuffer: true, powerPreference: 'default' },
+      { antialias: true, logarithmicDepthBuffer: false, powerPreference: 'default' },
+      { antialias: false, logarithmicDepthBuffer: false }
+    ];
+
+    for (const cfg of configs) {
+      try {
+        renderer = new THREE.WebGLRenderer(cfg);
+        break;
+      } catch (err) {
+        console.warn('WebGL config attempt failed:', cfg, err);
+      }
+    }
+
+    if (!renderer) {
+      throw new Error('WebGL is not available or context limit exceeded.');
+    }
+    this.renderer = renderer;
+
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(this.renderer.domElement);
+
+    this.renderer.domElement.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      console.warn('WebGL context lost, awaiting restoration...');
+    });
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
@@ -287,6 +412,7 @@ export class SolarSystemView {
     this.setupReferenceRings();
     this.setupAsteroidBelt();
     this.setupTugAndThrusters();
+    this.setupPointerInteractions();
 
     window.addEventListener('resize', this.onWindowResize);
   }
@@ -300,18 +426,13 @@ export class SolarSystemView {
   };
 
   private setupLighting(): void {
-    // 1. Bright, clean omnidirectional ambient space illumination
-    const ambientLight = new THREE.AmbientLight(0xffffff, 2.6);
+    // 1. Natural, gentle omnidirectional ambient space fill (eliminates pitch-black shadows)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.70);
     this.scene.add(ambientLight);
 
-    // 2. Camera headlight / fill light so whichever angle the user views from, the planets are crisply lit and bright!
-    const cameraLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    cameraLight.position.set(0, 0, 1);
-    this.camera.add(cameraLight);
-    this.scene.add(this.camera);
-
-    // 3. Warm, radiant central Sun light
-    const sunLight = new THREE.PointLight(0xfffaec, 5.0, 0, 0.0);
+    // 2. Primary Sun illumination radiating from the central solar body at (0, 0, 0)
+    // NOTE: Removed camera flashlight headlight to eliminate artificial specular glare on Earth!
+    const sunLight = new THREE.PointLight(0xfffaec, 4.5, 0, 0.0);
     sunLight.position.set(0, 0, 0);
     this.scene.add(sunLight);
   }
@@ -402,22 +523,111 @@ export class SolarSystemView {
   }
 
   /**
-   * Creates a luminous, anti-aliased continuous orbit ring.
-   * Uses a 2D mesh ribbon (RingGeometry) combined with a soft glow ribbon so it NEVER
-   * rasterizes into dotted/aliased pixels, remaining perfectly smooth and luminous from any distance.
+   * Sets up click listener with raycasting to select any planet or moon in the 3D scene.
+   */
+  private setupPointerInteractions(): void {
+    if (!this.renderer || !this.renderer.domElement) return;
+
+    let startX = 0;
+    let startY = 0;
+    let startTime = 0;
+
+    const dom = this.renderer.domElement;
+    dom.addEventListener('pointerdown', (e: PointerEvent) => {
+      startX = e.clientX;
+      startY = e.clientY;
+      startTime = performance.now();
+    });
+
+    dom.addEventListener('pointerup', (e: PointerEvent) => {
+      const elapsed = performance.now() - startTime;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Only treat as intentional click if the user didn't orbit/drag the view
+      if (dist < 6 && elapsed < 350) {
+        this.handlePointerClick(e.clientX, e.clientY);
+      }
+    });
+  }
+
+  private handlePointerClick(clientX: number, clientY: number): void {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+
+    const candidates: THREE.Object3D[] = [];
+    for (const [_, mesh] of this.bodyMeshes.entries()) {
+      candidates.push(mesh);
+    }
+    if (this.tugGroup) {
+      candidates.push(this.tugGroup);
+    }
+
+    const intersects = this.raycaster.intersectObjects(candidates, true);
+    if (intersects.length > 0) {
+      const hit = intersects[0];
+      let targetName: string | null = null;
+
+      let curr: THREE.Object3D | null = hit.object;
+      while (curr) {
+        if (curr === this.tugGroup) {
+          targetName = 'earth_tug';
+          break;
+        }
+        for (const [name, mesh] of this.bodyMeshes.entries()) {
+          if (curr === mesh) {
+            targetName = name;
+            break;
+          }
+        }
+        if (targetName) break;
+        curr = curr.parent;
+      }
+
+      if (targetName) {
+        this.setCameraFocus(targetName);
+        return;
+      }
+    }
+
+    // Proximity fallback for distant bodies: check ray distance to body center
+    let bestName: string | null = null;
+    let bestDistToRay = Infinity;
+
+    for (const [name, mesh] of this.bodyMeshes.entries()) {
+      const pos = mesh.position;
+      const camDist = this.camera.position.distanceTo(pos);
+      const clickTolerance = Math.max(0.6, camDist * 0.035);
+      const distToRay = this.raycaster.ray.distanceToPoint(pos);
+      if (distToRay < clickTolerance && distToRay < bestDistToRay) {
+        bestDistToRay = distToRay;
+        bestName = name;
+      }
+    }
+
+    if (bestName) {
+      this.setCameraFocus(bestName);
+    }
+  }
+
+  /**
+   * Creates a thin, elegant, continuous orbit ring with reduced width and subtle opacity.
    */
   private createLuminousOrbitRing(
     radiusAU: number,
     colorHex: number,
-    opacity: number = 0.85,
-    widthScene: number = 0.05
+    opacity: number = 0.28,
+    widthScene: number = 0.015
   ): THREE.Group {
     const group = new THREE.Group();
     const rScene = radiusAU * SCENE_SCALE_AU;
     const segments = 256;
 
-    // 1. Anti-aliased physical ribbon mesh (immune to 1px line rasterization dots)
-    const innerR = Math.max(0.1, rScene - widthScene);
+    const innerR = Math.max(0.05, rScene - widthScene);
     const outerR = rScene + widthScene;
     const ringGeo = new THREE.RingGeometry(innerR, outerR, segments);
     const ringMat = new THREE.MeshBasicMaterial({
@@ -431,60 +641,45 @@ export class SolarSystemView {
     ringMesh.rotation.x = Math.PI / 2; // Lie flat in X-Z ecliptic plane
     group.add(ringMesh);
 
-    // 2. Outer soft glow aura ribbon
-    const glowInner = Math.max(0.1, rScene - widthScene * 2.8);
-    const glowOuter = rScene + widthScene * 2.8;
-    const glowGeo = new THREE.RingGeometry(glowInner, glowOuter, segments);
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: colorHex,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: opacity * 0.32,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    });
-    const glowMesh = new THREE.Mesh(glowGeo, glowMat);
-    glowMesh.rotation.x = Math.PI / 2;
-    group.add(glowMesh);
-
     return group;
   }
 
   private setupReferenceRings(): void {
-    // 1. Mercury Orbit (0.387 AU) - Silver-grey solid luminous ribbon
-    const mercuryRing = this.createLuminousOrbitRing(MERCURY_ORBIT_AU, 0x94a3b8, 0.40, 0.025);
-    this.scene.add(mercuryRing);
+    this.orbitsGroup.clear();
 
-    // 2. Venus Orbit (0.723 AU) - Creamy gold solid luminous ribbon
-    const venusRing = this.createLuminousOrbitRing(VENUS_ORBIT_AU, 0xfde047, 0.45, 0.035);
-    this.scene.add(venusRing);
+    // 1. Mercury Orbit (0.387 AU) - Thin subtle silver-grey ribbon
+    const mercuryRing = this.createLuminousOrbitRing(MERCURY_ORBIT_AU, 0x94a3b8, 0.22, 0.012);
+    this.orbitsGroup.add(mercuryRing);
 
-    // 3. Earth Initial Reference Orbit (1.00 AU) - Continuous luminous Azure ribbon
-    const earthInitRing = this.createLuminousOrbitRing(1.0, 0x38bdf8, 0.55, 0.04);
-    this.scene.add(earthInitRing);
+    // 2. Venus Orbit (0.723 AU) - Thin creamy gold ribbon
+    const venusRing = this.createLuminousOrbitRing(VENUS_ORBIT_AU, 0xfde047, 0.24, 0.014);
+    this.orbitsGroup.add(venusRing);
+
+    // 3. Earth Initial Reference Orbit (1.00 AU) - Continuous subtle Azure ribbon
+    const earthInitRing = this.createLuminousOrbitRing(1.0, 0x38bdf8, 0.28, 0.016);
+    this.orbitsGroup.add(earthInitRing);
 
     // 4. Mars Crossing (1.524 AU) - Continuous solid coral-orange ribbon
-    const marsRing = this.createLuminousOrbitRing(MARS_ORBIT_AU, 0xf97316, 0.65, 0.05);
-    this.scene.add(marsRing);
+    const marsRing = this.createLuminousOrbitRing(MARS_ORBIT_AU, 0xf97316, 0.30, 0.016);
+    this.orbitsGroup.add(marsRing);
 
     // 5. Asteroid Belt Entry (2.20 AU) - Continuous solid golden-amber ribbon
-    const beltEntryRing = this.createLuminousOrbitRing(ASTEROID_BELT_INNER_AU, 0xfbbf24, 0.65, 0.06);
-    this.scene.add(beltEntryRing);
+    const beltEntryRing = this.createLuminousOrbitRing(ASTEROID_BELT_INNER_AU, 0xfbbf24, 0.30, 0.018);
+    this.orbitsGroup.add(beltEntryRing);
 
-    // 6. Target Orbit (2.70 AU) - Radiant electric cyan ribbon + primary destination aura
-    const targetRing = this.createLuminousOrbitRing(TARGET_ORBIT_AU, 0x00f0ff, 0.95, 0.08);
-    this.scene.add(targetRing);
-
-    const targetAura = this.createLuminousOrbitRing(TARGET_ORBIT_AU, 0x22d3ee, 0.40, 0.18);
-    this.scene.add(targetAura);
+    // 6. Target Orbit (2.70 AU) - Radiant electric cyan destination ribbon
+    const targetRing = this.createLuminousOrbitRing(TARGET_ORBIT_AU, 0x00f0ff, 0.50, 0.022);
+    this.orbitsGroup.add(targetRing);
 
     // 7. Jupiter Orbit (5.204 AU) - Continuous solid warm bronze ribbon
-    const jupiterRing = this.createLuminousOrbitRing(JUPITER_ORBIT_AU, 0xd97706, 0.65, 0.10);
-    this.scene.add(jupiterRing);
+    const jupiterRing = this.createLuminousOrbitRing(JUPITER_ORBIT_AU, 0xd97706, 0.30, 0.020);
+    this.orbitsGroup.add(jupiterRing);
 
     // 8. Saturn Orbit (9.582 AU) - Continuous solid golden-ochre ribbon
-    const saturnRing = this.createLuminousOrbitRing(SATURN_ORBIT_AU, 0xeab308, 0.50, 0.14);
-    this.scene.add(saturnRing);
+    const saturnRing = this.createLuminousOrbitRing(SATURN_ORBIT_AU, 0xeab308, 0.26, 0.022);
+    this.orbitsGroup.add(saturnRing);
+
+    this.scene.add(this.orbitsGroup);
   }
 
   private setupAsteroidBelt(): void {
@@ -743,134 +938,311 @@ export class SolarSystemView {
     if (mesh) return mesh;
 
     let geometry: THREE.BufferGeometry;
-    let material: THREE.Material;
 
     if (name === 'Sun') {
-      geometry = new THREE.SphereGeometry(1.0, 36, 36);
-      material = new THREE.MeshBasicMaterial({ color: 0xfffae0 });
-      mesh = new THREE.Mesh(geometry, material);
+      const sunGroup = new THREE.Group();
+      geometry = new THREE.SphereGeometry(1.0, 48, 48);
+      const sunTex = loadTexture('/textures/sun.jpg', createSunPhotosphereTexture());
+      const material = new THREE.MeshBasicMaterial(
+        sunTex ? { map: sunTex } : { color: 0xfffae0 }
+      );
+      const sunCoreMesh = new THREE.Mesh(geometry, material);
+      sunCoreMesh.name = 'sunCore';
+      sunGroup.add(sunCoreMesh);
 
-      // Inner Golden Corona Shell
-      const coronaGeo = new THREE.SphereGeometry(1.25, 32, 32);
-      const coronaMat = new THREE.MeshBasicMaterial({
-        color: 0xffaa00,
+      // Subtle chromospheric limb rim (thin edge darkening, NO blinding fuzzy glow ball)
+      const chromoGeo = new THREE.SphereGeometry(1.012, 36, 36);
+      const chromoMat = new THREE.MeshBasicMaterial({
+        color: 0xff7700,
         transparent: true,
-        opacity: 0.45,
-        blending: THREE.AdditiveBlending,
+        opacity: 0.28,
         side: THREE.BackSide,
         depthWrite: false
       });
-      const coronaInner = new THREE.Mesh(coronaGeo, coronaMat);
-      mesh.add(coronaInner);
+      sunGroup.add(new THREE.Mesh(chromoGeo, chromoMat));
 
-      // Outer Fiery Prominence Corona (breathing animated in render)
-      const coronaOuterGeo = new THREE.SphereGeometry(1.60, 32, 32);
-      const coronaOuterMat = new THREE.MeshBasicMaterial({
-        color: 0xff4500,
-        transparent: true,
-        opacity: 0.22,
-        blending: THREE.AdditiveBlending,
-        side: THREE.BackSide,
-        depthWrite: false
-      });
-      this.sunCoronaMesh = new THREE.Mesh(coronaOuterGeo, coronaOuterMat);
-      mesh.add(this.sunCoronaMesh);
+      // Realistic 3D Magnetic Prominence Loops / Coronal Arches
+      // Modeled after NASA SDO/AIA 304 Angstrom magnetic loops anchored on the solar photosphere
+      this.solarProminences = [];
+      const prng = mulberry32(404);
+      const loopCount = 12;
+
+      for (let i = 0; i < loopCount; i++) {
+        const theta1 = (i / loopCount) * Math.PI * 2 + (prng() - 0.5) * 0.2;
+        const phi = (prng() - 0.5) * 1.0; // within active sunspot latitudes (±30°)
+        const dTheta = 0.15 + prng() * 0.18; // span of the loop
+        const theta2 = theta1 + dTheta;
+
+        const p0 = new THREE.Vector3(
+          Math.cos(phi) * Math.cos(theta1),
+          Math.sin(phi),
+          Math.cos(phi) * Math.sin(theta1)
+        ).normalize();
+
+        const p2 = new THREE.Vector3(
+          Math.cos(phi) * Math.cos(theta2),
+          Math.sin(phi + (prng() - 0.5) * 0.1),
+          Math.cos(phi) * Math.sin(theta2)
+        ).normalize();
+
+        // Apex loops out into space
+        const apexHeight = 1.10 + prng() * 0.18; // 1.10 to 1.28 solar radii
+        const apex = p0.clone().add(p2).multiplyScalar(0.5).normalize().multiplyScalar(apexHeight);
+        apex.y += (prng() - 0.5) * 0.12; // Helical magnetic twist
+
+        const curve = new THREE.QuadraticBezierCurve3(p0, apex, p2);
+        const tubeRadius = 0.010 + prng() * 0.008;
+        const tubeGeo = new THREE.TubeGeometry(curve, 20, tubeRadius, 6, false);
+
+        const flameColors = [0xff3300, 0xff5500, 0xff7700, 0xff9900, 0xffaa11];
+        const col = flameColors[Math.floor(prng() * flameColors.length)];
+        const tubeMat = new THREE.MeshBasicMaterial({
+          color: col,
+          transparent: true,
+          opacity: 0.80,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+
+        const loopMesh = new THREE.Mesh(tubeGeo, tubeMat);
+        sunGroup.add(loopMesh);
+
+        this.solarProminences.push({
+          mesh: loopMesh,
+          mat: tubeMat,
+          baseOpacity: 0.75 + prng() * 0.20,
+          phase: prng() * Math.PI * 2,
+          speed: 1.5 + prng() * 2.0
+        });
+      }
+
+      // 4 Dynamic Solar Flare Eruption Spikes on the solar limb
+      for (let f = 0; f < 4; f++) {
+        const flareAngle = (f / 4) * Math.PI * 2 + 0.35;
+        const flareDir = new THREE.Vector3(Math.cos(flareAngle), (prng() - 0.5) * 0.4, Math.sin(flareAngle)).normalize();
+
+        const spikeGeo = new THREE.ConeGeometry(0.045, 0.26, 12, 1, true);
+        spikeGeo.translate(0, 0.13, 0);
+        const spikeMat = new THREE.MeshBasicMaterial({
+          color: 0xff4500,
+          transparent: true,
+          opacity: 0.70,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          side: THREE.DoubleSide
+        });
+        const spikeMesh = new THREE.Mesh(spikeGeo, spikeMat);
+        spikeMesh.position.copy(flareDir.clone().multiplyScalar(1.0));
+        spikeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), flareDir);
+        sunGroup.add(spikeMesh);
+
+        this.solarProminences.push({
+          mesh: spikeMesh,
+          mat: spikeMat,
+          baseOpacity: 0.65,
+          phase: f * 1.5,
+          speed: 3.0
+        });
+      }
+
+      mesh = sunGroup;
     } else if (name === 'Mercury') {
-      geometry = new THREE.SphereGeometry(0.22, 24, 24);
-      material = new THREE.MeshStandardMaterial({
-        color: 0xc4c7cc,
-        roughness: 0.25,
-        metalness: 0.1,
-        emissive: new THREE.Color(0x222222)
+      geometry = new THREE.SphereGeometry(0.22, 32, 32);
+      const mercTex = loadTexture('/textures/mercury.jpg');
+      const material = new THREE.MeshStandardMaterial({
+        ...(mercTex ? { map: mercTex } : { color: 0xc4c7cc }),
+        roughness: 0.85,
+        metalness: 0.1
       });
       mesh = new THREE.Mesh(geometry, material);
     } else if (name === 'Venus') {
-      geometry = new THREE.SphereGeometry(0.34, 28, 28);
-      material = new THREE.MeshStandardMaterial({
-        color: 0xfff0b3,
-        roughness: 0.20,
-        metalness: 0.0,
-        emissive: new THREE.Color(0x4a4422)
+      geometry = new THREE.SphereGeometry(0.34, 32, 32);
+      const venusTex = loadTexture('/textures/venus.jpg');
+      const material = new THREE.MeshStandardMaterial({
+        ...(venusTex ? { map: venusTex } : { color: 0xfff0b3 }),
+        roughness: 0.45,
+        metalness: 0.05
       });
       mesh = new THREE.Mesh(geometry, material);
     } else if (name === 'Earth') {
-      geometry = new THREE.SphereGeometry(0.38, 32, 32);
-      const earthTex = createEarthTexture();
-      material = new THREE.MeshStandardMaterial({
-        map: earthTex ?? undefined,
-        color: earthTex ? 0xffffff : 0x2277ff,
-        roughness: 0.30,
-        metalness: 0.05,
-        emissive: new THREE.Color(0x1a2e40)
+      geometry = new THREE.SphereGeometry(0.38, 48, 48);
+      const earthTex = loadTexture('/textures/earth_day.jpg', createEarthTexture());
+      // Non-reflective, photorealistic planetary material (Apollo / DSCOVR look)
+      const material = new THREE.MeshStandardMaterial({
+        ...(earthTex ? { map: earthTex } : { color: 0x2277ff }),
+        roughness: 0.88,
+        metalness: 0.0
       });
       mesh = new THREE.Mesh(geometry, material);
 
+      // Atmospheric Clouds Layer
+      const cloudsTex = loadTexture('/textures/earth_clouds.png');
+      const cloudsGeo = new THREE.SphereGeometry(0.385, 36, 36);
+      const cloudsMat = new THREE.MeshStandardMaterial({
+        ...(cloudsTex ? { map: cloudsTex } : { color: 0xffffff }),
+        transparent: true,
+        opacity: 0.38,
+        depthWrite: false,
+        roughness: 0.95
+      });
+      const cloudsMesh = new THREE.Mesh(cloudsGeo, cloudsMat);
+      cloudsMesh.name = 'earthClouds';
+      mesh.add(cloudsMesh);
+
       // Rayleigh Atmospheric Scattering Blue Halo
-      const atmoGeo = new THREE.SphereGeometry(0.42, 32, 32);
+      const atmoGeo = new THREE.SphereGeometry(0.41, 32, 32);
       const atmoMat = new THREE.MeshBasicMaterial({
         color: 0x60a5fa,
         transparent: true,
-        opacity: 0.40,
+        opacity: 0.25,
         blending: THREE.AdditiveBlending,
         side: THREE.BackSide,
         depthWrite: false
       });
       const atmoMesh = new THREE.Mesh(atmoGeo, atmoMat);
       mesh.add(atmoMesh);
+    } else if (name === 'Moon') {
+      geometry = new THREE.SphereGeometry(0.11, 28, 28);
+      const moonTex = loadTexture('/textures/moon.jpg');
+      const material = new THREE.MeshStandardMaterial({
+        ...(moonTex ? { map: moonTex } : { color: 0xcccccc }),
+        roughness: 0.90,
+        metalness: 0.05
+      });
+      mesh = new THREE.Mesh(geometry, material);
     } else if (name === 'Mars') {
-      geometry = new THREE.SphereGeometry(0.28, 24, 24);
-      const marsTex = createMarsTexture();
-      material = new THREE.MeshStandardMaterial({
-        map: marsTex ?? undefined,
-        color: marsTex ? 0xffffff : 0xcc5522,
-        roughness: 0.35,
+      geometry = new THREE.SphereGeometry(0.28, 32, 32);
+      const marsTex = loadTexture('/textures/mars.jpg', createMarsTexture());
+      const material = new THREE.MeshStandardMaterial({
+        ...(marsTex ? { map: marsTex } : { color: 0xcc5522 }),
+        roughness: 0.70,
+        metalness: 0.08
+      });
+      mesh = new THREE.Mesh(geometry, material);
+    } else if (name === 'Phobos') {
+      geometry = new THREE.DodecahedronGeometry(0.038, 1);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x78716c,
+        roughness: 0.92,
         metalness: 0.05,
-        emissive: new THREE.Color(0x3d170a)
+        flatShading: true
+      });
+      mesh = new THREE.Mesh(geometry, material);
+    } else if (name === 'Deimos') {
+      geometry = new THREE.DodecahedronGeometry(0.026, 1);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x8c7e73,
+        roughness: 0.90,
+        metalness: 0.05,
+        flatShading: true
       });
       mesh = new THREE.Mesh(geometry, material);
     } else if (name === 'Jupiter') {
-      geometry = new THREE.SphereGeometry(0.78, 32, 32);
-      const jupTex = createJupiterTexture();
-      material = new THREE.MeshStandardMaterial({
-        map: jupTex ?? undefined,
-        color: jupTex ? 0xffffff : 0xd4a373,
-        roughness: 0.35,
-        metalness: 0.05,
-        emissive: new THREE.Color(0x382c1a)
+      geometry = new THREE.SphereGeometry(0.78, 48, 48);
+      const jupTex = loadTexture('/textures/jupiter.jpg', createJupiterTexture());
+      const material = new THREE.MeshStandardMaterial({
+        ...(jupTex ? { map: jupTex } : { color: 0xd4a373 }),
+        roughness: 0.45,
+        metalness: 0.05
       });
       mesh = new THREE.Mesh(geometry, material);
-      // Clean, majestic Jupiter without any fake wobbling rings!
+    } else if (name === 'Io') {
+      geometry = new THREE.SphereGeometry(0.075, 24, 24);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b, // Sulfur yellow-orange volcanic crust
+        roughness: 0.80,
+        metalness: 0.1
+      });
+      mesh = new THREE.Mesh(geometry, material);
+    } else if (name === 'Europa') {
+      geometry = new THREE.SphereGeometry(0.068, 24, 24);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xf0f9ff, // Smooth brilliant water-ice crust
+        roughness: 0.35,
+        metalness: 0.05
+      });
+      mesh = new THREE.Mesh(geometry, material);
+    } else if (name === 'Ganymede') {
+      geometry = new THREE.SphereGeometry(0.108, 28, 28);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x94a3b8, // Dark silicate and grooved ice terrain
+        roughness: 0.85,
+        metalness: 0.05
+      });
+      mesh = new THREE.Mesh(geometry, material);
+    } else if (name === 'Callisto') {
+      geometry = new THREE.SphereGeometry(0.095, 24, 24);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x64748b, // Ancient heavily cratered dark ice
+        roughness: 0.90,
+        metalness: 0.05
+      });
+      mesh = new THREE.Mesh(geometry, material);
     } else if (name === 'Saturn') {
       const saturnGroup = new THREE.Group();
 
-      const globeGeo = new THREE.SphereGeometry(0.65, 32, 32);
+      const globeGeo = new THREE.SphereGeometry(0.65, 48, 48);
+      const saturnTex = loadTexture('/textures/saturn.jpg');
       const globeMat = new THREE.MeshStandardMaterial({
-        color: 0xf6d89b,
-        roughness: 0.35,
-        metalness: 0.05,
-        emissive: new THREE.Color(0x3d3014)
+        ...(saturnTex ? { map: saturnTex } : { color: 0xf6d89b }),
+        roughness: 0.50,
+        metalness: 0.05
       });
       const globeMesh = new THREE.Mesh(globeGeo, globeMat);
       globeMesh.name = 'saturnGlobe';
       saturnGroup.add(globeMesh);
 
-      // Saturnian Majestic Ring System (fixed tilt at 26.7 deg, does not tumble when globe spins)
+      // Saturnian Majestic Ring System (axial tilt 26.73 deg)
       const ringGeo = new THREE.RingGeometry(0.95, 1.85, 64);
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: 0xe2c688,
+      const ringTex = loadTexture('/textures/saturn_ring.png');
+      const ringMat = new THREE.MeshStandardMaterial({
+        ...(ringTex ? { map: ringTex } : { color: 0xe2c688 }),
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.92,
         side: THREE.DoubleSide,
+        roughness: 0.6,
         depthWrite: false
       });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.rotation.x = Math.PI / 2 + THREE.MathUtils.degToRad(26.7);
+      ringMesh.rotation.x = Math.PI / 2 + THREE.MathUtils.degToRad(26.73);
       saturnGroup.add(ringMesh);
 
       mesh = saturnGroup;
+    } else if (name === 'Enceladus') {
+      geometry = new THREE.SphereGeometry(0.042, 20, 20);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xffffff, // Pure reflective fresh snow/ice (albedo 0.99)
+        roughness: 0.20,
+        metalness: 0.0
+      });
+      mesh = new THREE.Mesh(geometry, material);
+    } else if (name === 'Tethys') {
+      geometry = new THREE.SphereGeometry(0.050, 20, 20);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        roughness: 0.80,
+        metalness: 0.05
+      });
+      mesh = new THREE.Mesh(geometry, material);
+    } else if (name === 'Rhea') {
+      geometry = new THREE.SphereGeometry(0.062, 24, 24);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xcbd5e1,
+        roughness: 0.85,
+        metalness: 0.05
+      });
+      mesh = new THREE.Mesh(geometry, material);
+    } else if (name === 'Titan') {
+      geometry = new THREE.SphereGeometry(0.112, 28, 28);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b, // Dense amber-orange photochemical nitrogen haze
+        roughness: 0.70,
+        metalness: 0.0
+      });
+      mesh = new THREE.Mesh(geometry, material);
     } else {
       geometry = new THREE.SphereGeometry(0.2, 16, 16);
-      material = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, emissive: new THREE.Color(0x222222) });
+      const material = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, emissive: new THREE.Color(0x222222) });
       mesh = new THREE.Mesh(geometry, material);
     }
 
@@ -888,10 +1260,15 @@ export class SolarSystemView {
       mesh.position.set(scenePos[0], scenePos[1], scenePos[2]);
       if (name === 'Earth') {
         // Set the daily phase from replay time so pause and seeking are deterministic.
-        // Reduce time before converting to radians to preserve precision on long runs.
+        // Earth turns exactly once per 24 simulated hours (86,400 s)
         const dayPhase_s = ((time_s % EARTH_ROTATION_PERIOD_SECONDS) + EARTH_ROTATION_PERIOD_SECONDS)
           % EARTH_ROTATION_PERIOD_SECONDS;
         mesh.rotation.y = (dayPhase_s / EARTH_ROTATION_PERIOD_SECONDS) * 2 * Math.PI;
+
+        const clouds = mesh.getObjectByName('earthClouds');
+        if (clouds) {
+          clouds.rotation.y = ((dayPhase_s * 1.04) / EARTH_ROTATION_PERIOD_SECONDS) * 2 * Math.PI;
+        }
       }
     }
 
@@ -917,8 +1294,156 @@ export class SolarSystemView {
       }
     }
 
-    // 3. Position and Orient Ceres Tug and Relativistic Thrusters
+    // 3. Realistic, deterministic axial self-spin for ALL planets based on simulation time
+    const rotationPeriods: Record<string, number> = {
+      Mercury: MERCURY_ROTATION_PERIOD_SECONDS,
+      Venus: VENUS_ROTATION_PERIOD_SECONDS, // negative = retrograde
+      Mars: MARS_ROTATION_PERIOD_SECONDS,
+      Jupiter: JUPITER_ROTATION_PERIOD_SECONDS,
+      Saturn: SATURN_ROTATION_PERIOD_SECONDS,
+      Sun: SUN_ROTATION_PERIOD_SECONDS,
+      Moon: MOON_ROTATION_PERIOD_SECONDS
+    };
+
+    for (const [pName, period_s] of Object.entries(rotationPeriods)) {
+      const bodyMesh = this.bodyMeshes.get(pName);
+      if (!bodyMesh) continue;
+      const absPeriod = Math.abs(period_s);
+      const phase = ((time_s % absPeriod) + absPeriod) % absPeriod;
+      const angle = (phase / absPeriod) * 2 * Math.PI;
+      const signedAngle = period_s >= 0 ? angle : -angle;
+
+      if (pName === 'Saturn') {
+        const globe = bodyMesh.getObjectByName('saturnGlobe');
+        if (globe) globe.rotation.y = signedAngle;
+      } else if (pName === 'Sun') {
+        const core = bodyMesh.getObjectByName('sunCore');
+        if (core) core.rotation.y = signedAngle;
+        else bodyMesh.rotation.y = signedAngle;
+      } else {
+        bodyMesh.rotation.y = signedAngle;
+      }
+    }
+
+    // 4. Update Moons for Earth, Mars, Jupiter, and Saturn
     const earthData = frame.bodies['Earth'];
+    if (earthData) {
+      const earthScene = eclipticToScene([earthData.x, earthData.y, earthData.z], [0, 0, 0], SCENE_SCALE_AU);
+      if (!frame.bodies['Moon']) {
+        const moonMesh = this.getOrCreateBodyMesh('Moon');
+        const lunarAngle = (2.0 * Math.PI * time_s) / MOON_ROTATION_PERIOD_SECONDS;
+        const lunarDist = 0.92;
+        moonMesh.position.set(
+          earthScene[0] + lunarDist * Math.cos(lunarAngle),
+          earthScene[1] + lunarDist * 0.089 * Math.sin(lunarAngle),
+          earthScene[2] + lunarDist * Math.sin(lunarAngle)
+        );
+      }
+    }
+
+    // Martian Moons: Phobos & Deimos
+    const marsMesh = this.bodyMeshes.get('Mars');
+    if (marsMesh) {
+      const phobosMesh = this.getOrCreateBodyMesh('Phobos');
+      const phobosAngle = (2.0 * Math.PI * time_s) / PHOBOS_ORBIT_PERIOD_SECONDS;
+      phobosMesh.position.set(
+        marsMesh.position.x + 0.45 * Math.cos(phobosAngle),
+        marsMesh.position.y + 0.45 * 0.08 * Math.sin(phobosAngle),
+        marsMesh.position.z + 0.45 * Math.sin(phobosAngle)
+      );
+      phobosMesh.rotation.y = phobosAngle;
+
+      const deimosMesh = this.getOrCreateBodyMesh('Deimos');
+      const deimosAngle = (2.0 * Math.PI * time_s) / DEIMOS_ORBIT_PERIOD_SECONDS;
+      deimosMesh.position.set(
+        marsMesh.position.x + 0.72 * Math.cos(deimosAngle),
+        marsMesh.position.y + 0.72 * 0.05 * Math.sin(deimosAngle),
+        marsMesh.position.z + 0.72 * Math.sin(deimosAngle)
+      );
+      deimosMesh.rotation.y = deimosAngle;
+    }
+
+    // Jovian Galilean Moons: Io, Europa, Ganymede, Callisto
+    const jupMesh = this.bodyMeshes.get('Jupiter');
+    if (jupMesh) {
+      const ioMesh = this.getOrCreateBodyMesh('Io');
+      const ioAngle = (2.0 * Math.PI * time_s) / IO_ORBIT_PERIOD_SECONDS;
+      ioMesh.position.set(
+        jupMesh.position.x + 1.15 * Math.cos(ioAngle),
+        jupMesh.position.y + 1.15 * 0.04 * Math.sin(ioAngle),
+        jupMesh.position.z + 1.15 * Math.sin(ioAngle)
+      );
+      ioMesh.rotation.y = ioAngle;
+
+      const europaMesh = this.getOrCreateBodyMesh('Europa');
+      const europaAngle = (2.0 * Math.PI * time_s) / EUROPA_ORBIT_PERIOD_SECONDS;
+      europaMesh.position.set(
+        jupMesh.position.x + 1.48 * Math.cos(europaAngle),
+        jupMesh.position.y + 1.48 * 0.04 * Math.sin(europaAngle),
+        jupMesh.position.z + 1.48 * Math.sin(europaAngle)
+      );
+      europaMesh.rotation.y = europaAngle;
+
+      const ganymedeMesh = this.getOrCreateBodyMesh('Ganymede');
+      const ganymedeAngle = (2.0 * Math.PI * time_s) / GANYMEDE_ORBIT_PERIOD_SECONDS;
+      ganymedeMesh.position.set(
+        jupMesh.position.x + 1.92 * Math.cos(ganymedeAngle),
+        jupMesh.position.y + 1.92 * 0.03 * Math.sin(ganymedeAngle),
+        jupMesh.position.z + 1.92 * Math.sin(ganymedeAngle)
+      );
+      ganymedeMesh.rotation.y = ganymedeAngle;
+
+      const callistoMesh = this.getOrCreateBodyMesh('Callisto');
+      const callistoAngle = (2.0 * Math.PI * time_s) / CALLISTO_ORBIT_PERIOD_SECONDS;
+      callistoMesh.position.set(
+        jupMesh.position.x + 2.45 * Math.cos(callistoAngle),
+        jupMesh.position.y + 2.45 * 0.03 * Math.sin(callistoAngle),
+        jupMesh.position.z + 2.45 * Math.sin(callistoAngle)
+      );
+      callistoMesh.rotation.y = callistoAngle;
+    }
+
+    // Saturnian Major Moons: Enceladus, Tethys, Rhea, Titan
+    const satMesh = this.bodyMeshes.get('Saturn');
+    if (satMesh) {
+      const enceladusMesh = this.getOrCreateBodyMesh('Enceladus');
+      const encAngle = (2.0 * Math.PI * time_s) / ENCELADUS_ORBIT_PERIOD_SECONDS;
+      enceladusMesh.position.set(
+        satMesh.position.x + 1.28 * Math.cos(encAngle),
+        satMesh.position.y + 1.28 * 0.05 * Math.sin(encAngle),
+        satMesh.position.z + 1.28 * Math.sin(encAngle)
+      );
+      enceladusMesh.rotation.y = encAngle;
+
+      const tethysMesh = this.getOrCreateBodyMesh('Tethys');
+      const tethysAngle = (2.0 * Math.PI * time_s) / TETHYS_ORBIT_PERIOD_SECONDS;
+      tethysMesh.position.set(
+        satMesh.position.x + 1.55 * Math.cos(tethysAngle),
+        satMesh.position.y + 1.55 * 0.04 * Math.sin(tethysAngle),
+        satMesh.position.z + 1.55 * Math.sin(tethysAngle)
+      );
+      tethysMesh.rotation.y = tethysAngle;
+
+      const rheaMesh = this.getOrCreateBodyMesh('Rhea');
+      const rheaAngle = (2.0 * Math.PI * time_s) / RHEA_ORBIT_PERIOD_SECONDS;
+      rheaMesh.position.set(
+        satMesh.position.x + 1.86 * Math.cos(rheaAngle),
+        satMesh.position.y + 1.86 * 0.04 * Math.sin(rheaAngle),
+        satMesh.position.z + 1.86 * Math.sin(rheaAngle)
+      );
+      rheaMesh.rotation.y = rheaAngle;
+
+      const titanMesh = this.getOrCreateBodyMesh('Titan');
+      const titanAngle = (2.0 * Math.PI * time_s) / TITAN_ORBIT_PERIOD_SECONDS;
+      titanMesh.position.set(
+        satMesh.position.x + 2.45 * Math.cos(titanAngle),
+        satMesh.position.y + 2.45 * 0.03 * Math.sin(titanAngle),
+        satMesh.position.z + 2.45 * Math.sin(titanAngle)
+      );
+      titanMesh.rotation.y = titanAngle;
+    }
+
+    // 5. Position and Orient Ceres Tug and Relativistic Thrusters
     if (earthData) {
       const earthScene = eclipticToScene([earthData.x, earthData.y, earthData.z], [0, 0, 0], SCENE_SCALE_AU);
       this.currentEarthPos.set(earthScene[0], earthScene[1], earthScene[2]);
@@ -938,14 +1463,11 @@ export class SolarSystemView {
       dir.normalize();
 
       // Visual standoff distance: 1.4 scene units ahead of Earth center
-      // (Earth radius is 0.35, giving 1.05 units clear visual separation)
       const visualStandoff = 1.4;
       const tugVisualPos = this.currentEarthPos.clone().addScaledVector(dir, visualStandoff);
 
       if (this.tugGroup) {
         this.tugGroup.position.copy(tugVisualPos);
-        // Group.lookAt points local +Z at its target; +Z holds the aft engines.
-        // Aim it backward so the plumes oppose the forward pull on Earth.
         this.tugGroup.lookAt(tugVisualPos.clone().sub(dir));
       }
 
@@ -977,53 +1499,149 @@ export class SolarSystemView {
         mat.opacity = this.isThrustingActive ? 0.9 : 0.35;
         mat.color.setHex(this.isThrustingActive ? 0x00f0ff : 0x5588aa);
       }
+    }
 
-      // Camera Tracking if focused on Earth-Tug system
-      if (this.cameraFocus === 'earth_tug') {
+    // 6. Camera Target Tracking for focused celestial bodies
+    if (this.cameraFocus && this.cameraFocus !== 'system') {
+      let targetPos: THREE.Vector3 | null = null;
+      if (this.cameraFocus === 'earth_tug' || this.cameraFocus === 'Earth' || this.cameraFocus === 'Tug') {
+        targetPos = this.currentEarthPos;
+      } else {
+        const mesh = this.bodyMeshes.get(this.cameraFocus);
+        if (mesh) targetPos = mesh.position;
+      }
+
+      if (targetPos && this.controls) {
         const offset = this.camera.position.clone().sub(this.controls.target);
-        this.controls.target.copy(this.currentEarthPos);
-        this.camera.position.copy(this.currentEarthPos).add(offset);
+        this.controls.target.copy(targetPos);
+        this.camera.position.copy(targetPos).add(offset);
       }
     }
 
-    // 4. Update the traversed trajectory trail up to current time_s
+    // 7. Update the traversed trajectory trail up to current time_s
     this.updateTraversedTrail(time_s);
   }
 
-  public setCameraFocus(mode: 'system' | 'earth_tug'): void {
+  public setOrbitsVisible(visible: boolean): void {
+    if (this.orbitsGroup) {
+      this.orbitsGroup.visible = visible;
+    }
+  }
+
+  public toggleOrbits(): boolean {
+    if (this.orbitsGroup) {
+      this.orbitsGroup.visible = !this.orbitsGroup.visible;
+      return this.orbitsGroup.visible;
+    }
+    return true;
+  }
+
+  public areOrbitsVisible(): boolean {
+    return this.orbitsGroup ? this.orbitsGroup.visible : true;
+  }
+
+  public setCameraFocus(mode: string): void {
     this.cameraFocus = mode;
+
     if (mode === 'system') {
       this.controls.target.set(0, 0, 0);
       this.camera.position.set(0, 72, 72);
-    } else {
-      // Zoom in directly to Earth-Tug system
+    } else if (mode === 'earth_tug' || mode === 'Tug') {
       this.controls.target.copy(this.currentEarthPos);
       this.camera.position.set(
         this.currentEarthPos.x + 3.0,
         this.currentEarthPos.y + 2.2,
         this.currentEarthPos.z + 3.8
       );
+    } else {
+      let targetPos: THREE.Vector3 | null = null;
+      if (mode === 'Earth') {
+        targetPos = this.currentEarthPos;
+      } else {
+        const mesh = this.bodyMeshes.get(mode);
+        if (mesh) targetPos = mesh.position.clone();
+      }
+
+      if (targetPos) {
+        this.controls.target.copy(targetPos);
+        const distMap: Record<string, number> = {
+          Sun: 4.5,
+          Mercury: 1.2,
+          Venus: 1.5,
+          Earth: 2.2,
+          Mars: 1.5,
+          Jupiter: 3.5,
+          Saturn: 3.8,
+          Moon: 0.6,
+          Phobos: 0.3,
+          Deimos: 0.25,
+          Io: 0.45,
+          Europa: 0.45,
+          Ganymede: 0.55,
+          Callisto: 0.55,
+          Titan: 0.55,
+          Enceladus: 0.35,
+          Tethys: 0.40,
+          Rhea: 0.45
+        };
+        const dist = distMap[mode] ?? 2.0;
+        this.camera.position.set(targetPos.x + dist * 0.8, targetPos.y + dist * 0.5, targetPos.z + dist * 1.0);
+      }
     }
     this.controls.update();
+
+    if (this.onFocusChange) {
+      this.onFocusChange(mode, this.getFocusDisplayName(mode));
+    }
   }
 
-  public toggleCameraFocus(): 'system' | 'earth_tug' {
+  public toggleCameraFocus(): string {
     const next = this.cameraFocus === 'system' ? 'earth_tug' : 'system';
     this.setCameraFocus(next);
     return next;
   }
 
-  public getCameraFocus(): 'system' | 'earth_tug' {
+  public getCameraFocus(): string {
     return this.cameraFocus;
+  }
+
+  public getFocusDisplayName(mode: string): string {
+    const names: Record<string, string> = {
+      system: 'Solar System',
+      earth_tug: 'Earth-Tug',
+      Sun: 'Sun',
+      Mercury: 'Mercury',
+      Venus: 'Venus',
+      Earth: 'Earth',
+      Moon: 'Moon',
+      Mars: 'Mars',
+      Phobos: 'Phobos',
+      Deimos: 'Deimos',
+      Jupiter: 'Jupiter',
+      Io: 'Io',
+      Europa: 'Europa',
+      Ganymede: 'Ganymede',
+      Callisto: 'Callisto',
+      Saturn: 'Saturn',
+      Titan: 'Titan',
+      Enceladus: 'Enceladus',
+      Tethys: 'Tethys',
+      Rhea: 'Rhea'
+    };
+    return names[mode] || mode;
   }
 
   public render(): void {
     this.pulseTime += 0.05;
 
-    // 1. Sun corona breathing pulsation
-    if (this.sunCoronaMesh) {
-      const s = 1.0 + 0.06 * Math.sin(this.pulseTime * 2.2);
-      this.sunCoronaMesh.scale.set(s, s, s);
+    // 1. Animate realistic solar magnetic prominence loops and limb flare eruptions
+    if (this.solarProminences && this.solarProminences.length > 0) {
+      for (const p of this.solarProminences) {
+        const pulse = Math.sin(this.pulseTime * p.speed + p.phase);
+        p.mat.opacity = p.baseOpacity * (0.8 + 0.2 * pulse);
+        const s = 1.0 + 0.03 * pulse;
+        p.mesh.scale.set(s, s, s);
+      }
     }
 
     // 2. Thruster relativistic plasma pulsation
@@ -1034,23 +1652,7 @@ export class SolarSystemView {
       this.tugThrusterPlume2.scale.set(pulse2, pulse2, pulse2 * (0.95 + 0.1 * Math.cos(this.pulseTime * 28.0)));
     }
 
-    // 3. Illustrative rotations for reference planets; Earth follows replay time in updateBodies.
-    const marsMesh = this.bodyMeshes.get('Mars');
-    if (marsMesh) marsMesh.rotation.y += 0.006;
-
-    const jupiterMesh = this.bodyMeshes.get('Jupiter');
-    if (jupiterMesh) jupiterMesh.rotation.y += 0.012;
-
-    const saturnGlobe = this.scene.getObjectByName('saturnGlobe');
-    if (saturnGlobe) saturnGlobe.rotation.y += 0.010;
-
-    const mercuryMesh = this.bodyMeshes.get('Mercury');
-    if (mercuryMesh) mercuryMesh.rotation.y += 0.004;
-
-    const venusMesh = this.bodyMeshes.get('Venus');
-    if (venusMesh) venusMesh.rotation.y -= 0.003;
-
-    // 4. Subtle dynamic motion for Asteroid Belt and Cosmic Nebula
+    // 3. Dynamic motion for Asteroid Belt and Cosmic Nebula background
     if (this.asteroidBeltMesh) {
       this.asteroidBeltMesh.rotation.y += 0.00015;
     }
@@ -1064,6 +1666,12 @@ export class SolarSystemView {
 
   public dispose(): void {
     window.removeEventListener('resize', this.onWindowResize);
-    this.renderer.dispose();
+    try {
+      this.renderer.dispose();
+      this.renderer.forceContextLoss();
+      if (this.renderer.domElement && this.renderer.domElement.parentNode) {
+        this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
+      }
+    } catch {}
   }
 }
