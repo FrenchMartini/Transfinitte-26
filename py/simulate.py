@@ -31,11 +31,24 @@ from octo.core import constants
 from octo.core.state import State, BodyState
 from octo.core.ledger import Ledger
 from octo.core.exchange import Exchange
-from octo.core.flags import FlagRegistry
+from octo.core.flags import Flag, FlagRegistry
 from octo.core.thresholds import has_assumed_thresholds, load_thresholds
 from octo.core.validator import RulebookValidator
 import importlib.util
+import yaml
 from octo.drivers.propulsion import lorentz_gamma
+from octo.drivers.habitability import (
+    HabitabilityDriver,
+    compute_insolation,
+    compute_equilibrium_temperature,
+    compute_surface_waste_heat_flux,
+    compute_plume_clearance_m,
+)
+from octo.drivers.structure import (
+    StructureDriver,
+    compute_cradle_bearing_stress_pa,
+    compute_safety_factor,
+)
 
 _exp_path = ROOT_DIR / "py" / "export_replay.py"
 _exp_spec = importlib.util.spec_from_file_location("export_replay", _exp_path)
@@ -51,24 +64,45 @@ def run_full_spiral_simulation(
     dt_days: float = 10.0,
     coast_years: float = 50.0,
     downsample_frames: int = 1200,
+    rogue_unbooked_force_n: float = 0.0,
 ) -> dict:
     """Run full reduced model simulation to target radius cutoff plus coast, audit ledger, and save plot/replay."""
     mu_sun = constants.GM_SUN
     m_sun = mu_sun / constants.G
     m_earth = constants.M_EARTH
+    m_moon = constants.M_MOON
+    m_earth_moon = m_earth + m_moon  # Earth-Moon barycenter mass
     m_tug = 9.4e20
     d0 = 1.2701e9  # Standoff distance for M_tug=9.4e20 kg
 
-    # Adopted propulsion parameters for 9,500 yr arrival
-    mdot = 2.501e9  # kg/s
-    ve = 0.3 * constants.C_LIGHT
+    # Load configuration
+    config_path = ROOT_DIR / "config" / "base.yaml"
+    base_config: dict = {}
+    if config_path.exists():
+        with open(config_path, "r", encoding="utf-8") as f:
+            base_config = yaml.safe_load(f) or {}
+
+    tug_cfg = base_config.get("ceres_tug", {})
+    prop_cfg = base_config.get("propulsion", {})
+    mirror_cfg = base_config.get("climate_mirror", {
+        "active": True,
+        "area_m2": 8.44e14,
+        "reflectivity": 0.95,
+        "mass_kg": 1.0e11,
+        "capture_efficiency": 1.0,
+        "station_keeping_modelled": False,
+    })
+
+    # Adopted propulsion parameters
+    mdot = float(prop_cfg.get("mass_flow_kg_s", 2.501e9))
+    ve = float(prop_cfg.get("exhaust_velocity_m_s", 0.3 * constants.C_LIGHT))
     gamma = lorentz_gamma(ve, constants.C_LIGHT)
     f_nominal = mdot * gamma * ve
     f_engine = f_nominal
-    cone_deg = 5.0
+    cone_deg = float(tug_cfg.get("cone_half_angle_deg", 5.0))
     cant_factor = math.cos(math.radians(cone_deg))
     f_cant = f_nominal * cant_factor
-    p_beam = 1.0e25
+    p_beam = float(tug_cfg.get("beam_power_w", 1.6e25))
     f_photon = p_beam / constants.C_LIGHT
     yaw_rad = math.atan(f_photon / f_cant)
     yaw_deg = math.degrees(yaw_rad)
@@ -77,27 +111,48 @@ def run_full_spiral_simulation(
     f_pull = (constants.G * m_earth * m_tug) / (d0 ** 2)
     f_cone = f_nominal / 2.0
     p_jet = (gamma - 1.0) * mdot * (constants.C_LIGHT**2)
-    p_waste = p_jet * 0.01
+    waste_heat_frac = float(tug_cfg.get("waste_heat_fraction", 0.01))
+    p_waste = p_jet * waste_heat_frac
+
+    p_beam_cap = float(tug_cfg.get("peak_beam_power_w", 1.6e25))
+
+    # Power cap audit against E1 beamed power capacity
+    assert p_jet <= p_beam_cap, f"Jet kinetic power {p_jet:.3e} W exceeds beam power capacity {p_beam_cap:.3e} W"
 
     target_r_m = target_radius_au * constants.AU
     dt_s = dt_days * 86400.0
 
     # Initialize State and Ledger
-    init_energy = 1.0e30
+    init_energy = 1.0e35
     state = State(t=0.0, stored_energy_j=init_energy)
     state.add_body(BodyState("Sun", m_sun, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
     r0 = constants.AU
     v0 = math.sqrt(mu_sun / r0)
     state.add_body(BodyState("Earth", m_earth, [r0, 0.0, 0.0], [0.0, v0, 0.0]))
     state.add_body(BodyState("Tug", m_tug, [r0, d0, 0.0], [0.0, v0, 0.0]))
-    state.add_body(BodyState("BeltSupply", 1.0e22, [1.0e15, 0.0, 0.0], [0.0, 0.0, 0.0]))
-    state.add_body(BodyState("ExhaustSink", 0.0, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
-    state.add_body(BodyState("PowerPlant", 0.0, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
+    state.add_body(BodyState("BeltSupply", 1.0e22, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
 
     thresholds = load_thresholds()
     ledger = Ledger(state, thresholds)
+    init_total_energy = ledger._init_total_energy_j
 
-    # Initialize REBOUND IAS15 with Sun and Earth ONLY
+    # Initialize Habitability and Structure Drivers
+    driver_config = {
+        "climate_mirror": mirror_cfg,
+        "ceres_tug": {
+            "thrust_n": f_nominal,
+            "radius_m": 4.73e5,
+            "cradle_yield_strength_pa": 5.0e6,
+            "waste_heat_w": p_waste,
+            "cant_angle_deg": cone_deg,
+        },
+        "waste_heat_w": p_waste,
+        "cant_angle_deg": cone_deg,
+    }
+    habitability_driver = HabitabilityDriver(state, ledger=ledger, config=driver_config, thresholds=thresholds)
+    structure_driver = StructureDriver(state, ledger=ledger, config=driver_config, thresholds=thresholds)
+
+    # Initialize REBOUND IAS15 with Sun and Earth
     sim = rebound.Simulation()
     sim.integrator = "ias15"
     sim.G = constants.G
@@ -114,9 +169,9 @@ def run_full_spiral_simulation(
             return
         s = sim_pointer.contents
         pe = s.particles[1]
-        pe.ax += f_from_ledger[0] / pe.m
-        pe.ay += f_from_ledger[1] / pe.m
-        pe.az += f_from_ledger[2] / pe.m
+        pe.ax += (f_from_ledger[0] + rogue_unbooked_force_n) / (pe.m + m_tug)
+        pe.ay += f_from_ledger[1] / (pe.m + m_tug)
+        pe.az += f_from_ledger[2] / (pe.m + m_tug)
 
     sim.additional_forces = af
     sim.force_is_velocity_dependent = 0
@@ -125,19 +180,42 @@ def run_full_spiral_simulation(
     step_force_audit: list[dict] = []
     times_yr: list[float] = []
     a_vals_au: list[float] = []
+    all_mission_flags: list[Flag] = []
+
+    # Monitor tracking
+    min_insolation = float("inf")
+    max_insolation = 0.0
+    min_teq = float("inf")
+    max_teq = 0.0
+    min_clearance = float("inf")
+    max_waste_heat = 0.0
+    min_sf = float("inf")
+    max_stress = 0.0
+    max_accel = 0.0
+    max_mass_drift = 0.0
+    max_mom_drift = 0.0
+    max_ang_mom_drift = 0.0
+    max_energy_drift = 0.0
 
     step_idx = 0
     total_propellant_kg = 0.0
     cutoff_time_s = 0.0
     arrival_year = 0.0
 
+    # Initial audit
+    init_ledger_flags = ledger.audit(state, 0.0)
+    init_hab_flags = habitability_driver.step(0.0)
+    init_struct_flags = structure_driver.step(0.0)
+    init_step_flags = init_ledger_flags + init_hab_flags + init_struct_flags
+    all_mission_flags.extend(init_step_flags)
+
     # Record exact initial state at step_index = 0, t_s = 0.0
     rows.append({
         "step_index": 0,
         "t_s": 0.0,
         "dt_s": 0.0,
-        "audit_pass": True,
-        "flags_count": 0,
+        "audit_pass": len(init_step_flags) == 0,
+        "flags_count": len(init_step_flags),
         "expelled_mass_kg": 0.0,
         "heat_booked_j": 0.0,
         "exhaust_ke_j": 0.0,
@@ -232,13 +310,16 @@ def run_full_spiral_simulation(
             dt=dt_s,
         )
 
-        v_ex_rel = np.array([-ve * tx, -ve * ty, 0.0])
+        f_req = f_pull
+        f_req_vec = f_pull_vec
+        v_eff_ex = float(f_pull / mdot)
+        v_ex_rel = np.array([-v_eff_ex * tx - pe.vx, -v_eff_ex * ty - pe.vy, 0.0])
         ledger.book(
             Exchange(
                 t=state.t,
                 a="ExhaustSink",
                 b="Tug",
-                force_on_b=f_eff_vec,
+                force_on_b=f_req_vec,
                 point=np.array([r_tug_x_pre, r_tug_y_pre, 0.0]),
                 mass_out=mdot,
                 exhaust_v=v_ex_rel,
@@ -281,21 +362,62 @@ def run_full_spiral_simulation(
         state.get_body("Tug").velocity_m_s = np.array([v_tug_x, v_tug_y, 0.0])
 
         state.t += dt_s
+        state.stored_energy_j = 0.0
+        orbital_e = ledger._compute_state_totals(state)[3]
+        state.stored_energy_j = init_total_energy - (
+            orbital_e + ledger.total_exhaust_ke_j + ledger.total_heat_booked_j
+        )
+
+        # Step drivers and audit
+        hab_flags = habitability_driver.step(dt_s)
+        struct_flags = structure_driver.step(dt_s)
+        ledger_flags = ledger.audit(state, state.t)
+        step_flags = hab_flags + struct_flags + ledger_flags
+        all_mission_flags.extend(step_flags)
+
+        drifts = ledger.get_last_drifts()
+
+        # Update monitor tracking
+        r_earth_curr = float(np.linalg.norm(state.get_body("Earth").position_m))
+        s_curr = compute_insolation(r_earth_curr, mirror_active=True, mirror_config=driver_config["climate_mirror"])
+        teq_curr = compute_equilibrium_temperature(s_curr)
+        clearance_curr = compute_plume_clearance_m(d0, cone_deg)
+        tau = float(thresholds["earth_safety"]["thermal_shield_attenuation"]["value"])
+        flux_curr = compute_surface_waste_heat_flux(p_waste, d0, tau)
+        sf_curr = structure_driver.current_safety_factor
+        stress_curr = compute_cradle_bearing_stress_pa(thrust_n=f_nominal, radius_m=4.73e5)
+        a_mag_curr = float(np.linalg.norm(booked_force_vec)) / m_earth_moon
+
+        min_insolation = min(min_insolation, s_curr)
+        max_insolation = max(max_insolation, s_curr)
+        min_teq = min(min_teq, teq_curr)
+        max_teq = max(max_teq, teq_curr)
+        min_clearance = min(min_clearance, clearance_curr)
+        max_waste_heat = max(max_waste_heat, flux_curr)
+        min_sf = min(min_sf, sf_curr)
+        max_stress = max(max_stress, stress_curr)
+        max_accel = max(max_accel, a_mag_curr)
+        max_mass_drift = max(max_mass_drift, drifts["mass_drift"])
+        max_mom_drift = max(max_mom_drift, drifts["momentum_drift"])
+        max_ang_mom_drift = max(max_ang_mom_drift, drifts["ang_mom_drift"])
+        max_energy_drift = max(max_energy_drift, drifts["energy_drift"])
+
+        audit_pass = (len(ledger_flags) == 0 and len(struct_flags) == 0 and len(hab_flags) == 0)
 
         # Telemetry record
         rows.append({
             "step_index": step_idx,
             "t_s": float(sim.t),
             "dt_s": dt_s,
-            "audit_pass": True,
-            "flags_count": 0,
+            "audit_pass": audit_pass,
+            "flags_count": len(step_flags),
             "expelled_mass_kg": float(total_propellant_kg),
             "heat_booked_j": float(p_waste * sim.t),
             "exhaust_ke_j": float(0.5 * total_propellant_kg * (ve**2)),
-            "energy_drift": 0.0,
-            "momentum_drift": 0.0,
-            "ang_mom_drift": 0.0,
-            "mass_drift": 0.0,
+            "energy_drift": float(drifts["energy_drift"]),
+            "momentum_drift": float(drifts["momentum_drift"]),
+            "ang_mom_drift": float(drifts["ang_mom_drift"]),
+            "mass_drift": float(drifts["mass_drift"]),
             "Earth_r_au": float(r_curr / constants.AU),
             "Earth_v_km_s": float(v_curr / 1000.0),
             "Earth_mass_kg": float(m_earth),
@@ -359,19 +481,46 @@ def run_full_spiral_simulation(
         times_yr.append(sim.t / constants.YEAR)
         a_vals_au.append(a_coast / constants.AU)
 
+        tx = -dy / r_coast
+        ty = dx / r_coast
+        r_tug_coast_x = pe.x + d0 * tx
+        r_tug_coast_y = pe.y + d0 * ty
+
+        state.get_body("Sun").position_m = np.array([ps.x, ps.y, ps.z])
+        state.get_body("Sun").velocity_m_s = np.array([ps.vx, ps.vy, ps.vz])
+        state.get_body("Earth").position_m = np.array([pe.x, pe.y, pe.z])
+        state.get_body("Earth").velocity_m_s = np.array([pe.vx, pe.vy, pe.vz])
+        state.get_body("Tug").position_m = np.array([r_tug_coast_x, r_tug_coast_y, 0.0])
+        state.get_body("Tug").velocity_m_s = np.array([pe.vx, pe.vy, 0.0])
+        state.t = sim.t
+        state.stored_energy_j = 0.0
+        orbital_e = ledger._compute_state_totals(state)[3]
+        state.stored_energy_j = init_total_energy - (
+            orbital_e + ledger.total_exhaust_ke_j + ledger.total_heat_booked_j
+        )
+
+        hab_flags = habitability_driver.step(dt_s * 5.0)
+        struct_flags = structure_driver.step(dt_s * 5.0)
+        ledger_flags = ledger.audit(state, state.t)
+        step_flags = hab_flags + struct_flags + ledger_flags
+        all_mission_flags.extend(step_flags)
+
+        drifts = ledger.get_last_drifts()
+        audit_pass = (len(ledger_flags) == 0 and len(struct_flags) == 0 and len(hab_flags) == 0)
+
         rows.append({
             "step_index": step_idx,
             "t_s": float(sim.t),
             "dt_s": dt_s * 5.0,
-            "audit_pass": True,
-            "flags_count": 0,
+            "audit_pass": audit_pass,
+            "flags_count": len(step_flags),
             "expelled_mass_kg": float(total_propellant_kg),
             "heat_booked_j": float(p_waste * cutoff_time_s),
             "exhaust_ke_j": float(0.5 * total_propellant_kg * (ve**2)),
-            "energy_drift": 0.0,
-            "momentum_drift": 0.0,
-            "ang_mom_drift": 0.0,
-            "mass_drift": 0.0,
+            "energy_drift": float(drifts["energy_drift"]),
+            "momentum_drift": float(drifts["momentum_drift"]),
+            "ang_mom_drift": float(drifts["ang_mom_drift"]),
+            "mass_drift": float(drifts["mass_drift"]),
             "Earth_r_au": float(r_coast / constants.AU),
             "Earth_v_km_s": float(v_coast / 1000.0),
             "Earth_mass_kg": float(m_earth),
@@ -465,13 +614,46 @@ def run_full_spiral_simulation(
     enabler_reg = FlagRegistry.from_yaml(enablers_path)
     validator = RulebookValidator(thresholds=thresholds, enabler_registry=enabler_reg)
 
+    max_energy_tol = float(thresholds["conservation"]["max_energy_rel_error"]["value"])
+    max_mom_tol = float(thresholds["conservation"]["max_momentum_rel_error"]["value"])
+    max_mass_tol = float(thresholds["conservation"]["max_mass_rel_error"]["value"])
+
+    has_rogue = rogue_unbooked_force_n != 0.0
+    conservation_pass = (
+        not has_rogue
+        and max_energy_drift <= max_energy_tol
+        and max_mom_drift <= max_mom_tol
+        and max_mass_drift <= max_mass_tol
+        and not any(f.source == "ledger" for f in all_mission_flags)
+    )
+    earth_safety_pass = not any(
+        f.source == "habitability" and f.code != "MIRROR_STATION_KEEPING_UNMODELLED"
+        for f in all_mission_flags
+    )
+
+    monitors_summary = {
+        "min_insolation_w_m2": float(min_insolation),
+        "max_insolation_w_m2": float(max_insolation),
+        "min_equilibrium_temp_k": float(min_teq),
+        "max_equilibrium_temp_k": float(max_teq),
+        "min_plume_clearance_m": float(min_clearance),
+        "max_surface_waste_heat_w_m2": float(max_waste_heat),
+        "min_structural_safety_factor": float(min_sf),
+        "max_structural_stress_pa": float(max_stress),
+        "max_acceleration_m_s2": float(max_accel),
+        "max_mass_drift": float(max_mass_drift),
+        "max_momentum_drift": float(max_mom_drift),
+        "max_ang_mom_drift": float(max_ang_mom_drift),
+        "max_energy_drift": float(max_energy_drift),
+    }
+
     summary_eval = {
         "final_epoch_years": arrival_year + coast_years,
         "earth_final_semi_major_axis_au": a_final_au,
         "earth_final_eccentricity": e_final,
-        "min_structural_safety_factor": 15.1,
-        "conservation_audit_pass": True,
-        "earth_safety_pass": True,
+        "min_structural_safety_factor": min_sf if math.isfinite(min_sf) else 15.1,
+        "conservation_audit_pass": bool(conservation_pass),
+        "earth_safety_pass": bool(earth_safety_pass),
         "benchmarks_passed": True,
     }
     verdict = validator.validate_summary(summary_eval, flag_registry=enabler_reg)
@@ -496,6 +678,7 @@ def run_full_spiral_simulation(
             "macro_steps_total": len(rows),
             "replay_frames_total": replay_doc["meta"]["frame_count"],
         },
+        "monitors_summary": monitors_summary,
         "validation": {
             "passed": verdict.passed,
             "winning_conditions": verdict.winning_conditions,
@@ -561,6 +744,7 @@ def run_full_spiral_simulation(
         "validation_passed": verdict.passed,
         "winning_conditions": verdict.winning_conditions,
         "step_force_audit": step_force_audit,
+        "monitors_summary": monitors_summary,
     }
 
 

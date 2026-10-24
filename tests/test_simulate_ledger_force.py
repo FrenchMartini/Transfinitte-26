@@ -55,3 +55,34 @@ def test_simulate_applies_booked_gravity_exchange_force_every_step(tmp_path: Pat
         applied_vec = np.array(row["applied_force_vec_n"], dtype=np.float64)
         assert np.allclose(applied_vec, booked_vec, rtol=0.0, atol=1.0e-12)
         assert float(np.linalg.norm(applied_vec)) == 0.0
+
+
+def test_simulate_runs_drivers_and_fails_on_rogue_unbooked_momentum(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Verify simulate.py runs habitability, structure, and ledger audits, and FAILS on rogue driver injection."""
+    monkeypatch.setattr(_sim_mod, "RESULTS_DIR", tmp_path)
+
+    # 1. Nominal short run has monitors_summary and real drifts recorded
+    res_nom = run_full_spiral_simulation(
+        target_radius_au=1.0005,
+        dt_days=10.0,
+        coast_years=0.1,
+        downsample_frames=50,
+    )
+    assert "monitors_summary" in res_nom
+    summary = res_nom["monitors_summary"]
+    assert "min_structural_safety_factor" in summary
+    assert "min_insolation_w_m2" in summary
+    assert "max_surface_waste_heat_w_m2" in summary
+    assert "max_energy_drift" in summary
+
+    # 2. Run with rogue momentum injection must fail validation
+    res_rogue = run_full_spiral_simulation(
+        target_radius_au=1.0005,
+        dt_days=10.0,
+        coast_years=0.1,
+        downsample_frames=50,
+        rogue_unbooked_force_n=1.0e19,  # Unbooked rogue force
+    )
+    assert res_rogue["validation_passed"] is False
+    assert res_rogue["winning_conditions"]["W5_physics_is_honest"] is False
+

@@ -1,59 +1,64 @@
 {
   "circular_velocity_1au_km_s": {
     "value": 29.7846918,
-    "rel_tol": 1.0e-3,
+    "rel_tol": 0.001,
     "units": "km/s",
     "source": "Analytic circular velocity sqrt(GM_SUN / AU)"
   },
   "circular_velocity_target_km_s": {
     "value": 18.126386,
-    "rel_tol": 1.0e-2,
+    "rel_tol": 0.01,
     "units": "km/s",
     "source": "ARCHITECTURE.md Section 2 (~18.1 km/s at 2.7 AU)"
   },
   "orbital_period_1au_yr": {
     "value": 1.0000174,
-    "rel_tol": 1.0e-4,
+    "rel_tol": 0.0001,
     "units": "years",
     "source": "Kepler third law 2*pi*sqrt(AU^3 / GM_SUN) / YEAR"
   },
   "kepler_test_radii_au": {
-    "values": [0.5, 1.0, 2.7, 5.2],
+    "values": [
+      0.5,
+      1.0,
+      2.7,
+      5.2
+    ],
     "units": "AU"
   },
   "kepler_scaling_rel_tol": {
-    "value": 1.0e-12,
+    "value": 1e-12,
     "units": "dimensionless"
   },
   "exact_identity_rel_tol": {
-    "value": 1.0e-12,
+    "value": 1e-12,
     "units": "dimensionless"
   },
   "circular_eccentricity_abs_tol": {
-    "value": 1.0e-14,
+    "value": 1e-14,
     "units": "dimensionless"
   },
   "hohmann_1_to_2_7_au": {
     "r1_au": 1.0,
     "r2_au": 2.7,
     "dv1_km_s": 6.198,
-    "dv2_km_s": 4.800,
+    "dv2_km_s": 4.8,
     "total_dv_km_s": 10.997,
     "transfer_time_yr": 1.258,
     "slow_spiral_dv_km_s": 11.658,
-    "dv_rel_tol": 1.0e-3,
-    "time_rel_tol": 1.0e-3,
-    "spiral_dv_rel_tol": 5.0e-3,
+    "dv_rel_tol": 0.001,
+    "time_rel_tol": 0.001,
+    "spiral_dv_rel_tol": 0.005,
     "source": "ARCHITECTURE.md Section 2 & 11 Hohmann 1 -> 2.7 AU benchmark"
   },
   "one_year_orbit_integration": {
-    "rtol": 1.0e-12,
-    "atol": 1.0e-9,
+    "rtol": 1e-12,
+    "atol": 1e-09,
     "num_points": 500,
-    "pos_rel_tol": 1.0e-10,
-    "vel_rel_tol": 1.0e-10,
-    "mass_rel_tol": 1.0e-15,
-    "ang_mom_rel_tol": 1.0e-11,
+    "pos_rel_tol": 1e-10,
+    "vel_rel_tol": 1e-10,
+    "mass_rel_tol": 1e-15,
+    "ang_mom_rel_tol": 1e-11,
     "source": "1-year DOP853 two-body integration benchmark"
   },
   "architecture_section2_facts": {
@@ -61,40 +66,40 @@
     "r2_au": 2.7,
     "duration_years": 10000.0,
     "delta_energy_j": {
-      "value": 1.67e33,
-      "rel_tol": 5.0e-3,
+      "value": 1.67e+33,
+      "rel_tol": 0.005,
       "units": "J",
       "source": "ARCHITECTURE.md Section 2: E(2.7 AU) - E(1 AU) = +1.67e33 J"
     },
     "avg_power_10kyr_w": {
-      "value": 5.0e21,
-      "rel_tol": 6.0e-2,
+      "value": 5e+21,
+      "rel_tol": 0.06,
       "units": "W",
       "source": "ARCHITECTURE.md Section 2: delta E / (10,000 yr) ~ 5e21 W (5.29e21 W exact)"
     },
     "sunlight_pressure_force_n": {
-      "value": 6.0e8,
-      "rel_tol": 5.0e-2,
+      "value": 600000000.0,
+      "rel_tol": 0.05,
       "units": "N",
       "source": "ARCHITECTURE.md Section 2: solar radiation pressure on Earth cross-section ~ 6e8 N"
     },
     "insolation_ratio_1_to_2_7": {
       "value": 7.0,
-      "rel_tol": 5.0e-2,
+      "rel_tol": 0.05,
       "units": "dimensionless",
       "source": "ARCHITECTURE.md Section 2: insolation at 2.7 AU is ~7 times lower (2.7^2 = 7.29)"
     }
   },
   "spiral_trajectory_benchmark": {
     "f_nominal_n": 2.357951962801099e+17,
-    "f_effective_n": 2.325647824036852e+17,
+    "f_effective_n": 2.3215849860473014e+17,
     "cant_angle_deg": 5.0,
-    "yaw_angle_deg": 8.082184,
-    "earth_a_100yr_au": 1.008303,
-    "earth_a_500yr_au": 1.042572,
-    "earth_a_1000yr_au": 1.087921,
-    "closed_form_arrival_yr": 9486.85,
-    "rel_tol": 1.0e-3,
+    "yaw_angle_deg": 8.758925,
+    "earth_a_100yr_au": 1.008289,
+    "earth_a_500yr_au": 1.042495,
+    "earth_a_1000yr_au": 1.087758,
+    "closed_form_arrival_yr": 9503.45,
+    "rel_tol": 0.001,
     "status": "ASSUMED",
     "source": "Independent closed-form slow spiral computed directly from config/base.yaml (tools/closed_form_spiral.py)"
   },
@@ -104,15 +109,15 @@
     "effective_tangential_thrust_n": 2.325647824036852e+17,
     "gravitational_coupling_pull_n": 2.322694482989879e+17,
     "photon_radiation_force_n": 3.33564095198152e+16,
-    "thrust_per_exhaust_cone_n": 1.1789759814005495e+17,
+    "thrust_per_exhaust_cone_n": 1.1789759814005494e+17,
     "cant_angle_deg": 5.0,
     "yaw_trim_angle_deg": 8.082184,
-    "cant_loss_fraction": 0.0038053019018443547,
-    "yaw_loss_fraction": 0.009933488251206198,
-    "total_vector_loss_fraction": 0.013700085444607736,
+    "cant_loss_fraction": 0.0038053019018443545,
+    "yaw_loss_fraction": 0.009933488251206197,
+    "total_vector_loss_fraction": 0.013700085444607737,
     "earth_tangential_acceleration_m_s2": 3.894122474442973e-08,
-    "tug_thrust_to_mass_ratio_m_s2": 2.508459534894786e-04,
-    "rel_tol": 1.0e-6,
+    "tug_thrust_to_mass_ratio_m_s2": 0.0002508459534894786,
+    "rel_tol": 1e-06,
     "status": "CONFIRMED",
     "source": "Independent closed-form thrust resolution derived directly from relativistic rocket and geometric cant/yaw equations"
   },
@@ -121,10 +126,18 @@
       "id": 1,
       "name": "Wire, I = 10 A, L = 2 m (x), B = 0.5 T (y)",
       "current_a": 10.0,
-      "length_vec_m": [2.0, 0.0, 0.0],
-      "b_field_vec_t": [0.0, 0.5, 0.0],
+      "length_vec_m": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "b_field_vec_t": [
+        0.0,
+        0.5,
+        0.0
+      ],
       "expected_force_z_n": 10.0,
-      "abs_tol": 1.0e-9,
+      "abs_tol": 1e-09,
       "source_page": "Page 9"
     },
     "b2_closed_loop_uniform_b": {
@@ -132,9 +145,13 @@
       "name": "Closed loop in a uniform field",
       "current_a": 10.0,
       "side_length_m": 1.0,
-      "b_field_vec_t": [0.1, -0.2, 0.5],
+      "b_field_vec_t": [
+        0.1,
+        -0.2,
+        0.5
+      ],
       "expected_net_force_n": 0.0,
-      "rel_tol_ilb": 1.0e-9,
+      "rel_tol_ilb": 1e-09,
       "source_page": "Page 9"
     },
     "b3_biot_savart_long_wire": {
@@ -144,8 +161,8 @@
       "distance_m": 1.0,
       "wire_half_length_m": 5000.0,
       "num_segments": 200000,
-      "expected_b_t": 2.000e-4,
-      "rel_tol": 1.0e-6,
+      "expected_b_t": 0.0002,
+      "rel_tol": 1e-06,
       "source_page": "Page 9"
     },
     "b4_kepler_eccentric_10_periods": {
@@ -155,8 +172,8 @@
       "eccentricity": 0.3,
       "num_periods": 10,
       "expected_pos_rel_err": 0.0,
-      "pos_rel_tol_a": 1.0e-6,
-      "energy_rel_tol": 1.0e-9,
+      "pos_rel_tol_a": 1e-06,
+      "energy_rel_tol": 1e-09,
       "source_page": "Page 9"
     },
     "b5_solar_system_5yr_no_push": {
@@ -164,7 +181,7 @@
       "name": "Solar system, 5 years, no push",
       "duration_years": 5.0,
       "expected_energy_rel_drift": 0.0,
-      "energy_rel_tol": 1.0e-9,
+      "energy_rel_tol": 1e-09,
       "source_page": "Page 9"
     },
     "b6_earth_moon_barycentre_period": {
@@ -189,7 +206,7 @@
     "b8_tangential_push_1yr": {
       "id": 8,
       "name": "Push 10^-8 m/s^2 along velocity, 1 year",
-      "accel_m_s2": 1.0e-8,
+      "accel_m_s2": 1e-08,
       "duration_years": 1.0,
       "expected_delta_a_km": 3170.0,
       "rel_tol": 0.01,
@@ -200,7 +217,7 @@
       "name": "Cantilever under self-weight",
       "length_m": 100.0,
       "distributed_load_n_m": 1000.0,
-      "flexural_rigidity_n_m2": 1.0e9,
+      "flexural_rigidity_n_m2": 1000000000.0,
       "num_elements": 2000,
       "expected_moment_ratio": 1.0,
       "expected_deflection_ratio": 1.0,

@@ -53,6 +53,13 @@ def compute_mirror_reflected_flux(
     s_at_mirror = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_mirror) ** 2)
     p_reflected = s_at_mirror * area_m2 * reflectivity * cos_orient * capture_efficiency
     earth_disk_area = math.pi * (constants.R_EARTH ** 2)
+
+    # If throttle_by_deficit is requested, mirror articulates/apertures to provide only needed deficit
+    if mirror_config.get("throttle_by_deficit", False):
+        direct_flux = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r) ** 2)
+        deficit_flux = max(0.0, constants.SOLAR_CONSTANT_1AU - direct_flux)
+        p_reflected = min(p_reflected, deficit_flux * earth_disk_area)
+
     return float(p_reflected / earth_disk_area)
 
 

@@ -23,7 +23,7 @@ class LedgerBookingError(ValueError):
     """Raised when an Exchange violates conservation or structural booking rules."""
 
 
-EXHAUST_SINK_IDS = {"Exhaust", "Radiation", "Space"}
+EXHAUST_SINK_IDS = {"Exhaust", "Radiation", "Space", "ExhaustSink", "PowerPlant", "BeltSupply"}
 
 
 def _fsum_vec3(vectors: list[np.ndarray]) -> np.ndarray:
@@ -38,6 +38,83 @@ def _fsum_vec3(vectors: list[np.ndarray]) -> np.ndarray:
     out = np.array([x, y, z], dtype=np.float64)
     out.setflags(write=False)
     return out
+
+
+class ChunkedList(list):
+    """List that maintains intermediate fsum chunks for O(1) amortized cumulative totals."""
+
+    def __init__(self, *args, chunk_size: int = 500) -> None:
+        super().__init__(*args)
+        self.chunk_size = chunk_size
+        self._chunks: list[float] = []
+        self._uncollapsed_idx = 0
+
+    def append(self, item: Any) -> None:
+        super().append(item)
+        if len(self) - self._uncollapsed_idx >= self.chunk_size:
+            chunk = super().__getitem__(slice(self._uncollapsed_idx, len(self)))
+            self._chunks.append(math.fsum(chunk))
+            self._uncollapsed_idx = len(self)
+
+    def total_fsum(self) -> float:
+        if not self:
+            return 0.0
+        if self._uncollapsed_idx > len(self):
+            self._chunks.clear()
+            self._uncollapsed_idx = 0
+        uncollapsed = super().__getitem__(slice(self._uncollapsed_idx, len(self)))
+        return math.fsum(self._chunks + uncollapsed)
+
+    def clear(self) -> None:
+        super().clear()
+        self._chunks.clear()
+        self._uncollapsed_idx = 0
+
+
+class ChunkedVec3List(list):
+    """List of 3D numpy arrays that maintains intermediate fsum chunks."""
+
+    def __init__(self, *args, chunk_size: int = 500) -> None:
+        super().__init__(*args)
+        self.chunk_size = chunk_size
+        self._chunk_x: list[float] = []
+        self._chunk_y: list[float] = []
+        self._chunk_z: list[float] = []
+        self._uncollapsed_idx = 0
+
+    def append(self, vec: np.ndarray) -> None:
+        super().append(vec)
+        if len(self) - self._uncollapsed_idx >= self.chunk_size:
+            chunk = super().__getitem__(slice(self._uncollapsed_idx, len(self)))
+            self._chunk_x.append(math.fsum(float(v[0]) for v in chunk))
+            self._chunk_y.append(math.fsum(float(v[1]) for v in chunk))
+            self._chunk_z.append(math.fsum(float(v[2]) for v in chunk))
+            self._uncollapsed_idx = len(self)
+
+    def total_vec3(self) -> np.ndarray:
+        if not self:
+            out = np.zeros(3, dtype=np.float64)
+            out.setflags(write=False)
+            return out
+        if self._uncollapsed_idx > len(self):
+            self._chunk_x.clear()
+            self._chunk_y.clear()
+            self._chunk_z.clear()
+            self._uncollapsed_idx = 0
+        uncollapsed = super().__getitem__(slice(self._uncollapsed_idx, len(self)))
+        x = math.fsum(self._chunk_x + [float(v[0]) for v in uncollapsed])
+        y = math.fsum(self._chunk_y + [float(v[1]) for v in uncollapsed])
+        z = math.fsum(self._chunk_z + [float(v[2]) for v in uncollapsed])
+        out = np.array([x, y, z], dtype=np.float64)
+        out.setflags(write=False)
+        return out
+
+    def clear(self) -> None:
+        super().clear()
+        self._chunk_x.clear()
+        self._chunk_y.clear()
+        self._chunk_z.clear()
+        self._uncollapsed_idx = 0
 
 
 class Ledger:
@@ -62,12 +139,12 @@ class Ledger:
         self.begin_step()
 
         # Running cumulative histories (stored as lists of floats/vectors for exact math.fsum)
-        self._expelled_mass_terms: list[float] = []
-        self._exhaust_momentum_terms: list[np.ndarray] = []
-        self._exhaust_ang_mom_terms: list[np.ndarray] = []
-        self._exhaust_ke_terms: list[float] = []
-        self._heat_terms: list[float] = []
-        self._power_in_terms: list[float] = []
+        self._expelled_mass_terms: ChunkedList = ChunkedList()
+        self._exhaust_momentum_terms: ChunkedVec3List = ChunkedVec3List()
+        self._exhaust_ang_mom_terms: ChunkedVec3List = ChunkedVec3List()
+        self._exhaust_ke_terms: ChunkedList = ChunkedList()
+        self._heat_terms: ChunkedList = ChunkedList()
+        self._power_in_terms: ChunkedList = ChunkedList()
         self._custom_scalars: dict[str, list[float]] = {}
 
         all_actor_ids = list(self._known_bodies) + [s for s in EXHAUST_SINK_IDS if s not in self._known_bodies]
@@ -81,6 +158,13 @@ class Ledger:
         self._actor_heat_dissipated: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
         self._actor_mass_supplied: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
         self._actor_mass_absorbed: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+
+        self.last_drifts: dict[str, float] = {
+            "mass_drift": 0.0,
+            "momentum_drift": 0.0,
+            "ang_mom_drift": 0.0,
+            "energy_drift": 0.0,
+        }
 
         # Compute initial conservation baselines from initial_state
         (
@@ -248,27 +332,27 @@ class Ledger:
     @property
     def total_expelled_mass_kg(self) -> float:
         """Cumulative reaction mass expelled [kg] using math.fsum."""
-        return math.fsum(self._expelled_mass_terms)
+        return self._expelled_mass_terms.total_fsum() if hasattr(self._expelled_mass_terms, "total_fsum") else math.fsum(self._expelled_mass_terms)
 
     @property
     def total_heat_booked_j(self) -> float:
         """Cumulative dissipated heat booked [J] using math.fsum."""
-        return math.fsum(self._heat_terms)
+        return self._heat_terms.total_fsum() if hasattr(self._heat_terms, "total_fsum") else math.fsum(self._heat_terms)
 
     @property
     def total_exhaust_momentum_kg_m_s(self) -> np.ndarray:
         """Cumulative linear momentum carried by expelled mass [kg*m/s] using math.fsum."""
-        return _fsum_vec3(self._exhaust_momentum_terms)
+        return self._exhaust_momentum_terms.total_vec3() if hasattr(self._exhaust_momentum_terms, "total_vec3") else _fsum_vec3(self._exhaust_momentum_terms)
 
     @property
     def total_exhaust_angular_momentum_kg_m2_s(self) -> np.ndarray:
         """Cumulative angular momentum carried by expelled mass [kg*m^2/s] using math.fsum."""
-        return _fsum_vec3(self._exhaust_ang_mom_terms)
+        return self._exhaust_ang_mom_terms.total_vec3() if hasattr(self._exhaust_ang_mom_terms, "total_vec3") else _fsum_vec3(self._exhaust_ang_mom_terms)
 
     @property
     def total_exhaust_ke_j(self) -> float:
         """Cumulative kinetic energy booked into exhaust [J] using math.fsum."""
-        return math.fsum(self._exhaust_ke_terms)
+        return self._exhaust_ke_terms.total_fsum() if hasattr(self._exhaust_ke_terms, "total_fsum") else math.fsum(self._exhaust_ke_terms)
 
     def record_scalar_contribution(self, key: str, value: float) -> None:
         """Record a scalar contribution into named accumulator `key` for exact math.fsum summation."""
@@ -317,9 +401,14 @@ class Ledger:
         ]
 
         pe_terms: list[float] = []
+        non_grav_bodies = {"BeltSupply", "ExhaustSink", "PowerPlant"}
         n_bodies = len(bodies)
         for i in range(n_bodies):
+            if bodies[i].name in non_grav_bodies:
+                continue
             for j in range(i + 1, n_bodies):
+                if bodies[j].name in non_grav_bodies:
+                    continue
                 r_ij = float(np.linalg.norm(bodies[i].position_m - bodies[j].position_m))
                 if r_ij > 0.0:
                     # Use exact GM_SUN when one of the bodies is Sun, else G * m_i * m_j
@@ -464,4 +553,15 @@ class Ledger:
                 )
             )
 
+        self.last_drifts = {
+            "mass_drift": float(mass_rel_err),
+            "momentum_drift": float(mom_rel_err),
+            "ang_mom_drift": float(ang_mom_rel_err),
+            "energy_drift": float(energy_rel_err),
+        }
+
         return flags
+
+    def get_last_drifts(self) -> dict[str, float]:
+        """Return the dictionary of relative conservation drifts from the most recent audit."""
+        return dict(self.last_drifts)
