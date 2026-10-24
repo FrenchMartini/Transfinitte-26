@@ -17,7 +17,7 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Last Prior Commit Hash:** `e824071` (`step 3.4: replay json exporter with frame cap and null preservation, and tests`)
+- **Last Prior Commit Hash:** `3c78319` (`step 4: ceres gravity tug driver with relativistic physics, station-keeping controller, and 100% test coverage`)
 - **Current Test Count & Result:** 72 tests — **72 PASSED** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
