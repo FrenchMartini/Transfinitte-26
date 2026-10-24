@@ -484,12 +484,18 @@ export class SolarSystemView {
   private l1ElectrochromicRims: THREE.Mesh[] = [];
   private l1NorthPolarBeam: THREE.Mesh | null = null;
   private l1SouthPolarBeam: THREE.Mesh | null = null;
+  private l1RayLines: THREE.LineSegments | null = null;
+  private l1NorthCaustic: THREE.Mesh | null = null;
+  private l1SouthCaustic: THREE.Mesh | null = null;
+  private l1SubsolarCaustic: THREE.Mesh | null = null;
 
   // L2 Night-Side Giant Fixed Hexagonal Concentrator (Anti-Hypercane Reverse Earthshine)
   private l2SwarmGroup: THREE.Group | null = null;
   private l2HexFlyers: THREE.Mesh[] = [];
   private l2ElectrochromicRims: THREE.Mesh[] = [];
   private l2ReverseEarthshineBeam: THREE.Mesh | null = null;
+  private l2RayLines: THREE.LineSegments | null = null;
+  private l2NightCaustic: THREE.Mesh | null = null;
   private currentL2Pos: THREE.Vector3 = new THREE.Vector3(11.25, 0, 0);
 
   // Bypass Solar Transfer Corridor (Rays flowing from L1 past Earth to Giant L2 Mirror)
@@ -502,6 +508,8 @@ export class SolarSystemView {
   private currentEarthPos: THREE.Vector3 = new THREE.Vector3(10, 0, 0);
   private isThrustingActive: boolean = false;
   private pulseTime: number = 0;
+  private currentBeamZScale: number = 1.0;
+  private currentBypassScale: number = 1.0;
 
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private pointer: THREE.Vector2 = new THREE.Vector2();
@@ -1639,43 +1647,128 @@ export class SolarSystemView {
     // -------------------------------------------------------------------------
     // DYNAMIC TARGETED HEATING BEAMS (Poles & Terminators - Prevents Ocean Boiling)
     // -------------------------------------------------------------------------
-    // 1. North Polar Concentrator Corridor (Tilted toward Arctic latitudes)
-    const polarBeamGeo = new THREE.CylinderGeometry(0.025, 0.09, 0.65, 16, 1, true);
-    polarBeamGeo.translate(0, 0.325, 0);
-    polarBeamGeo.rotateX(Math.PI / 2);
-
-    const beamMatNorth = new THREE.MeshBasicMaterial({
-      color: 0xffd54f, // Warm solar amber-gold
-      transparent: true,
-      opacity: 0.38,
-      blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-    this.l1NorthPolarBeam = new THREE.Mesh(polarBeamGeo, beamMatNorth);
-    this.l1NorthPolarBeam.rotation.x = -0.16; // Gimbaled north toward Arctic circle
-    this.mirrorGroup.add(this.l1NorthPolarBeam);
-
-    // 2. South Polar Concentrator Corridor (Tilted toward Antarctic latitudes)
-    const beamMatSouth = beamMatNorth.clone();
-    this.l1SouthPolarBeam = new THREE.Mesh(polarBeamGeo, beamMatSouth);
-    this.l1SouthPolarBeam.rotation.x = 0.16; // Gimbaled south toward Antarctic circle
-    this.mirrorGroup.add(this.l1SouthPolarBeam);
-
-    // 3. Central & Terminator Diffuser Corridor
-    const centerBeamGeo = new THREE.CylinderGeometry(0.04, 0.22, 0.65, 16, 1, true);
-    centerBeamGeo.translate(0, 0.325, 0);
-    centerBeamGeo.rotateX(Math.PI / 2);
+    // Exact Ray-Tracing Optics (Nominal Earth center at z = 1.25, surface at z = 0.87):
+    // 1. Central Day-Side Sunbeam (flushing against Earth's day surface at z = 0.87)
+    // Cylinder: bottom (at L1) radius 0.16, top (at Earth surface) radius 0.28, height = 0.87
+    const centerBeamGeo = new THREE.CylinderGeometry(0.28, 0.16, 0.87, 24, 1, true);
+    centerBeamGeo.translate(0, 0.435, 0); // bottom at y=0, top at y=0.87
+    centerBeamGeo.rotateX(Math.PI / 2); // bottom at z=0, top at z=0.87 (touching Earth)
     const centerBeamMat = new THREE.MeshBasicMaterial({
       color: 0xffe082,
       transparent: true,
-      opacity: 0.32,
+      opacity: 0.35,
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide,
       depthWrite: false
     });
     this.mirrorSunbeam = new THREE.Mesh(centerBeamGeo, centerBeamMat);
     this.mirrorGroup.add(this.mirrorSunbeam);
+
+    // Sub-solar Day Surface Caustics Illumination Disk (on Earth's day hemisphere at z = 0.87)
+    const subsolarCausticGeo = new THREE.CircleGeometry(0.28, 24);
+    const subsolarCausticMat = new THREE.MeshBasicMaterial({
+      color: 0xffd54f,
+      transparent: true,
+      opacity: 0.42,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.l1SubsolarCaustic = new THREE.Mesh(subsolarCausticGeo, subsolarCausticMat);
+    this.l1SubsolarCaustic.position.set(0, 0, 0.87);
+    this.mirrorGroup.add(this.l1SubsolarCaustic);
+
+    // 2. North Polar Concentrator Corridor (Gimbaled toward Arctic circle at y = +0.36, z = 1.22)
+    // Vector from (0, 0.08, 0) to (0, 0.36, 1.22): dy = 0.28, dz = 1.22 -> length = 1.251, angle = -0.2255 rad (-12.92 deg)
+    const polarBeamGeo = new THREE.CylinderGeometry(0.10, 0.06, 1.251, 20, 1, true);
+    polarBeamGeo.translate(0, 1.251 * 0.5, 0);
+    polarBeamGeo.rotateX(Math.PI / 2);
+
+    const beamMatNorth = new THREE.MeshBasicMaterial({
+      color: 0xffd54f, // Warm solar amber-gold
+      transparent: true,
+      opacity: 0.40,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.l1NorthPolarBeam = new THREE.Mesh(polarBeamGeo, beamMatNorth);
+    this.l1NorthPolarBeam.position.set(0, 0.08, 0);
+    this.l1NorthPolarBeam.rotation.x = -0.2255;
+    this.mirrorGroup.add(this.l1NorthPolarBeam);
+
+    // Arctic North Polar Caustic Focal Spot (at y = 0.36, z = 1.22)
+    const northCausticGeo = new THREE.CircleGeometry(0.10, 20);
+    const northCausticMat = new THREE.MeshBasicMaterial({
+      color: 0xfffbeb,
+      transparent: true,
+      opacity: 0.65,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.l1NorthCaustic = new THREE.Mesh(northCausticGeo, northCausticMat);
+    this.l1NorthCaustic.position.set(0, 0.36, 1.22);
+    this.l1NorthCaustic.rotation.x = -0.2255;
+    this.mirrorGroup.add(this.l1NorthCaustic);
+
+    // 3. South Polar Concentrator Corridor (Gimbaled toward Antarctic circle at y = -0.36, z = 1.22)
+    const beamMatSouth = beamMatNorth.clone();
+    this.l1SouthPolarBeam = new THREE.Mesh(polarBeamGeo, beamMatSouth);
+    this.l1SouthPolarBeam.position.set(0, -0.08, 0);
+    this.l1SouthPolarBeam.rotation.x = 0.2255;
+    this.mirrorGroup.add(this.l1SouthPolarBeam);
+
+    // Antarctic South Polar Caustic Focal Spot (at y = -0.36, z = 1.22)
+    const southCausticMat = northCausticMat.clone();
+    this.l1SouthCaustic = new THREE.Mesh(northCausticGeo, southCausticMat);
+    this.l1SouthCaustic.position.set(0, -0.36, 1.22);
+    this.l1SouthCaustic.rotation.x = 0.2255;
+    this.mirrorGroup.add(this.l1SouthCaustic);
+
+    // 4. Ray-Traced Photon Lines from L1 Flyers directly striking Earth
+    const l1RayPositions: number[] = [];
+    const northFlyers = l1HexOffsets.filter(([_, oy]) => oy > 0.03);
+    northFlyers.forEach(([ox, oy], k) => {
+      const angle = (k / northFlyers.length) * Math.PI * 2;
+      const targetX = 0.08 * Math.cos(angle);
+      const targetY = 0.36 + 0.05 * Math.sin(angle);
+      const targetZ = 1.22;
+      l1RayPositions.push(ox, oy, 0.003, targetX, targetY, targetZ);
+    });
+    const southFlyers = l1HexOffsets.filter(([_, oy]) => oy < -0.03);
+    southFlyers.forEach(([ox, oy], k) => {
+      const angle = (k / southFlyers.length) * Math.PI * 2;
+      const targetX = 0.08 * Math.cos(angle);
+      const targetY = -0.36 + 0.05 * Math.sin(angle);
+      const targetZ = 1.22;
+      l1RayPositions.push(ox, oy, 0.003, targetX, targetY, targetZ);
+    });
+    const leftFlyers = l1HexOffsets.filter(([ox, _]) => ox < -0.04);
+    leftFlyers.forEach(([ox, oy], k) => {
+      const ty = (k - 1) * 0.14;
+      l1RayPositions.push(ox, oy, 0.003, -0.38, ty, 1.25);
+    });
+    const rightFlyers = l1HexOffsets.filter(([ox, _]) => ox > 0.04);
+    rightFlyers.forEach(([ox, oy], k) => {
+      const ty = (k - 1) * 0.14;
+      l1RayPositions.push(ox, oy, 0.003, 0.38, ty, 1.25);
+    });
+    const centerFlyers = l1HexOffsets.filter(([ox, oy]) => Math.sqrt(ox * ox + oy * oy) < 0.05);
+    centerFlyers.forEach(([ox, oy], k) => {
+      const a = (k * Math.PI) / 3;
+      l1RayPositions.push(ox, oy, 0.003, 0.15 * Math.cos(a), 0.15 * Math.sin(a), 0.87);
+    });
+
+    const l1RayGeo = new THREE.BufferGeometry();
+    l1RayGeo.setAttribute('position', new THREE.Float32BufferAttribute(l1RayPositions, 3));
+    const l1RayMat = new THREE.LineBasicMaterial({
+      color: 0xfef08a, // Brilliant laser gold photon rays
+      transparent: true,
+      opacity: 0.75
+    });
+    this.l1RayLines = new THREE.LineSegments(l1RayGeo, l1RayMat);
+    this.mirrorGroup.add(this.l1RayLines);
 
     this.scene.add(this.mirrorGroup);
 
@@ -1708,8 +1801,10 @@ export class SolarSystemView {
     const l2FlyerGeo = new THREE.CircleGeometry(l2HexR * 0.98, 6);
     const l2FlyerMat = new THREE.MeshStandardMaterial({
       color: 0xfef08a, // High-specular reflective gold mirror
-      metalness: 0.97,
-      roughness: 0.04,
+      emissive: 0x92400e, // Brilliant golden emissive luster so dish is radiant on both sides
+      emissiveIntensity: 0.45,
+      metalness: 0.96,
+      roughness: 0.05,
       side: THREE.DoubleSide
     });
     const l2RimGeo = new THREE.RingGeometry(l2HexR * 0.88, l2HexR, 6);
@@ -1787,10 +1882,11 @@ export class SolarSystemView {
     l2Beacon.position.set(0, 0, 0.06);
     this.l2SwarmGroup.add(l2Beacon);
 
-    // Giant Reverse Earthshine Focus Beam: Converges from giant L2 dish (R=0.56) to Earth's night side (R=0.38)
-    const l2BeamGeo = new THREE.CylinderGeometry(0.56, 0.38, 1.25, 32, 1, true);
-    l2BeamGeo.translate(0, 0.625, 0); // apex toward Earth
-    l2BeamGeo.rotateX(Math.PI / 2);
+    // Giant Reverse Earthshine Focus Beam:
+    // Starts WIDE at giant L2 parabolic dish (z = 0, R = 0.58) and CONVERGES to Earth's night side (z = 0.87, R = 0.36)
+    const l2BeamGeo = new THREE.CylinderGeometry(0.36, 0.58, 0.87, 32, 1, true);
+    l2BeamGeo.translate(0, 0.435, 0); // bottom at y=0 (R=0.58), top at y=0.87 (R=0.36)
+    l2BeamGeo.rotateX(Math.PI / 2); // bottom at z=0 (at dish), top at z=0.87 (flush against Earth night hemisphere)
     const l2BeamMat = new THREE.MeshBasicMaterial({
       color: 0xf59e0b, // Warm amber reverse Earthshine illumination
       transparent: true,
@@ -1802,6 +1898,47 @@ export class SolarSystemView {
     this.l2ReverseEarthshineBeam = new THREE.Mesh(l2BeamGeo, l2BeamMat);
     this.l2SwarmGroup.add(this.l2ReverseEarthshineBeam);
 
+    // Reverse Earthshine Nocturnal Caustics Glow Cap (on Earth's night hemisphere at z = 0.87)
+    const l2NightCausticGeo = new THREE.CircleGeometry(0.36, 32);
+    const l2NightCausticMat = new THREE.MeshBasicMaterial({
+      color: 0xd97706,
+      transparent: true,
+      opacity: 0.40,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    this.l2NightCaustic = new THREE.Mesh(l2NightCausticGeo, l2NightCausticMat);
+    this.l2NightCaustic.position.set(0, 0, 0.87);
+    this.l2SwarmGroup.add(this.l2NightCaustic);
+
+    // Ray-Traced Reverse Earthshine Photon Lines (from outer & intermediate L2 tiles to Earth's night side)
+    const l2RayPositions: number[] = [];
+    const outerL2Tiles = l2HexOffsets.filter(([ox, oy]) => Math.sqrt(ox * ox + oy * oy) > 0.25);
+    outerL2Tiles.forEach(([ox, oy], k) => {
+      const dist = Math.sqrt(ox * ox + oy * oy);
+      const dishZ = 0.06 * Math.pow(dist / maxDist, 2);
+      const angle = (k / outerL2Tiles.length) * Math.PI * 2;
+      const targetX = 0.34 * Math.cos(angle);
+      const targetY = 0.34 * Math.sin(angle);
+      const targetZ = 0.87;
+      l2RayPositions.push(ox, oy, dishZ + 0.003, targetX, targetY, targetZ);
+    });
+    const innerL2Tiles = l2HexOffsets.filter(([ox, oy]) => Math.sqrt(ox * ox + oy * oy) <= 0.15);
+    innerL2Tiles.forEach(([ox, oy]) => {
+      l2RayPositions.push(ox, oy, 0.003, 0, 0, 0.87);
+    });
+
+    const l2RayGeo = new THREE.BufferGeometry();
+    l2RayGeo.setAttribute('position', new THREE.Float32BufferAttribute(l2RayPositions, 3));
+    const l2RayMat = new THREE.LineBasicMaterial({
+      color: 0xfbbf24, // Bright amber photon lines
+      transparent: true,
+      opacity: 0.70
+    });
+    this.l2RayLines = new THREE.LineSegments(l2RayGeo, l2RayMat);
+    this.l2SwarmGroup.add(this.l2RayLines);
+
     this.scene.add(this.l2SwarmGroup);
 
     // =========================================================================
@@ -1811,13 +1948,15 @@ export class SolarSystemView {
     // passing safely around Earth's perimeter and being captured by the giant L2 mirror.
     this.bypassBeamsGroup = new THREE.Group();
 
-    // Translucent expanding bypass sheath: Starts at L1 (R=0.26), widens around Earth (R=0.48), reaches L2 (R=0.58)
-    const sheathGeo = new THREE.CylinderGeometry(0.26, 0.58, 2.50, 32, 1, true);
+    // Expanding bypass sheath: Starts at L1 (z = -1.25, R = 0.26), widens past Earth (z = 0, R = 0.48), reaches L2 (z = +1.25, R = 0.58)
+    // CylinderGeometry: top (at +y) radius 0.58, bottom (at -y) radius 0.26, height 2.50
+    // After rotateX(PI/2): -y -> -z = -1.25 (at L1, R=0.26), +y -> +z = +1.25 (at L2, R=0.58)
+    const sheathGeo = new THREE.CylinderGeometry(0.58, 0.26, 2.50, 32, 1, true);
     sheathGeo.rotateX(Math.PI / 2); // Along local Z axis (Sun-Earth axis)
     const sheathMat = new THREE.MeshBasicMaterial({
       color: 0xffd54f, // Solar golden-amber
       transparent: true,
-      opacity: 0.18,
+      opacity: 0.16,
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide,
       depthWrite: false
@@ -1825,9 +1964,9 @@ export class SolarSystemView {
     this.bypassSheath = new THREE.Mesh(sheathGeo, sheathMat);
     this.bypassBeamsGroup.add(this.bypassSheath);
 
-    // 8 Longitudinal Bypass Laser Raylines linking L1 perimeter to Giant L2 perimeter
+    // 12 Longitudinal Bypass Laser Raylines linking L1 perimeter to Giant L2 perimeter
     const bypassRayPositions: number[] = [];
-    const numRays = 8;
+    const numRays = 12;
     for (let i = 0; i < numRays; i++) {
       const a = (i / numRays) * Math.PI * 2;
       const x1 = 0.25 * Math.cos(a);
@@ -2684,13 +2823,31 @@ export class SolarSystemView {
 
         const boostFraction = Math.max(0.15, Math.min(1.0, (r_au - 1.0) / 1.70));
         const beamMat = this.mirrorSunbeam.material as THREE.MeshBasicMaterial;
-        beamMat.opacity = 0.25 + 0.35 * boostFraction;
+        beamMat.opacity = 0.28 + 0.35 * boostFraction;
 
         if (this.l1NorthPolarBeam) {
-          (this.l1NorthPolarBeam.material as THREE.MeshBasicMaterial).opacity = 0.28 + 0.32 * boostFraction;
+          (this.l1NorthPolarBeam.material as THREE.MeshBasicMaterial).opacity = 0.32 + 0.35 * boostFraction;
         }
         if (this.l1SouthPolarBeam) {
-          (this.l1SouthPolarBeam.material as THREE.MeshBasicMaterial).opacity = 0.28 + 0.32 * boostFraction;
+          (this.l1SouthPolarBeam.material as THREE.MeshBasicMaterial).opacity = 0.32 + 0.35 * boostFraction;
+        }
+        if (this.l1RayLines) {
+          (this.l1RayLines.material as THREE.LineBasicMaterial).opacity = 0.55 + 0.35 * boostFraction;
+        }
+
+        // Dynamically compute Z-scaling so rays and beams always touch Earth's surface exactly
+        this.currentBeamZScale = (d_l - 0.38) / 0.87;
+        this.currentBypassScale = d_l / 1.25;
+
+        // Position caustics flush with Earth's surface
+        if (this.l1SubsolarCaustic) {
+          this.l1SubsolarCaustic.position.set(0, 0, d_l - 0.375);
+        }
+        if (this.l1NorthCaustic) {
+          this.l1NorthCaustic.position.set(0, 0.36, d_l - 0.08);
+        }
+        if (this.l1SouthCaustic) {
+          this.l1SouthCaustic.position.set(0, -0.36, d_l - 0.08);
         }
 
         // B. L2 Giant Night-Side Fixed Hexagonal Concentrator (Anti-sunward at L2)
@@ -2702,7 +2859,13 @@ export class SolarSystemView {
 
         if (this.l2ReverseEarthshineBeam) {
           const l2Mat = this.l2ReverseEarthshineBeam.material as THREE.MeshBasicMaterial;
-          l2Mat.opacity = 0.25 + 0.30 * boostFraction;
+          l2Mat.opacity = 0.28 + 0.35 * boostFraction;
+        }
+        if (this.l2RayLines) {
+          (this.l2RayLines.material as THREE.LineBasicMaterial).opacity = 0.55 + 0.35 * boostFraction;
+        }
+        if (this.l2NightCaustic) {
+          this.l2NightCaustic.position.set(0, 0, d_l - 0.375);
         }
 
         // C. Bypass Solar Transfer Corridor (Rays flowing from L1 past Earth to Giant L2 Mirror)
@@ -2710,10 +2873,10 @@ export class SolarSystemView {
           this.bypassBeamsGroup.position.copy(this.currentEarthPos);
           this.bypassBeamsGroup.setRotationFromMatrix(rotMatL1);
           if (this.bypassSheath) {
-            (this.bypassSheath.material as THREE.MeshBasicMaterial).opacity = 0.15 + 0.15 * boostFraction;
+            (this.bypassSheath.material as THREE.MeshBasicMaterial).opacity = 0.16 + 0.16 * boostFraction;
           }
           if (this.bypassRayLines) {
-            (this.bypassRayLines.material as THREE.LineBasicMaterial).opacity = 0.50 + 0.30 * boostFraction;
+            (this.bypassRayLines.material as THREE.LineBasicMaterial).opacity = 0.55 + 0.35 * boostFraction;
           }
         }
       }
@@ -3110,24 +3273,35 @@ export class SolarSystemView {
 
     // 5. Dual Hexagonal Heating Swarms Animation (Polar Beams, Reverse Earthshine, Statite Tacking)
     // Both L1 (Day) and L2 (Night) Hexagonal Swarms are stationary and fixed at their collinear Lagrange points
+    const zScale = this.currentBeamZScale || 1.0;
+    const bypassZ = this.currentBypassScale || 1.0;
 
     if (this.mirrorSunbeam) {
       const pulse = 0.94 + 0.06 * Math.sin(this.pulseTime * 14.0);
-      this.mirrorSunbeam.scale.set(pulse, pulse, 1.0);
+      this.mirrorSunbeam.scale.set(pulse, pulse, zScale);
     }
     if (this.l1NorthPolarBeam && this.l1SouthPolarBeam) {
       const pPulse1 = 0.93 + 0.07 * Math.sin(this.pulseTime * 12.0);
       const pPulse2 = 0.93 + 0.07 * Math.cos(this.pulseTime * 13.0);
-      this.l1NorthPolarBeam.scale.set(pPulse1, pPulse1, 1.0);
-      this.l1SouthPolarBeam.scale.set(pPulse2, pPulse2, 1.0);
+      this.l1NorthPolarBeam.scale.set(pPulse1, pPulse1, zScale);
+      this.l1SouthPolarBeam.scale.set(pPulse2, pPulse2, zScale);
+    }
+    if (this.l1RayLines) {
+      this.l1RayLines.scale.set(1.0, 1.0, zScale);
     }
     if (this.l2ReverseEarthshineBeam) {
       const l2Pulse = 0.94 + 0.06 * Math.sin(this.pulseTime * 10.0);
-      this.l2ReverseEarthshineBeam.scale.set(l2Pulse, l2Pulse, 1.0);
+      this.l2ReverseEarthshineBeam.scale.set(l2Pulse, l2Pulse, zScale);
+    }
+    if (this.l2RayLines) {
+      this.l2RayLines.scale.set(1.0, 1.0, zScale);
     }
     if (this.bypassSheath) {
       const bPulse = 0.96 + 0.04 * Math.sin(this.pulseTime * 11.0);
-      this.bypassSheath.scale.set(bPulse, bPulse, 1.0);
+      this.bypassSheath.scale.set(bPulse, bPulse, bypassZ);
+    }
+    if (this.bypassRayLines) {
+      this.bypassRayLines.scale.set(1.0, 1.0, bypassZ);
     }
 
     // Electrochromic solar tacking trim panel pulsing (statite sailboat trim)
