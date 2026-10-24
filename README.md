@@ -17,7 +17,7 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Last Prior Commit Hash:** `b977f50` (`step 4.2: reduced model, closed-form spiral tool, reference updates, and tests`)
+- **Last Prior Commit Hash:** `5e4d772` (`chore: update readme commit hash`)
 - **Current Test Count & Result:** 82 tests — **82 PASSED** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
