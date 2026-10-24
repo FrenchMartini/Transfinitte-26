@@ -17,16 +17,16 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Last Prior Commit Hash:** `17daa73` (`step 3.0: ledger mutation verification gate, thermal shield test, and decision update`)
-- **Current Test Count & Result:** 53 tests — **53 PASSED** (`pytest -v`)
+- **Last Prior Commit Hash:** `b25388f` (`step 3.1: orbit driver with rebound ias15, external forces from ledger, and tests`)
+- **Current Test Count & Result:** 58 tests — **58 PASSED** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
   - **Step 1 (Restructure into `octo/`, Configs, `reference.json`, AST Limit Check):** DONE
   - **Step 2 (`octo/core/`: README, `units`, `state`, `exchange`, `ledger`, `flags`, `FlagRegistry`, `recorder` skeleton):** DONE
   - **Step 3.0 (Verification Gate & Ledger Mutation Checks):** DONE
   - **Step 3.1 (`orbit` driver with REBOUND IAS15 & external force callback):** DONE
-  - **Step 3.2 (Coupler & macro-step loop):** IN PROGRESS
-  - **Step 3.3 (First Milestone: 1.0 -> 2.7 AU test probe Hohmann transfer):** NOT STARTED
+  - **Step 3.2 (Coupler & macro-step loop):** DONE
+  - **Step 3.3 (First Milestone: 1.0 -> 2.7 AU test probe Hohmann transfer):** IN PROGRESS
   - **Step 4 (`propulsion` driver variants + Rocket/Power cross-checks):** NOT STARTED
   - **Step 5 (`structure` + `em` drivers):** NOT STARTED
   - **Step 6 (`multibody` driver + `windowed_full` thrust-map builder):** NOT STARTED
@@ -219,3 +219,4 @@ Until confirmed, any clean run reports `"PASS (with unconfirmed thresholds)"`:
 - **2026-10-24 (`a3ecfe0`):** Step 2.4 — Added `octo/core/recorder.py` (`ParquetResultsWriter` + configurable **DRAFT** `BinaryReplayRecorder`), `tests/test_recorder.py`, and updated `docs/physics.md` and `README.md`.
 - **2026-10-24 (Step 3.0):** Verification Gate completed. All 7 ledger mutations tested and killed (reaction creation omission, empty audit bypass, multi-scale `math.fsum` vs `sum` cancellation drift, rocket exhaust kinetic energy omission, point torque drop, FlagRegistry bypass, and GM_SUN 1% drift). Tested toy radiative-equilibrium thermal shield model proving $(1-R)^N$ invalid and requiring configurable `ASSUMED` threshold `thermal_shield_attenuation`. Ceres Gravity Tug accepted as primary design with physical corrections; Octo-Earth ring/arms deferred. Core test coverage at 90%.
 - **2026-10-24 (Step 3.1):** Added `OrbitDriver` in `octo/drivers/orbit.py` with REBOUND IAS15 integrator, body population from `State`, external forces from `Ledger` via `sim.additional_forces` callback, and integrator tolerances loaded from `config/base.yaml`. Added tests in `tests/test_orbit_rebound.py` verifying 1-year Sun-Earth orbit closure within reference tolerances, zero audit drift via `Ledger.audit()`, Kepler third law period matching, external force acceleration, and wall-time performance (1 yr = 0.0020 s, 10,000 yr extrapolated = 19.8 s). All 53 tests passing.
+- **2026-10-24 (Step 3.2):** Added `octo/core/coupler.py` implementing `DriverRegistry` from config, macro-step Strang splitting loop (`dt / 2` power/propulsion, `dt` orbit, `dt / 2` propulsion/power, post-step structure/habitability), `ledger.audit` called every step, Parquet writing via `ParquetResultsWriter`, and trajectory/telemetry plotting with Matplotlib. Added unit and integration tests in `tests/test_coupler.py`. All 58 tests passing, AST limit scan clean.
