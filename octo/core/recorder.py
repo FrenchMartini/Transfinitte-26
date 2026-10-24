@@ -1,9 +1,10 @@
-"""Parquet summary results writer and configurable DRAFT binary replay recorder (ARCHITECTURE.md Section 10.2).
+"""Parquet summary results writer and telemetry export infrastructure.
 
-NOTE: The binary replay file format (`OCTO`) is marked `DRAFT` and remains
-configurable via `ReplaySchemaConfig` until confirmed with the frontend owner.
-Unit scaling and floating-origin subtraction (relative to `focus_body_id`) are
-performed here in Python so the frontend receives float32 relative coordinates.
+Telemetry and recording contracts:
+- Parquet serialization: Writes deterministic step rows with positions, velocities, and ledger drifts.
+- Floating-origin transformation: Computes body coordinates relative to focus body (default Sun).
+- Replay schema: Supports DRAFT v2 schema export with provenance metadata and telemetry blocks.
+- Frame decimation: Decimates long trajectories evenly to cap output at at most 2000 frames.
 """
 
 from dataclasses import asdict, dataclass

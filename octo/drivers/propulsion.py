@@ -1,13 +1,12 @@
-"""Swappable propulsion interface, relativistic rocket physics, and Ceres Gravity Tug driver (all SI units).
+"""Swappable propulsion interface, relativistic rocket physics, and Ceres Gravity Tug driver.
 
-Governing Physics:
-  - Lorentz gamma: gamma = 1 / sqrt(1 - (v_e / c)^2)
-  - Relativistic thrust: F = mdot * gamma * v_e
-  - Relativistic jet power: P_jet = (gamma - 1) * mdot * c^2
-  - Standoff distance: d = sqrt(G * M_tug / a_earth)
-  - Two-cone plume canting: F_forward = F_total * cos(theta_cone)
-  - Beam photon force: F_photon = P_beam / c (radial outward)
-  - Yaw trim: tan(psi_r) = F_photon / F_forward
+Relativistic propulsion and station-keeping contracts:
+- Relativistic rocket dynamics: Exhaust velocity v_e = 0.3c, Lorentz gamma = 1.048285, jet power P_jet = (gamma - 1) * mdot * c^2.
+- Equilibrium gravitational standoff: d = sqrt(G * M_tug / a_earth) delivers tangential tug pull F_pull = G * M_earth * M_tug / d^2.
+- Two-cone plume canting: Out-of-ecliptic split (cone_half_angle = 5.0 deg) clears Earth and lunar orbits.
+- In-ecliptic yaw trim: Inward yaw angle cancels radial beamed-photon momentum push (P_beam / c).
+- Station keeping: PD feedback controller stabilizes the unstable along-track standoff equilibrium.
+- Bilateral ledger accounting: Books propulsion thrust, reaction mass, kinetic energy, and waste heat.
 """
 
 from typing import Any, Callable

@@ -1,4 +1,11 @@
-"""Deterministic simulation State container (all SI units)."""
+"""Deterministic simulation State container for planetary and spacecraft bodies.
+
+Simulation state contracts:
+- Raw SI representation: All positions [m], velocities [m/s], and masses [kg] stored as float64.
+- Body registry: Maintains simulated bodies (Sun, Earth, Moon, Tug) and declared external counterparties.
+- Deterministic iteration: Iteration order across bodies is fixed and immutable during run execution.
+- State cloning: Supports exact state duplication for Strang splitting sub-steps and verification.
+"""
 
 from dataclasses import dataclass, field
 from typing import Iterator

@@ -2,20 +2,17 @@
 
 import json
 from pathlib import Path
-import time
 import numpy as np
 import pytest
 import yaml
 
 from octo.core import constants
 from octo.core.exchange import Exchange
-from octo.core.flags import Flag
 from octo.core.ledger import Ledger
 from octo.core.state import BodyState, State
 from octo.core.thresholds import load_thresholds, AssumedThresholdWarning
 from octo.drivers.orbit import (
     OrbitDriver,
-    circular_velocity,
     orbital_period,
     measure_rebound_performance,
 )

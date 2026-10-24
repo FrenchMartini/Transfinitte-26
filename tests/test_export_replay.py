@@ -1,6 +1,5 @@
 """Tests for py/export_replay.py: Parquet to results/replay_*.json exporter (Step 3.4 & Step 3.4b DRAFT v2)."""
 
-import importlib.util
 import json
 from pathlib import Path
 import tempfile
@@ -9,6 +8,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+import importlib.util
 from octo.core import constants
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -297,8 +297,8 @@ def test_frame0_matches_initial_config_state():
         assert pytest.approx(f0["bodies"]["Tug"]["x"], rel=1e-9) == r0_au
         assert pytest.approx(f0["bodies"]["Tug"]["y"], rel=1e-6) == d0_au
 
-    # 2. Check actual exported results/replay_ceres_tug.json
-    tug_replay_path = ROOT_DIR / "results" / "replay_ceres_tug.json"
+    # 2. Check actual exported results/simulation.json
+    tug_replay_path = ROOT_DIR / "results" / "simulation.json"
     if tug_replay_path.is_file():
         with open(tug_replay_path, "r", encoding="utf-8") as f:
             tug_doc = json.load(f)

@@ -64,11 +64,15 @@ def test_load_default_thresholds_warns_on_assumed():
     with pytest.warns(AssumedThresholdWarning, match="ASSUMED"):
         data = load_thresholds()
 
-    # Check confirmed winning conditions from prompt
+    # Check confirmed winning conditions from prompt and participant guide
     assert get_threshold_value(data, "simulation", "max_years") == 10000
     assert data["simulation"]["max_years"]["status"] == "CONFIRMED"
     assert get_threshold_value(data, "structure", "min_safety_factor") == 1.5
     assert data["structure"]["min_safety_factor"]["status"] == "CONFIRMED"
+    assert get_threshold_value(data, "orbit_targets", "target_radius_au") == 2.7
+    assert data["orbit_targets"]["target_radius_au"]["status"] == "CONFIRMED"
+    assert data["conservation"]["max_energy_rel_error"]["status"] == "CONFIRMED"
+    assert data["conservation"]["max_momentum_rel_error"]["status"] == "CONFIRMED"
     assert has_assumed_thresholds(data) is True
 
     # Ensure benchmark tolerances do NOT live in rulebook_thresholds.yaml

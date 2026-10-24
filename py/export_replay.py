@@ -148,8 +148,17 @@ def _build_initial_frame_from_config(
         half_ang_rad = math.radians(cone_deg)
         c_cant = math.cos(half_ang_rad)
         s_cant = math.sin(half_ang_rad)
+        f_cant = f_nom * c_cant
+        f_ph_init = float(beam_p) / constants.C_LIGHT
+        yaw_rad = math.atan(f_ph_init / f_cant) if f_cant > 0.0 else 0.0
+        f_eff_init = float(cfg.get("ceres_tug", {}).get("effective_thrust_n", f_cant * math.cos(yaw_rad)))
+        f_pull_init = (constants.G * constants.M_EARTH * float(m_tug)) / (float(d0_m) ** 2) if float(d0_m) > 0.0 else f_eff_init
         tug_telemetry = {
             "thrust_n": float(f_nom),
+            "effective_thrust_n": float(f_eff_init),
+            "gravitational_pull_n": float(f_pull_init),
+            "photon_radiation_thrust_n": float(f_ph_init),
+            "thrust_per_cone_n": float(f_nom) / 2.0,
             "tug_earth_distance_m": float(d0_m),
             "beam_power_w": float(beam_p),
             "beam_directions": [
@@ -174,6 +183,15 @@ def _build_initial_frame_from_config(
         "joint_angles_rad": None,
         "segment_safety_factors": None,
     }
+
+
+def _safe_float(pydict: dict[str, list[Any]], col: str, idx: int, default: float = 0.0) -> float:
+    """Extract float from pydict column at idx safely handling None or missing columns."""
+    if col in pydict and idx < len(pydict[col]):
+        val = pydict[col][idx]
+        if val is not None:
+            return float(val)
+    return default
 
 
 def export_parquet_to_replay_json(
@@ -228,35 +246,31 @@ def export_parquet_to_replay_json(
         frames.append(_build_initial_frame_from_config(body_names, has_tug, focus_body, cfg))
 
     for idx in indices:
-        t_val = float(pydict["t_s"][idx]) if "t_s" in pydict else float(idx)
-        step_idx = int(pydict["step_index"][idx]) if "step_index" in pydict else idx
-        flags_cnt = int(pydict["flags_count"][idx]) if "flags_count" in pydict else 0
+        t_val = _safe_float(pydict, "t_s", idx, float(idx))
+        step_idx = int(pydict["step_index"][idx]) if "step_index" in pydict and pydict["step_index"][idx] is not None else idx
+        flags_cnt = int(pydict["flags_count"][idx]) if "flags_count" in pydict and pydict["flags_count"][idx] is not None else 0
 
         # Focus body coordinates and velocities for heliocentric centering
-        focus_x = float(pydict[f"{focus_body}_x_au"][idx]) if f"{focus_body}_x_au" in pydict else 0.0
-        focus_y = float(pydict[f"{focus_body}_y_au"][idx]) if f"{focus_body}_y_au" in pydict else 0.0
-        focus_z = float(pydict[f"{focus_body}_z_au"][idx]) if f"{focus_body}_z_au" in pydict else 0.0
-        focus_vx = float(pydict[f"{focus_body}_vx_km_s"][idx]) if f"{focus_body}_vx_km_s" in pydict else 0.0
-        focus_vy = float(pydict[f"{focus_body}_vy_km_s"][idx]) if f"{focus_body}_vy_km_s" in pydict else (
-            float(pydict[f"{focus_body}_v_km_s"][idx]) if f"{focus_body}_v_km_s" in pydict else 0.0
-        )
-        focus_vz = float(pydict[f"{focus_body}_vz_km_s"][idx]) if f"{focus_body}_vz_km_s" in pydict else 0.0
+        focus_x = _safe_float(pydict, f"{focus_body}_x_au", idx, 0.0)
+        focus_y = _safe_float(pydict, f"{focus_body}_y_au", idx, 0.0)
+        focus_z = _safe_float(pydict, f"{focus_body}_z_au", idx, 0.0)
+        focus_vx = _safe_float(pydict, f"{focus_body}_vx_km_s", idx, 0.0)
+        focus_vy = _safe_float(pydict, f"{focus_body}_vy_km_s", idx, _safe_float(pydict, f"{focus_body}_v_km_s", idx, 0.0))
+        focus_vz = _safe_float(pydict, f"{focus_body}_vz_km_s", idx, 0.0)
 
         bodies_dict: dict[str, dict[str, float]] = {}
         for b_name in body_names:
-            raw_x = float(pydict[f"{b_name}_x_au"][idx]) if f"{b_name}_x_au" in pydict else 0.0
-            raw_y = float(pydict[f"{b_name}_y_au"][idx]) if f"{b_name}_y_au" in pydict else 0.0
-            raw_z = float(pydict[f"{b_name}_z_au"][idx]) if f"{b_name}_z_au" in pydict else 0.0
+            raw_x = _safe_float(pydict, f"{b_name}_x_au", idx, 0.0)
+            raw_y = _safe_float(pydict, f"{b_name}_y_au", idx, 0.0)
+            raw_z = _safe_float(pydict, f"{b_name}_z_au", idx, 0.0)
 
             # Velocities [km/s]
-            raw_vx = float(pydict[f"{b_name}_vx_km_s"][idx]) if f"{b_name}_vx_km_s" in pydict else 0.0
-            raw_vy = float(pydict[f"{b_name}_vy_km_s"][idx]) if f"{b_name}_vy_km_s" in pydict else (
-                float(pydict[f"{b_name}_v_km_s"][idx]) if f"{b_name}_v_km_s" in pydict else 0.0
-            )
-            raw_vz = float(pydict[f"{b_name}_vz_km_s"][idx]) if f"{b_name}_vz_km_s" in pydict else 0.0
+            raw_vx = _safe_float(pydict, f"{b_name}_vx_km_s", idx, 0.0)
+            raw_vy = _safe_float(pydict, f"{b_name}_vy_km_s", idx, _safe_float(pydict, f"{b_name}_v_km_s", idx, 0.0))
+            raw_vz = _safe_float(pydict, f"{b_name}_vz_km_s", idx, 0.0)
 
             # Mass [kg]
-            mass_kg = float(pydict[f"{b_name}_mass_kg"][idx]) if f"{b_name}_mass_kg" in pydict else 0.0
+            mass_kg = _safe_float(pydict, f"{b_name}_mass_kg", idx, 0.0)
 
             # Both positions and velocities strictly relative to focus body (heliocentric frame)
             bodies_dict[b_name] = {
@@ -272,10 +286,14 @@ def export_parquet_to_replay_json(
         # Tug telemetry block
         tug_telemetry = None
         if has_tug:
-            thrust_n = float(pydict["thrust_n"][idx]) if "thrust_n" in pydict else 0.0
-            standoff_m = float(pydict["tug_earth_distance_m"][idx]) if "tug_earth_distance_m" in pydict else 1.2701e9
-            beam_p = float(pydict["beam_power_w"][idx]) if "beam_power_w" in pydict else 1.0e25
-            prop_spent = float(pydict["expelled_mass_kg"][idx]) if "expelled_mass_kg" in pydict else 0.0
+            thrust_n = _safe_float(pydict, "thrust_n", idx, 0.0)
+            eff_thrust_n = _safe_float(pydict, "effective_thrust_n", idx, thrust_n)
+            pull_n = _safe_float(pydict, "gravitational_pull_n", idx, thrust_n)
+            photon_n = _safe_float(pydict, "photon_radiation_thrust_n", idx, 0.0)
+            cone_thrust_n = _safe_float(pydict, "thrust_per_cone_n", idx, thrust_n / 2.0)
+            standoff_m = _safe_float(pydict, "tug_earth_distance_m", idx, 1.2701e9)
+            beam_p = _safe_float(pydict, "beam_power_w", idx, 1.0e25)
+            prop_spent = _safe_float(pydict, "expelled_mass_kg", idx, 0.0)
 
             half_ang_rad = math.radians(cone_deg)
             c_cant = math.cos(half_ang_rad)
@@ -283,6 +301,10 @@ def export_parquet_to_replay_json(
 
             tug_telemetry = {
                 "thrust_n": thrust_n,
+                "effective_thrust_n": eff_thrust_n,
+                "gravitational_pull_n": pull_n,
+                "photon_radiation_thrust_n": photon_n,
+                "thrust_per_cone_n": cone_thrust_n,
                 "tug_earth_distance_m": standoff_m,
                 "beam_power_w": beam_p,
                 "beam_directions": [
@@ -294,10 +316,10 @@ def export_parquet_to_replay_json(
 
         # Ledger conservation drifts
         ledger_drifts = {
-            "energy": float(pydict["energy_drift"][idx]) if "energy_drift" in pydict else 0.0,
-            "momentum": float(pydict["momentum_drift"][idx]) if "momentum_drift" in pydict else 0.0,
-            "angular_momentum": float(pydict["ang_mom_drift"][idx]) if "ang_mom_drift" in pydict else 0.0,
-            "mass": float(pydict["mass_drift"][idx]) if "mass_drift" in pydict else 0.0,
+            "energy": _safe_float(pydict, "energy_drift", idx, 0.0),
+            "momentum": _safe_float(pydict, "momentum_drift", idx, 0.0),
+            "angular_momentum": _safe_float(pydict, "ang_mom_drift", idx, 0.0),
+            "mass": _safe_float(pydict, "mass_drift", idx, 0.0),
         }
 
         frames.append(

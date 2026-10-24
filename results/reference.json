@@ -97,5 +97,23 @@
     "rel_tol": 1.0e-3,
     "status": "ASSUMED",
     "source": "Independent closed-form slow spiral computed directly from config/base.yaml (tools/closed_form_spiral.py)"
+  },
+  "thrust_budget_benchmark": {
+    "nominal_thrust_n": 2.357951962801099e+17,
+    "canted_thrust_n": 2.3489792436974794e+17,
+    "effective_tangential_thrust_n": 2.325647824036852e+17,
+    "gravitational_coupling_pull_n": 2.322694482989879e+17,
+    "photon_radiation_force_n": 3.33564095198152e+16,
+    "thrust_per_exhaust_cone_n": 1.1789759814005495e+17,
+    "cant_angle_deg": 5.0,
+    "yaw_trim_angle_deg": 8.082184,
+    "cant_loss_fraction": 0.0038053019018443547,
+    "yaw_loss_fraction": 0.009933488251206198,
+    "total_vector_loss_fraction": 0.013700085444607736,
+    "earth_tangential_acceleration_m_s2": 3.894122474442973e-08,
+    "tug_thrust_to_mass_ratio_m_s2": 2.508459534894786e-04,
+    "rel_tol": 1.0e-6,
+    "status": "CONFIRMED",
+    "source": "Independent closed-form thrust resolution derived directly from relativistic rocket and geometric cant/yaw equations"
   }
 }

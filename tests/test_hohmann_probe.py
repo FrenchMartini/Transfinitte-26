@@ -1,4 +1,4 @@
-"""Step 3.3 First Milestone: Hohmann transfer 1 -> 2.7 AU for test probe with full ledger accounting."""
+"""Hohmann transfer from 1.0 to 2.7 AU for test probe with full ledger accounting."""
 
 import json
 from pathlib import Path
@@ -16,7 +16,6 @@ from octo.drivers.orbit import (
     circular_velocity,
     eccentricity,
     hohmann_transfer,
-    orbital_period,
 )
 
 
@@ -38,7 +37,7 @@ def ref_data() -> dict:
 
 
 def test_hohmann_milestone_test_probe_transfer(base_config: dict, ref_data: dict):
-    """Simulate complete Hohmann transfer 1.0 AU -> 2.7 AU for test probe with full Ledger conservation closure."""
+    """Simulate complete Hohmann transfer from 1.0 AU to 2.7 AU for test probe with full Ledger conservation closure."""
     h_ref = ref_data["hohmann_1_to_2_7_au"]
     r1 = h_ref["r1_au"] * constants.AU
     r2 = h_ref["r2_au"] * constants.AU
@@ -84,9 +83,7 @@ def test_hohmann_milestone_test_probe_transfer(base_config: dict, ref_data: dict
     # Verify clean initial baseline
     assert ledger.audit(state, 0.0) == []
 
-    # --------------------------------------------------------------------------
-    # 4. BURN 1: Departure burn at perihelion (1.0 AU) -> enter transfer orbit
-    # --------------------------------------------------------------------------
+    # 4. Departure burn at perihelion (1.0 AU) to enter transfer orbit
     m1_probe = m0_probe * np.exp(-dv1_expected / v_exhaust)
     dm1 = m0_probe - m1_probe
 
@@ -149,9 +146,7 @@ def test_hohmann_milestone_test_probe_transfer(base_config: dict, ref_data: dict
     flags_after_coast = ledger.audit(state, state.t)
     assert flags_after_coast == [], f"Drift detected after coast: {flags_after_coast}"
 
-    # --------------------------------------------------------------------------
-    # 6. BURN 2: Arrival burn at aphelion (2.7 AU) -> circularize orbit
-    # --------------------------------------------------------------------------
+    # 6. Arrival burn at aphelion (2.7 AU) to circularize orbit
     m2_probe = m1_probe * np.exp(-dv2_expected / v_exhaust)
     dm2 = m1_probe - m2_probe
 

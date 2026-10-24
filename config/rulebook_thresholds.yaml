@@ -1,17 +1,10 @@
-# ==============================================================================
-# Octo-Earth / OrbitShift Rulebook & Appendix Thresholds
-# ==============================================================================
-# CENTRAL RULE: Every organizer rulebook/appendix limit lives in this file.
-# Benchmark reference values and tolerances live in results/reference.json.
-# Paste the real appendix values here when available and change status to CONFIRMED.
+# OrbitShift rulebook limits and planetary physical safety thresholds.
 #
-# Every entry MUST have all five fields:
-#   value:    numeric or boolean threshold
-#   units:    physical unit string
-#   status:   ASSUMED | CONFIRMED
-#   severity: hard | flag
-#   source:   reference or placeholder note
-# ==============================================================================
+# Threshold governance and audit contracts:
+# - Central repository for all organizer, planetary habitability, and structural limits.
+# - Status: ASSUMED (unconfirmed placeholder) or CONFIRMED (official rulebook value).
+# - Severity: hard (causes immediate simulation failure) or flag (tracked in FlagRegistry).
+# - Benchmark values and tolerances live strictly in results/reference.json.
 
 simulation:
   max_years:
@@ -19,7 +12,7 @@ simulation:
     units: years
     status: CONFIRMED
     severity: hard
-    source: "Winning Condition 1: Earth reaches its target orbit within 10,000 simulated years"
+    source: "PARTICIPANT_GUIDE.pdf Page 3 Winning Condition 1: Earth reaches its target orbit within 10,000 simulated years"
 
 structure:
   min_safety_factor:
@@ -27,7 +20,7 @@ structure:
     units: dimensionless
     status: CONFIRMED
     severity: hard
-    source: "Winning Condition 3: Every structural safety factor >= 1.5"
+    source: "PARTICIPANT_GUIDE.pdf Page 3 Winning Condition 3: Every structural safety factor >= 1.5"
 
 earth_safety:
   max_acceleration_m_s2:
@@ -35,110 +28,110 @@ earth_safety:
     units: m/s^2
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - planetary biosphere secular acceleration ceiling"
   max_jerk_m_s3:
     value: 0.001
     units: m/s^3
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - biosphere tidal jerk ceiling"
   moon_retention_hill_fraction:
     value: 0.5
     units: fraction
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - long-term Hill-sphere retention limit (r_moon / R_Hill <= 0.5)"
   max_mass_loss_fraction:
     value: 0.01
     units: fraction
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - atmosphere/crustal mass loss ceiling (1%)"
   min_insolation_w_m2:
     value: 150.0
     units: W/m^2
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - minimum surface solar irradiance"
   max_insolation_w_m2:
     value: 1500.0
     units: W/m^2
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - runaway greenhouse irradiance ceiling"
   min_equilibrium_temp_k:
     value: 150.0
     units: K
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - oceanic freeze equilibrium temperature"
   max_equilibrium_temp_k:
     value: 320.0
     units: K
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - habitable equilibrium temperature ceiling"
   max_insolation_rate_w_m2_yr:
     value: 10.0
     units: W/m^2/yr
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - biosphere adaptation rate limit"
   max_surface_waste_heat_w_m2:
     value: 5.0
     units: W/m^2
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - surface waste heat flux ceiling"
   exhaust_reimpact_allowed:
     value: false
     units: boolean
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - exhaust plume clearance"
   thermal_shield_attenuation:
     value: 1.0e-5
     units: fraction
     status: ASSUMED
     severity: hard
-    source: "placeholder radiative-equilibrium shield attenuation"
+    source: "placeholder radiative-equilibrium shield attenuation (Step 3.0 audit)"
 
 orbit_targets:
   target_radius_au:
     value: 2.7
     units: AU
-    status: ASSUMED
+    status: CONFIRMED
     severity: hard
-    source: "placeholder - replace from appendix (~2.7 AU prompt specification)"
+    source: "PARTICIPANT_GUIDE.pdf Page 1 & 3: move Earth from 1 AU out to about 2.7 AU near the asteroid belt"
   target_radius_tolerance_au:
     value: 0.05
     units: AU
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - arrival semi-major axis tolerance window"
   max_eccentricity:
     value: 0.05
     units: dimensionless
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - target orbit circularization tolerance"
 
 conservation:
   max_energy_rel_error:
     value: 1.0e-9
     units: dimensionless
-    status: ASSUMED
+    status: CONFIRMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "PARTICIPANT_GUIDE.pdf Page 9 Section 6 (Benchmark 4 & 5): energy tolerance 10^-9"
   max_momentum_rel_error:
     value: 1.0e-9
     units: dimensionless
-    status: ASSUMED
+    status: CONFIRMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "PARTICIPANT_GUIDE.pdf Page 9 Section 6 (Ledger check): norm(dP_bodies - J_applied) < 1e-9 * norm(J_applied)"
   max_mass_rel_error:
     value: 1.0e-12
     units: dimensionless
     status: ASSUMED
     severity: hard
-    source: "placeholder - replace from appendix"
+    source: "placeholder waiting for rulebook appendix - machine precision mass conservation tolerance"

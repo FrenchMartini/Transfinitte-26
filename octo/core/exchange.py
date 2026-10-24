@@ -1,4 +1,4 @@
-"""Immutable Exchange contract (ARCHITECTURE.md Section 6)."""
+"""Immutable bilateral Exchange contract for Newton's Third Law conservation accounting."""
 
 from dataclasses import dataclass
 import numpy as np

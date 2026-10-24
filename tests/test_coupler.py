@@ -15,12 +15,10 @@ import matplotlib.pyplot as plt
 
 from octo.core import constants
 from octo.core.coupler import (
-    DriverRegistry,
     SimulationCoupler,
     create_default_driver_registry,
     plot_simulation_results,
 )
-from octo.core.exchange import Exchange
 from octo.core.ledger import Ledger
 from octo.core.state import BodyState, State
 from octo.core.thresholds import load_thresholds, AssumedThresholdWarning
@@ -156,10 +154,12 @@ def test_coupler_plot_results_with_matplotlib(sun_earth_state: State, base_confi
     ledger = Ledger(initial_state=sun_earth_state, thresholds=thresholds)
 
     with tempfile.TemporaryDirectory() as tmpdir:
+        test_cfg = dict(base_config)
+        test_cfg["output_paths"] = {"parquet": str(Path(tmpdir) / "test_run.parquet")}
         coupler = SimulationCoupler(
             state=sun_earth_state,
             ledger=ledger,
-            config=base_config,
+            config=test_cfg,
         )
         history = coupler.run(num_steps=5)
 

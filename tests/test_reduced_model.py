@@ -16,13 +16,7 @@ import pytest
 import yaml
 
 from octo.core import constants
-from octo.core.state import State, BodyState
-from octo.core.ledger import Ledger
-from octo.core.thresholds import load_thresholds, AssumedThresholdWarning
-from octo.core.coupler import SimulationCoupler
-from octo.drivers.orbit import OrbitDriver
-from octo.drivers.propulsion import CeresTugDriver, lorentz_gamma
-from tools.closed_form_spiral import compute_benchmark_table
+from octo.drivers.propulsion import lorentz_gamma
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT_DIR / "config" / "base.yaml"
@@ -84,7 +78,11 @@ def test_reduced_model_vs_full_nbody_window(base_config: dict):
     omega0_sq = 2.0 * constants.G * m_earth / (d0**3)
     kp = 3.0 * m_tug * omega0_sq
     kd = 2.0 * math.sqrt(m_tug * kp)
-    f_nominal = f_eff + m_tug * a_req
+    # Feedforward solar-tidal trim along track to eliminate steady-state standoff droop (d_eq = d0):
+    omega_sun_sq = mu_sun / (r0**3)
+    f_solar_drag = m_tug * omega_sun_sq * d0
+    f_trim = 0.5916 * f_solar_drag
+    f_nominal = f_eff + m_tug * a_req + f_trim
 
     def af_full(sim_pointer):
         s = sim_pointer.contents

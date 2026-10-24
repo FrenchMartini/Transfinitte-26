@@ -1,6 +1,5 @@
 """Tests for Ceres Gravity Tug propulsion driver, relativistic rocket physics, and station-keeping (Step 4)."""
 
-import json
 import math
 from pathlib import Path
 import time
@@ -9,7 +8,6 @@ import pytest
 import yaml
 
 from octo.core import constants
-from octo.core.coupler import SimulationCoupler, create_default_driver_registry
 from octo.core.ledger import Ledger
 from octo.core.state import BodyState, State
 from octo.core.thresholds import load_thresholds, AssumedThresholdWarning

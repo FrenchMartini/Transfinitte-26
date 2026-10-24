@@ -1,8 +1,8 @@
-# Phase 3E: Architecture Decision Record v2 (ADR v2)
+# Architecture Decision Record & Decision Gate Evaluation
 
 - **Date:** 2026-10-24
-- **Supersedes:** `docs/architecture_decision.md` (retained in version history)
-- **Primary References:** `Moving Earth Orbit Research.pdf`, `docs/new_research_validation.md`, `py/experiments/new_research_validation.py`, `results/new_research_validation.json`
+- **Status:** Approved
+- **Primary References:** `docs/participant_guide.pdf`, `docs/research_validation.md`, `py/experiments/research_validation.py`, `results/research_validation.json`
 
 ---
 

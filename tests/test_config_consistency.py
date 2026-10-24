@@ -72,7 +72,7 @@ def test_tug_pull_thrust_acceleration_balance(base_config: dict):
 
 def test_option_b_config_consistency():
     """Verify Option B config (compact standoff d=6.84e8 m, M_tug=2.726e20 kg) satisfies force balance."""
-    opt_b_path = ROOT_DIR / "config" / "ceres_tug_option_b.yaml"
+    opt_b_path = ROOT_DIR / "config" / "compact_standoff.yaml"
     with open(opt_b_path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 

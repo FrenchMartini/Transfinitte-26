@@ -1,8 +1,10 @@
-"""Analytical feasibility comparison across Candidate Architectures A–F (Phase 3C).
+"""Analytical feasibility comparison across Candidate Architectures A through F.
 
-Recomputes all governing physical quantities from `octo.core.constants` and
-`octo.drivers.orbit`, verifies them deterministically, and writes
-`results/architecture_comparison.json`.
+Physical feasibility and candidate trade studies:
+- Governing physics: Recomputes delta-v, mechanical power, and orbital angular momentum transfer.
+- Candidate evaluations: Evaluates candidates across thermal, structural, and conservation limits.
+- Trilemma resolution: Demonstrates why detached gravitational coupling avoids surface heat and shear.
+- Output serialization: Writes structured comparison matrix to results/architecture_comparison.json.
 """
 
 import json

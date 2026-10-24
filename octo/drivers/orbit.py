@@ -1,4 +1,12 @@
-"""Orbital mechanics, closed-form transfers, Section 2 energetics, and two-body integrator (SI units)."""
+"""Orbital mechanics, closed-form transfers, orbital energetics, and N-body integrator.
+
+Orbital physics and integration contracts:
+- Gravity fields: Point-mass gravitational accelerations for heliocentric and N-body systems.
+- REBOUND IAS15 N-body: High-order adaptive symplectic integration with Ledger external force callbacks.
+- Closed-form transfers: Analytic Hohmann transfers, vis-viva equations, and circular velocities.
+- Reduced model: Averaged secular spiral integration with driver-managed standoff tug forces.
+- Strict SI units: All positions [m], velocities [m/s], accelerations [m/s^2], and energies [J].
+"""
 
 from typing import Any
 import time
@@ -8,7 +16,7 @@ from scipy.integrate import solve_ivp
 
 from octo.core import constants
 from octo.core.ledger import Ledger
-from octo.core.state import BodyState, State
+from octo.core.state import State
 from octo.drivers.propulsion import PropulsionCallable, zero_thrust_propulsion
 
 

@@ -1,12 +1,40 @@
-# ==============================================================================
-# Declared Hypothetical Enablers (ARCHITECTURE.md Section 9, max 3 entries)
-# ==============================================================================
-# Format per entry:
-#   - id: E1
-#     name: "Fusion power source"
-#     relaxes: ["power.max_watts"]
-#     value: 5.0e21
-#     justification: "..."
-#     sources: ["..."]
-# ==============================================================================
-enablers: []
+# Declared hypothetical enablers relaxing rulebook limits (Rulebook Section 7).
+#
+# Constraints and schema rules:
+# - At most 3 declared enablers allowed across the entire mission.
+# - Each entry specifies id, name, relaxes (threshold keys), value, justification, and sources.
+# - Any raised flag in FlagRegistry not attributed to a declared enabler fails the run.
+
+enablers:
+  - id: "E1"
+    name: "Near-Sun Beamed Power Link"
+    relaxes:
+      - "power.max_power_w"
+      - "power.beam_power_w"
+    value: 1.096e25
+    justification: "Near-Sun Dyson swarm collector capturing ~2.85% L_sun and beaming 1.096e25 W to the standoff tug via coherent laser/microwave array."
+    sources:
+      - "docs/specification.md"
+      - "docs/decision_gate_evaluation.md"
+
+  - id: "E2"
+    name: "Relativistic Drive & Belt Supply Pipeline"
+    relaxes:
+      - "propulsion.max_exhaust_velocity_m_s"
+      - "propulsion.reaction_mass_resupply_kg"
+    value: 7.511e20
+    justification: "Automated asteroid belt extraction pipeline supplying 7.51e20 kg reaction mass to 0.3c relativistic plasma drive."
+    sources:
+      - "docs/specification.md"
+      - "docs/feasibility_corrections.md"
+
+  - id: "E3"
+    name: "Deep-Space Radiative Shield & L1 Climate Mirror"
+    relaxes:
+      - "earth_safety.thermal_shield_attenuation"
+      - "earth_safety.min_insolation_w_m2"
+    value: 1361.0
+    justification: "Active shadow shield maintaining 1.0e-5 thermal attenuation and off-axis L1 solar concentrator maintaining 1361 W/m^2 insolation on Earth out to 2.7 AU."
+    sources:
+      - "docs/specification.md"
+      - "docs/decision_gate_evaluation.md"

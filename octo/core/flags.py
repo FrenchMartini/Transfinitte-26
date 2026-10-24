@@ -1,4 +1,11 @@
-"""Flag contract and FlagRegistry (ARCHITECTURE.md Sections 6 & 9)."""
+"""Flag contract and FlagRegistry for audit limit tracking and enabler matching.
+
+Flag and enabler contracts:
+- Flag records: Immutable instances capturing violation code, timestamp, source, and values.
+- Enabler matching: `FlagRegistry` maps raised flags to declared hypothetical enablers.
+- Enabler limits: Strictly enforces at most 3 declared enablers per competition rules.
+- Audit verdict: Any unexplained or mismatched flag results in an unresolved audit failure.
+"""
 
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -48,16 +55,16 @@ class FlagRegistry:
 
     MAX_ENABLERS = 3
 
-    def __init__(self, enablers_data: dict[str, Any] | list[dict[str, Any]] | None = None) -> None:
-        raw_list: list[dict[str, Any]] = []
+    def __init__(self, enablers_data: dict[str, Any] | list[Any] | tuple[Any, ...] | None = None) -> None:
+        raw_list: list[Any] = []
         if enablers_data is None:
             raw_list = []
         elif isinstance(enablers_data, dict):
             if "enablers" not in enablers_data or not isinstance(enablers_data["enablers"], list):
                 raise EnablerValidationError("Enablers config must contain an 'enablers' list.")
             raw_list = enablers_data["enablers"]
-        elif isinstance(enablers_data, list):
-            raw_list = enablers_data
+        elif isinstance(enablers_data, (list, tuple)):
+            raw_list = list(enablers_data)
         else:
             raise EnablerValidationError("Invalid enablers_data type.")
 
@@ -69,8 +76,14 @@ class FlagRegistry:
         self._enablers: list[HypotheticalEnabler] = []
         seen_ids: set[str] = set()
         for item in raw_list:
+            if isinstance(item, HypotheticalEnabler):
+                if item.id in seen_ids:
+                    raise EnablerValidationError(f"Duplicate enabler id {item.id!r}.")
+                seen_ids.add(item.id)
+                self._enablers.append(item)
+                continue
             if not isinstance(item, dict):
-                raise EnablerValidationError("Each enabler entry must be a mapping.")
+                raise EnablerValidationError("Each enabler entry must be a mapping or HypotheticalEnabler.")
             for req in ("id", "name", "relaxes", "value", "justification", "sources"):
                 if req not in item:
                     raise EnablerValidationError(f"Enabler entry missing required field '{req}'.")

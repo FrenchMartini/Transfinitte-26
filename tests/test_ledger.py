@@ -1,6 +1,5 @@
 """Tests for Step 2.2: octo/core/ledger.py (conservation, reactions, rogue-driver audit, Kahan/fsum)."""
 
-from decimal import Decimal
 import numpy as np
 import pytest
 

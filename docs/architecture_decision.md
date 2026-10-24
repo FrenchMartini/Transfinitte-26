@@ -2,7 +2,7 @@
 
 - **Date:** 2026-10-24
 - **Status:** Proposed for Implementation Approval (Pre-Step 3 Gate)
-- **Supporting Analysis:** [`docs/architecture_options.md`](file:///Users/adithya_na1r/tf26/docs/architecture_options.md), [`py/experiments/feasibility_audit.py`](file:///Users/adithya_na1r/tf26/py/experiments/feasibility_audit.py), [`results/architecture_comparison.json`](file:///Users/adithya_na1r/tf26/results/architecture_comparison.json)
+- **Supporting Analysis:** [`docs/architecture_options.md`](architecture_options.md), [`py/experiments/feasibility_audit.py`](../py/experiments/feasibility_audit.py), [`results/architecture_comparison.json`](../results/architecture_comparison.json)
 
 ---
 
@@ -43,7 +43,7 @@ Any physically honest architecture faces a fundamental **trilemma**:
 
 ## 3. Declared Hypothetical Enablers (3 of 3 Slots Used)
 
-Candidate F cleanly maps onto the 3 permitted entries in [`config/hypothetical_enablers.yaml`](file:///Users/adithya_na1r/tf26/config/hypothetical_enablers.yaml):
+Candidate F cleanly maps onto the 3 permitted entries in [`config/hypothetical_enablers.yaml`](../config/hypothetical_enablers.yaml):
 1. **`E1` — Solar-Statite / Dyson Beamed-Power Array (`1.05e25 W`):** Relaxes `power.max_watts`; books $-P_{\text{beam}}/c$ recoil on the emitter and $+P_{\text{beam}}/c$ on the tug.
 2. **`E2` — Relativistic $0.3c$ Plasma Accelerator & Directional Radiator Shield:** Relaxes `propulsion.max_exhaust_velocity_m_s` and directs tug waste heat away from Earth so surface waste heat stays $< 5\text{ W/m}^2$.
 3. **`E3` — Pre-Positioned Ceres Tug at $1\text{ AU}$ + L1 Solar Concentrator Mirror:** Accounts for initial capture of Ceres at $d_0 = 1.30 \times 10^9\text{ m}$ and maintains $1,361\text{ W/m}^2$ insolation on Earth out to $2.7\text{ AU}$.

@@ -1,4 +1,10 @@
-"""Generate simulation Parquet runs and export results/replay_hohmann.json and results/replay_ceres_tug.json (Step 3.4b)."""
+"""Generate simulation Parquet runs and export validated replay JSON artifacts.
+
+Replay artifact generation workflow:
+- Hohmann probe transfer: Generates 1.26-year baseline transfer dataset and exports replay_hohmann.json.
+- Ceres Tug spiral: Generates full 9,566-year spiral and 50-year coast dataset and exports replay_ceres_tug.json.
+- Schema compliance: Enforces DRAFT v2 schema with heliocentric coordinates, metadata block, and frame cap.
+"""
 
 import math
 from pathlib import Path

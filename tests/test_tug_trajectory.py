@@ -8,14 +8,7 @@ import pytest
 import yaml
 
 from octo.core import constants
-from octo.core.state import BodyState, State
-from octo.core.ledger import Ledger
-from octo.core.thresholds import load_thresholds, AssumedThresholdWarning
-from octo.drivers.propulsion import (
-    CeresTugDriver,
-    two_cone_canting_loss,
-    standoff_distance_for_acceleration,
-)
+from octo.drivers.propulsion import standoff_distance_for_acceleration
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent

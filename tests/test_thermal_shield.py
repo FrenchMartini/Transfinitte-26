@@ -1,7 +1,6 @@
 """Tests for Step 3.0 Design Corrections: toy radiative-equilibrium multilayer model."""
 
 import pytest
-from octo.core import constants
 from octo.core.thresholds import load_thresholds, get_threshold_value, AssumedThresholdWarning
 
 

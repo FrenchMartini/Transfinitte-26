@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
-"""Independent closed-form slow spiral trajectory calculation (Step 4.2 & Step 4.3).
+"""Independent closed-form slow spiral trajectory calculation.
 
-CRITICAL REQUIREMENT:
-Imports NOTHING from the octo package. Uses only standard library math, sys, json, pathlib, and yaml.
-
-Governing equations:
-  gamma = 1 / sqrt(1 - (v_e / c)^2)
-  F_nom = mdot * gamma * v_e
-  F_cant = F_nom * cos(cant_angle)
-  F_photon = P_beam / c
-  yaw_angle = arctan(F_photon / F_cant)
-  F_eff = F_nom * cos(cant_angle) * cos(yaw_angle)
-  v(t) = v0 - (F_eff / M_earth) * t
-  r(t) = GM_sun / (v(t)^2)
+Independent benchmark calculation contracts:
+- Complete isolation: Imports nothing from the octo package; uses only standard library and PyYAML.
+- Relativistic dynamics: Computes nominal thrust, out-of-ecliptic canting, and beamed photon yaw trim.
+- Analytic spiral kinematics: Evaluates semi-major axis a(t) and arrival time via exact quasi-circular relations.
+- Benchmark synchronization: Updates reference values in results/reference.json deterministically.
 """
 
 import json

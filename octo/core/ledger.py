@@ -1,16 +1,11 @@
-"""Conservation Ledger enforcing Newton's Third Law and auditing State (ARCHITECTURE.md Section 6).
+"""Conservation Ledger enforcing Newton's Third Law and auditing simulation state.
 
-Design rules:
-1. `book(exchange)` makes a one-sided force structurally impossible: every force on `b`
-   automatically books the equal-and-opposite reaction `-force_on_b` on `a`.
-2. Rejects self-forces (`a == b`), empty/unknown components, and NaN/Inf values.
-3. Expelled mass (`mass_out` with `exhaust_v`) is booked with its inertial momentum
-   and kinetic energy so planet + exhaust conservation closes.
-4. `audit(state, t)` independently recomputes linear momentum, angular momentum, mass,
-   and total energy from `State` + cumulative exhaust/heat/radiation and compares against
-   the initial baseline using tolerances from `config/rulebook_thresholds.yaml`.
-5. All running totals use `math.fsum` (exact floating-point accumulation) in a fixed
-   deterministic reduction order.
+Conservation rules and audit contracts:
+- Bilateral booking: `book(exchange)` applies +F on component b and -F on component a.
+- Force integrity: Rejects self-forces (a == b), unknown components, and NaN/Inf values.
+- Reaction mass closure: Expelled mass is booked with its inertial momentum and kinetic energy.
+- Independent audit: `audit(state, t)` verifies mass, linear momentum, angular momentum, and total energy.
+- Exact floating-point math: All running ledger reductions use `math.fsum` with deterministic iteration.
 """
 
 import math

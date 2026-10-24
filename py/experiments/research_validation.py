@@ -1,7 +1,11 @@
-"""Validation script for claims in 'Moving Earth Orbit Research.pdf' (Phase 3E).
+"""Validation script for propulsion research claims and literature numbers.
 
-Reproduces all key physical, orbital, thermal, electromagnetic, and structural
-calculations from the research document and outputs `results/new_research_validation.json`.
+Research audit and validation contracts:
+- Closed-form orbital kinematics: Recomputes delta-v, total energy, and average force for 1.0 to 2.7 AU spiral.
+- Tidal perturbance verification: Computes Earth surface tide ratio from standoff tug vs lunar tide.
+- Plume canting and thermal shielding: Audits two-cone clearance and specular shield attenuation.
+- Alternative concept audits: Validates geometric collapse of lunar tractor and PLT laser cavities.
+- Output serialization: Writes deterministic validation register to results/research_validation.json.
 """
 
 import json
@@ -12,7 +16,7 @@ from typing import Any
 from octo.core import constants
 from octo.drivers import orbit
 
-OUTPUT_PATH = Path(__file__).resolve().parent.parent.parent / "results" / "new_research_validation.json"
+OUTPUT_PATH = Path(__file__).resolve().parent.parent.parent / "results" / "research_validation.json"
 
 
 def validate_pdf_claims() -> dict[str, Any]:

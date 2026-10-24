@@ -1,6 +1,12 @@
-# ==============================================================================
-# Octo-Earth Base Run Configuration (ARCHITECTURE.md Section 9)
-# ==============================================================================
+# Primary simulation run configuration for OrbitShift Ceres Gravity Tug.
+#
+# Key parameters and architecture contracts:
+# - Run mode: Averaged secular spiral transfer (10,000-year time span).
+# - Propulsion: Relativistic Ceres Gravity Tug with 0.3c exhaust velocity.
+# - Nominal thrust calibrated for 9,500-year arrival at 2.7 AU with cant and yaw trim.
+# - Constant Tug mass: Maintained via continuous reaction-mass resupply from asteroid belt.
+# - Equilibrium standoff: d = sqrt(G * M_tug / a_earth) = 1.2701e9 m.
+# - Numerical integration: Macro-step Strang splitting with IAS15 N-body orbital propagation.
 mode: "averaged"
 time_span_years: 10000.0
 macro_step_s: 86400.0
@@ -19,24 +25,24 @@ drivers:
 propulsion:
   variant: "ceres_gravity_tug"
   exhaust_velocity_m_s: 89937737.4  # 0.3c
-  mass_flow_kg_s: 2.501e9  # Adopted for 9,500 yr arrival with cant/yaw margin
+  mass_flow_kg_s: 2.501e9  # Calibrated for 9,500 yr arrival with cant and yaw trim
   power_w: 1.085e25
   efficiency: 1.0
 
 ceres_tug:
-  mass_kg: 9.4e20  # Constant mass (propellant resupplied, part of enabler E2)
+  mass_kg: 9.4e20  # Constant mass via continuous asteroid-belt resupply
   exhaust_velocity_m_s: 89937737.4  # 0.3c
   beam_power_w: 1.0e25
   cone_half_angle_deg: 5.0
   waste_heat_fraction: 0.01  # ASSUMED
-  standoff_distance_m: 1.2701e9  # d = sqrt(G * M_tug / a_earth) for M_tug=9.4e20 kg (Option A)
+  standoff_distance_m: 1.2701e9  # Equilibrium standoff d = sqrt(G * M_tug / a_earth)
   standoff_tolerance_m: 1.0e7
   station_keeping_kp: 1.0e-5
   station_keeping_kd: 1.0e-2
   balance_tolerance_rel: 0.05
-  reduced_model_validation_tol: 0.01  # ASSUMED (1% target from ARCHITECTURE.md)
+  reduced_model_validation_tol: 0.01  # ASSUMED: 1% agreement target
 
-reduced_model_validation_tol: 0.01  # ASSUMED (1% target from ARCHITECTURE.md)
+reduced_model_validation_tol: 0.01  # ASSUMED: 1% agreement target
 
 initial_conditions:
   semi_major_axis_au: 1.0
@@ -54,6 +60,6 @@ test_probe:
 seed: 42
 
 output_paths:
-  parquet: "results/run_0001.parquet"
-  replay: "results/run_0001.octo"
-  report: "results/validation_report.json"
+  simulation: "results/simulation.json"
+  plot: "results/spiral_trajectory.png"
+  acceptance_report: "reports/final_acceptance_report.md"

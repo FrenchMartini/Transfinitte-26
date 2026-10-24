@@ -1,11 +1,11 @@
-"""Simulation Coupler, Driver Registry, macro-step Strang splitting, and output dispatchers (Step 3.2).
+"""Simulation Coupler, Driver Registry, macro-step Strang splitting, and output dispatchers.
 
-Architecture:
-  Strang splitting per macro-step:
-    half step (dt / 2): power, propulsion (book Exchanges)
-    full step (dt):     orbit (reads net force from ledger, integrates via REBOUND IAS15)
-    half step (dt / 2): propulsion, power
-    post-step:          structure, habitability, ledger.audit
+Simulation loop contracts:
+- Driver orchestration: Drivers never call each other directly; they read State and book to Ledger.
+- Strang splitting per macro-step: Half-step power/propulsion, full-step orbit, half-step propulsion/power.
+- N-body orbit integration: Orbit driver applies net booked forces via REBOUND IAS15.
+- Post-step audits: Structure and habitability monitors evaluate limits, followed by `ledger.audit`.
+- Output dispatching: Serializes telemetry rows to Parquet and generates diagnostic summary plots.
 """
 
 import os
@@ -19,12 +19,14 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from octo.core import constants
-from octo.core.flags import Flag, FlagRegistry
+from octo.core.flags import FlagRegistry
 from octo.core.ledger import Ledger
 from octo.core.recorder import ParquetResultsWriter
 from octo.core.state import State
+from octo.drivers.habitability import HabitabilityDriver
 from octo.drivers.orbit import OrbitDriver
 from octo.drivers.propulsion import CeresTugDriver, PropulsionModel
+from octo.drivers.structure import StructureDriver
 
 
 class DriverProtocol(Protocol):
@@ -118,14 +120,14 @@ def create_default_driver_registry() -> DriverRegistry:
     )
     registry.register(
         "structure",
-        lambda state, ledger=None, config=None, **kw: StubDriver(
-            name="structure", state=state, ledger=ledger, config=config
+        lambda state, ledger=None, config=None, **kw: StructureDriver(
+            state=state, ledger=ledger, config=config, **kw
         ),
     )
     registry.register(
         "habitability",
-        lambda state, ledger=None, config=None, **kw: StubDriver(
-            name="habitability", state=state, ledger=ledger, config=config
+        lambda state, ledger=None, config=None, **kw: HabitabilityDriver(
+            state=state, ledger=ledger, config=config, **kw
         ),
     )
     return registry
@@ -190,14 +192,25 @@ class SimulationCoupler:
             self.drivers["power"].step(half_dt)
 
         # 5. Post-step: structure, habitability
+        monitor_flags = []
         if "structure" in self.drivers:
-            self.drivers["structure"].step(dt_s)
+            res = self.drivers["structure"].step(dt_s)
+            if isinstance(res, list):
+                monitor_flags.extend(res)
         if "habitability" in self.drivers:
-            self.drivers["habitability"].step(dt_s)
+            res = self.drivers["habitability"].step(dt_s)
+            if isinstance(res, list):
+                monitor_flags.extend(res)
 
         # 6. Audit state conservation against initial baseline
         flags = self.ledger.audit(self.state, self.state.t)
-        audit_pass = len(flags) == 0
+        all_flags = list(flags) + monitor_flags
+
+        if self.flag_registry is not None:
+            self.flag_registry.register_many(all_flags)
+            audit_pass = not self.flag_registry.has_unresolved_flags()
+        else:
+            audit_pass = len(all_flags) == 0
 
         self.step_index += 1
 
@@ -207,7 +220,7 @@ class SimulationCoupler:
             "t_s": float(self.state.t),
             "dt_s": dt_s,
             "audit_pass": audit_pass,
-            "flags_count": len(flags),
+            "flags_count": len(all_flags),
             "expelled_mass_kg": float(self.ledger.total_expelled_mass_kg),
             "heat_booked_j": float(self.ledger.total_heat_booked_j),
             "exhaust_ke_j": float(self.ledger.total_exhaust_ke_j),

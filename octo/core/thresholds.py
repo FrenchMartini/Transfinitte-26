@@ -1,4 +1,11 @@
-"""Rulebook threshold configuration loader and schema validator."""
+"""Rulebook threshold configuration loader and schema validator.
+
+Threshold validation contracts:
+- Central governance: Loads and parses config/rulebook_thresholds.yaml with schema enforcement.
+- Field completeness: Every entry requires value, physical units, status, severity, and source citation.
+- Assumed threshold warnings: Emits AssumedThresholdWarning when unconfirmed placeholder values are loaded.
+- Hard limits vs flags: Differentiates simulation-halting hard limits from audit-monitored flag thresholds.
+"""
 
 from pathlib import Path
 from typing import Any

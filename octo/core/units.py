@@ -1,11 +1,13 @@
-"""SI unit conversion helpers and lightweight boundary unit wrappers.
+"""SI unit conversion helpers and boundary unit wrappers.
 
-All internal simulation math uses raw SI floats and NumPy float64 arrays.
-These typed wrappers are used at config/report boundaries so mixing incompatible
-units raises `UnitMismatchError` immediately.
+Unit system and safety contracts:
+- Strict SI base math: All internal simulation math uses raw floats and NumPy float64 arrays.
+- Boundary typing: Strongly-typed wrappers enforce physical dimensional safety at IO boundaries.
+- Type mismatch prevention: Mixing incompatible units raises UnitMismatchError immediately.
 """
 
 from dataclasses import dataclass
+import math
 from typing import Self
 from octo.core import constants
 
@@ -104,6 +106,36 @@ class Teslas(Quantity):
 
 class Amperes(Quantity):
     """SI electric current [A]."""
+
+
+class Pascals(Quantity):
+    """SI pressure or stress [Pa]."""
+
+
+class Radians(Quantity):
+    """Plane angle in radians [rad]."""
+
+
+class Degrees(Quantity):
+    """Plane angle in degrees [deg]."""
+
+
+class MetersPerSecond(Quantity):
+    """SI velocity [m/s]."""
+
+
+class MetersPerSecondSquared(Quantity):
+    """SI acceleration [m/s^2]."""
+
+
+def degrees_to_radians(deg: float) -> float:
+    """Convert degrees [deg] to radians [rad]."""
+    return math.radians(float(deg))
+
+
+def radians_to_degrees(rad: float) -> float:
+    """Convert radians [rad] to degrees [deg]."""
+    return math.degrees(float(rad))
 
 
 def au_to_meters(au_val: float) -> float:

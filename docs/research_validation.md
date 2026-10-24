@@ -1,8 +1,8 @@
-# Phase 3E: Independent Validation of New Research (`Moving Earth Orbit Research.pdf`)
+# Independent Validation of Planetary Propulsion Research Literature
 
 ## Executive Summary
 
-We performed an independent, critical audit of the 21-page research document `Moving Earth Orbit Research.pdf` against established celestial mechanics, relativistic electrodynamics, thermodynamic radiation limits, and the TRANSFINITTE competition rules.
+We performed an independent, critical audit of candidate orbital transfer research literature against established celestial mechanics, relativistic electrodynamics, thermodynamic radiation limits, and the TRANSFINITTE competition rules. Numeric outputs are verified in `results/research_validation.json` via `py/experiments/research_validation.py`.
 
 Our audit arrived at two pivotal conclusions:
 1. **The PDF's Refinements to the Standoff Gravity Tug are Brilliant, Necessary, and Mathematically Sound:**
