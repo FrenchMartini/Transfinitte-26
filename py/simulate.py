@@ -169,9 +169,9 @@ def run_full_spiral_simulation(
             return
         s = sim_pointer.contents
         pe = s.particles[1]
-        pe.ax += (f_from_ledger[0] + rogue_unbooked_force_n) / (pe.m + m_tug)
-        pe.ay += f_from_ledger[1] / (pe.m + m_tug)
-        pe.az += f_from_ledger[2] / (pe.m + m_tug)
+        pe.ax += (f_from_ledger[0] + rogue_unbooked_force_n) / pe.m
+        pe.ay += f_from_ledger[1] / pe.m
+        pe.az += f_from_ledger[2] / pe.m
 
     sim.additional_forces = af
     sim.force_is_velocity_dependent = 0

@@ -15,22 +15,22 @@
       "power": "W"
     },
     "focus_body_id": "Sun",
-    "frame_count": 5,
-    "downsampling_note": "Uniform decimation from 14 Parquet rows to 5 frames (spanning 0.00 to 0.34 yr) in heliocentric coordinates (Sun position and velocity at 0) with frame 0 guaranteed equal to the initial config state at t=0 s."
+    "frame_count": 50,
+    "downsampling_note": "Uniform decimation from 2222 Parquet rows to 50 frames (spanning 0.00 to 60.88 yr) in heliocentric coordinates (Sun position and velocity at 0) with frame 0 guaranteed equal to the initial config state at t=0 s."
   },
   "mission_summary": {
-    "arrival_year": 0.32854209445585214,
-    "final_semi_major_axis_au": 1.0000239358558445,
-    "final_eccentricity": 2.0952998524555055e-05,
-    "total_propellant_kg": 2.5930368e+16,
-    "propellant_fraction_ceres": 2.7585497872340425e-05,
+    "arrival_year": 60.780287474332646,
+    "final_semi_major_axis_au": 1.0050003009430655,
+    "final_eccentricity": 2.6420643354481652e-05,
+    "total_propellant_kg": 4.79711808e+18,
+    "propellant_fraction_ceres": 0.005103317106382978,
     "relativistic_jet_power_w": 1.0853401389277237e+25,
-    "active_spiral_duration_years": 0.32854209445585214,
-    "unpowered_coast_duration_years": 0.01,
-    "total_simulation_years": 0.33854209445585215,
-    "wall_time_s": 0.006552791979629546,
-    "macro_steps_total": 14,
-    "replay_frames_total": 5
+    "active_spiral_duration_years": 60.780287474332646,
+    "unpowered_coast_duration_years": 0.1,
+    "total_simulation_years": 60.88028747433265,
+    "wall_time_s": 0.8836038750014268,
+    "macro_steps_total": 2222,
+    "replay_frames_total": 50
   },
   "monitors_summary": {
     "min_insolation_w_m2": 1361.1664654085753,
@@ -41,10 +41,10 @@
     "max_surface_waste_heat_w_m2": 0.05354022212869547,
     "min_structural_safety_factor": 14.904149742729086,
     "max_structural_stress_pa": 335477.0373559367,
-    "max_acceleration_m_s2": 3.841945876502128e-08,
+    "max_acceleration_m_s2": 3.841945876502129e-08,
     "max_mass_drift": 1.4155739913719492e-16,
-    "max_momentum_drift": 9.945538457286637e-05,
-    "max_ang_mom_drift": 2.2314943950822261e-07,
+    "max_momentum_drift": 0.0001049681896846452,
+    "max_ang_mom_drift": 1.1679496468280984e-05,
     "max_energy_drift": 1.7088481708475368e-16
   },
   "validation": {
@@ -58,12 +58,12 @@
       "W6_no_unresolved_flags": true
     },
     "details": {
-      "final_epoch_years": 0.33854209445585215,
+      "final_epoch_years": 60.88028747433265,
       "max_allowed_years": 10000.0,
-      "final_semi_major_axis_au": 1.0000239358558445,
+      "final_semi_major_axis_au": 1.0050003009430655,
       "target_semi_major_axis_au": 2.7,
       "semi_major_axis_tolerance_au": 0.05,
-      "final_eccentricity": 2.0952998524555055e-05,
+      "final_eccentricity": 2.6420643354481652e-05,
       "max_allowed_eccentricity": 0.05,
       "min_structural_safety_factor": 14.904149742729086,
       "required_safety_factor": 1.5,
@@ -167,15 +167,15 @@
       "segment_safety_factors": null
     },
     {
-      "time_s": 2592000.0,
-      "step_index": 3,
+      "time_s": 38880000.0,
+      "step_index": 45,
       "bodies": {
         "Earth": {
-          "x": 0.8697682073437114,
-          "y": 0.49346043863437905,
+          "x": 0.1133333529970136,
+          "y": 0.9936434736904322,
           "z": 0.0,
-          "vx": -14.697604569427982,
-          "vy": 25.905874161641684,
+          "vx": -29.59174496761111,
+          "vy": 3.3754609442755785,
           "vz": 0.0,
           "mass_kg": 5.9722e+24
         },
@@ -189,11 +189,11 @@
           "mass_kg": 0.0
         },
         "Tug": {
-          "x": 0.8669045382124154,
-          "y": 0.5014530037420978,
+          "x": 0.1051870921065302,
+          "y": 0.9960351533092022,
           "z": 0.0,
-          "vx": -14.697604569427982,
-          "vy": 25.905874161641684,
+          "vx": -29.59174496761111,
+          "vy": 3.3754609442755785,
           "vz": 0.0,
           "mass_kg": 9.4e+20
         }
@@ -218,12 +218,12 @@
             -0.08715574274765817
           ]
         ],
-        "propellant_spent_kg": 6482592000000000.0
+        "propellant_spent_kg": 9.723888e+16
       },
       "ledger_drifts": {
         "energy": 0.0,
-        "momentum": 5.31790974988835e-05,
-        "angular_momentum": 2.1203525239690889e-07,
+        "momentum": 8.988687225237348e-05,
+        "angular_momentum": 1.0498475864815315e-08,
         "mass": 0.0
       },
       "flag_count": 3,
@@ -231,15 +231,15 @@
       "segment_safety_factors": null
     },
     {
-      "time_s": 5184000.0,
-      "step_index": 6,
+      "time_s": 78624000.0,
+      "step_index": 91,
       "bodies": {
         "Earth": {
-          "x": 0.5129929634562924,
-          "y": 0.8583940537639063,
+          "x": -0.998612673233573,
+          "y": 0.05630494840889741,
           "z": 0.0,
-          "vx": -25.567054785755836,
-          "vy": 15.279516836011451,
+          "vx": -1.6773029808733024,
+          "vy": -29.73454597643523,
           "vz": 0.0,
           "mass_kg": 5.9722e+24
         },
@@ -253,11 +253,11 @@
           "mass_kg": 0.0
         },
         "Tug": {
-          "x": 0.5065582145059475,
-          "y": 0.8639326189066752,
+          "x": -1.000534121712416,
+          "y": 0.048035139847762975,
           "z": 0.0,
-          "vx": -25.567054785755836,
-          "vy": 15.279516836011451,
+          "vx": -1.6773029808733024,
+          "vy": -29.73454597643523,
           "vz": 0.0,
           "mass_kg": 9.4e+20
         }
@@ -282,28 +282,28 @@
             -0.08715574274765817
           ]
         ],
-        "propellant_spent_kg": 1.2965184e+16
+        "propellant_spent_kg": 1.96638624e+17
       },
       "ledger_drifts": {
         "energy": 0.0,
-        "momentum": 7.817348611182596e-05,
-        "angular_momentum": 1.9532624932403175e-07,
-        "mass": 0.0
+        "momentum": 0.00010491298637780866,
+        "angular_momentum": 2.6207291119487416e-07,
+        "mass": 1.4155739913719492e-16
       },
       "flag_count": 3,
       "joint_angles_rad": null,
       "segment_safety_factors": null
     },
     {
-      "time_s": 8640000.0,
-      "step_index": 10,
+      "time_s": 117504000.0,
+      "step_index": 136,
       "bodies": {
         "Earth": {
-          "x": -0.14886383818170193,
-          "y": 0.9888645064955479,
+          "x": -0.17150090528850262,
+          "y": -0.9855041468464909,
           "z": 0.0,
-          "vx": -29.45301477651097,
-          "vy": -4.433482543354432,
+          "vx": 29.338816664021248,
+          "vy": -5.1061798653433454,
           "vz": 0.0,
           "mass_kg": 5.9722e+24
         },
@@ -317,11 +317,11 @@
           "mass_kg": 0.0
         },
         "Tug": {
-          "x": -0.15735176366679895,
-          "y": 0.9890563888920815,
+          "x": -0.1635088984025034,
+          "y": -0.9883693735092177,
           "z": 0.0,
-          "vx": -29.45301477651097,
-          "vy": -4.433482543354432,
+          "vx": 29.338816664021248,
+          "vy": -5.1061798653433454,
           "vz": 0.0,
           "mass_kg": 9.4e+20
         }
@@ -346,12 +346,12 @@
             -0.08715574274765817
           ]
         ],
-        "propellant_spent_kg": 2.160864e+16
+        "propellant_spent_kg": 2.93877504e+17
       },
       "ledger_drifts": {
         "energy": 1.7088481708475368e-16,
-        "momentum": 9.482739868202025e-05,
-        "angular_momentum": 1.7285607578863686e-07,
+        "momentum": 9.519752306925492e-05,
+        "angular_momentum": 5.144184983281885e-07,
         "mass": 0.0
       },
       "flag_count": 3,
@@ -359,15 +359,2895 @@
       "segment_safety_factors": null
     },
     {
-      "time_s": 10683576.0,
-      "step_index": 13,
+      "time_s": 156384000.0,
+      "step_index": 181,
       "bodies": {
         "Earth": {
-          "x": -0.5280444352667072,
-          "y": 0.8492319749465884,
+          "x": 0.9587907187592858,
+          "y": -0.2855535165460556,
           "z": 0.0,
-          "vx": -25.294079420722547,
-          "vy": -15.726994620641559,
+          "vx": 8.499914079675296,
+          "vy": 28.539663842123836,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.9625703493004374,
+          "y": -0.27795114251769754,
+          "z": 0.0,
+          "vx": 8.499914079675296,
+          "vy": 28.539663842123836,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.91116384e+17
+      },
+      "ledger_drifts": {
+        "energy": 1.7088481708475368e-16,
+        "momentum": 3.523558457331462e-05,
+        "angular_momentum": 7.483966648619728e-07,
+        "mass": 1.4155739913719492e-16
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 196128000.0,
+      "step_index": 227,
+      "bodies": {
+        "Earth": {
+          "x": 0.23379680804089906,
+          "y": 0.9727948790726715,
+          "z": 0.0,
+          "vx": -28.95304056884653,
+          "vy": 6.95866804824611,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.2260027929907487,
+          "y": 0.9761616322998459,
+          "z": 0.0,
+          "vx": -28.95304056884653,
+          "vy": 6.95866804824611,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 4.90516128e+17
+      },
+      "ledger_drifts": {
+        "energy": 1.7088481708475368e-16,
+        "momentum": 8.70653291653653e-05,
+        "angular_momentum": 9.737954599284453e-07,
+        "mass": 1.4155739913719492e-16
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 235008000.0,
+      "step_index": 272,
+      "bodies": {
+        "Earth": {
+          "x": -0.9380957296138412,
+          "y": 0.34810945807777566,
+          "z": 0.0,
+          "vx": -10.35971323373739,
+          "vy": -27.915568214217668,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.9423672101900049,
+          "y": 0.3407721457917873,
+          "z": 0.0,
+          "vx": -10.35971323373739,
+          "vy": -27.915568214217668,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 5.87755008e+17
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010437386888011904,
+        "angular_momentum": 1.2268957524176293e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 273888000.0,
+      "step_index": 317,
+      "bodies": {
+        "Earth": {
+          "x": -0.4585677467934326,
+          "y": -0.889469792482324,
+          "z": 0.0,
+          "vx": 26.463593690020133,
+          "vy": -13.644064633365138,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.45179787215184963,
+          "y": -0.8945933161947617,
+          "z": 0.0,
+          "vx": 26.463593690020133,
+          "vy": -13.644064633365138,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 6.84993888e+17
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 9.926955950439313e-05,
+        "angular_momentum": 1.4986384518553072e-06,
+        "mass": 1.4155739913719492e-16
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 313632000.0,
+      "step_index": 363,
+      "bodies": {
+        "Earth": {
+          "x": 0.9113383022469463,
+          "y": -0.4136479074461061,
+          "z": 0.0,
+          "vx": 12.305251722783028,
+          "vy": 27.110451488776956,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.9161173996433808,
+          "y": -0.4066306482966908,
+          "z": 0.0,
+          "vx": 12.305251722783028,
+          "vy": 27.110451488776956,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 7.84393632e+17
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 4.677890822288802e-05,
+        "angular_momentum": 1.733435818675234e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 352512000.0,
+      "step_index": 408,
+      "bodies": {
+        "Earth": {
+          "x": 0.522413905995384,
+          "y": 0.8537524730700055,
+          "z": 0.0,
+          "vx": -25.3943884651908,
+          "vy": 15.53905513468985,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.5160361291315153,
+          "y": 0.8593565483879648,
+          "z": 0.0,
+          "vx": -25.3943884651908,
+          "vy": 15.53905513468985,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 8.81632512e+17
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 7.781744736037409e-05,
+        "angular_momentum": 1.934041341351818e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 391392000.0,
+      "step_index": 453,
+      "bodies": {
+        "Earth": {
+          "x": -0.7825490285117975,
+          "y": 0.6242025233214772,
+          "z": 0.0,
+          "vx": -18.5643002792355,
+          "vy": -23.27261658565366,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.7888997774210864,
+          "y": 0.6185678373332588,
+          "z": 0.0,
+          "vx": -18.5643002792355,
+          "vy": -23.27261658565366,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 9.78871392e+17
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010289401232466862,
+        "angular_momentum": 2.182015465420074e-06,
+        "mass": 1.4155739913719492e-16
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 431136000.0,
+      "step_index": 499,
+      "bodies": {
+        "Earth": {
+          "x": -0.5873494481432608,
+          "y": -0.8107268227339849,
+          "z": 0.0,
+          "vx": 24.105969639822604,
+          "vy": -17.464952429215124,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.5814263863785275,
+          "y": -0.8168095061242175,
+          "z": 0.0,
+          "vx": 24.105969639822604,
+          "vy": -17.464952429215124,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 1.078271136e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.0001008119404961324,
+        "angular_momentum": 2.4847674407750656e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 470016000.0,
+      "step_index": 544,
+      "bodies": {
+        "Earth": {
+          "x": 0.730138227463771,
+          "y": -0.685099506869454,
+          "z": 0.0,
+          "vx": 20.3678918346416,
+          "vy": 21.706657113631174,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.7369200642654804,
+          "y": -0.6799918276029338,
+          "z": 0.0,
+          "vx": 20.3678918346416,
+          "vy": 21.706657113631174,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 1.175510016e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 6.672980080088565e-05,
+        "angular_momentum": 2.722059688540283e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 508896000.0,
+      "step_index": 589,
+      "bodies": {
+        "Earth": {
+          "x": 0.7726137817365893,
+          "y": 0.6369454226383785,
+          "z": 0.0,
+          "vx": -18.933916578974646,
+          "vy": 22.966879868723694,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.7684117225139727,
+          "y": 0.6443227118549053,
+          "z": 0.0,
+          "vx": -18.933916578974646,
+          "vy": 22.966879868723694,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 1.272748896e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 6.348328357452949e-05,
+        "angular_momentum": 2.901324297746737e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 548640000.0,
+      "step_index": 635,
+      "bodies": {
+        "Earth": {
+          "x": -0.6694566354965981,
+          "y": 0.7447528199636297,
+          "z": 0.0,
+          "vx": -22.135835930957015,
+          "vy": -19.8970518950464,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.6766474421623717,
+          "y": 0.7402390635025293,
+          "z": 0.0,
+          "vx": -22.135835930957015,
+          "vy": -19.8970518950464,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 1.37214864e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010172189029561556,
+        "angular_momentum": 3.1407858441136248e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 587520000.0,
+      "step_index": 680,
+      "bodies": {
+        "Earth": {
+          "x": -0.8254170543565501,
+          "y": -0.5672318754195924,
+          "z": 0.0,
+          "vx": 16.855445446076217,
+          "vy": -24.52881307578508,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.8218742249930215,
+          "y": -0.5749474478543233,
+          "z": 0.0,
+          "vx": 16.855445446076217,
+          "vy": -24.52881307578508,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 1.46938752e+18
+      },
+      "ledger_drifts": {
+        "energy": 1.7088481708475368e-16,
+        "momentum": 0.00010331721739071562,
+        "angular_momentum": 3.452932869757393e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 626400000.0,
+      "step_index": 725,
+      "bodies": {
+        "Earth": {
+          "x": 0.4543044968096242,
+          "y": -0.8926871602858776,
+          "z": 0.0,
+          "vx": 26.523123086732454,
+          "vy": 13.497780137482975,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.46241750194628994,
+          "y": -0.8901849921166503,
+          "z": 0.0,
+          "vx": 26.523123086732454,
+          "vy": 13.497780137482975,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 1.5666264e+18
+      },
+      "ledger_drifts": {
+        "energy": 1.7088481708475368e-16,
+        "momentum": 8.045533760567555e-05,
+        "angular_momentum": 3.7137344696631706e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 666144000.0,
+      "step_index": 771,
+      "bodies": {
+        "Earth": {
+          "x": 0.8743278970535684,
+          "y": 0.48888345414526124,
+          "z": 0.0,
+          "vx": -14.523645414291252,
+          "vy": 25.97437930153368,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.8715104377176506,
+          "y": 0.4968924254141015,
+          "z": 0.0,
+          "vx": -14.523645414291252,
+          "vy": 25.97437930153368,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 1.666026144e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 5.277746209422212e-05,
+        "angular_momentum": 3.874958353971605e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 705024000.0,
+      "step_index": 816,
+      "bodies": {
+        "Earth": {
+          "x": -0.3680624807415559,
+          "y": 0.9317572915092862,
+          "z": 0.0,
+          "vx": -27.676932261244,
+          "vy": -10.932432729076364,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.37637540273692127,
+          "y": 0.9300318855299209,
+          "z": 0.0,
+          "vx": -27.676932261244,
+          "vy": -10.932432729076364,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 1.763265024e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 9.809513964811274e-05,
+        "angular_momentum": 4.084156278409917e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 743904000.0,
+      "step_index": 861,
+      "bodies": {
+        "Earth": {
+          "x": -0.9728853683300476,
+          "y": -0.23951285083143692,
+          "z": 0.0,
+          "vx": 7.112411963534372,
+          "vy": -28.89342993501675,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.9722926994012745,
+          "y": -0.2479822334202403,
+          "z": 0.0,
+          "vx": 7.112411963534372,
+          "vy": -28.89342993501675,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 1.860503904e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010468646607852862,
+        "angular_momentum": 4.406780032853478e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 783648000.0,
+      "step_index": 907,
+      "bodies": {
+        "Earth": {
+          "x": 0.2738833872898519,
+          "y": -0.9638946295720819,
+          "z": 0.0,
+          "vx": 28.62117523433995,
+          "vy": 8.132123004149319,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.28232640789924757,
+          "y": -0.9630018245071434,
+          "z": 0.0,
+          "vx": 28.62117523433995,
+          "vy": 8.132123004149319,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 1.959903648e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 8.604660664822517e-05,
+        "angular_momentum": 4.705562502895458e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 822528000.0,
+      "step_index": 952,
+      "bodies": {
+        "Earth": {
+          "x": 0.9923879590612973,
+          "y": 0.13945929142323993,
+          "z": 0.0,
+          "vx": -4.140467467295998,
+          "vy": 29.463408362090707,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.9926583723147067,
+          "y": 0.14794507804364465,
+          "z": 0.0,
+          "vx": -4.140467467295998,
+          "vy": 29.463408362090707,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 2.057142528e+18
+      },
+      "ledger_drifts": {
+        "energy": 1.7088481708475368e-16,
+        "momentum": 1.927573389212816e-05,
+        "angular_momentum": 4.863130251402213e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 861408000.0,
+      "step_index": 997,
+      "bodies": {
+        "Earth": {
+          "x": -0.0012614684040420834,
+          "y": 1.0022259925928305,
+          "z": 0.0,
+          "vx": -29.751792250548124,
+          "vy": -0.03712897128193396,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.009628901521237724,
+          "y": 1.0036639637065587,
+          "z": 0.0,
+          "vx": -29.751792250548124,
+          "vy": -0.03712897128193396,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 2.154381408e+18
+      },
+      "ledger_drifts": {
+        "energy": 1.7088481708475368e-16,
+        "momentum": 9.223927418548443e-05,
+        "angular_momentum": 5.029890238187129e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 901152000.0,
+      "step_index": 1043,
+      "bodies": {
+        "Earth": {
+          "x": -1.0017904717557096,
+          "y": -0.03323150336886716,
+          "z": 0.0,
+          "vx": 0.9855455720185903,
+          "vy": -29.733619666039075,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -1.0029605731669313,
+          "y": -0.041640579452606435,
+          "z": 0.0,
+          "vx": 0.9855455720185903,
+          "vy": -29.733619666039075,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 2.253781152e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010494080097677424,
+        "angular_momentum": 5.36529901805557e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 940032000.0,
+      "step_index": 1088,
+      "bodies": {
+        "Earth": {
+          "x": -0.1076598862940904,
+          "y": -0.9966597617415462,
+          "z": 0.0,
+          "vx": 29.57589947816289,
+          "vy": -3.19531666897734,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.09949807379963418,
+          "y": -0.9989978196321893,
+          "z": 0.0,
+          "vx": 29.57589947816289,
+          "vy": -3.19531666897734,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 2.351020032e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 9.41570791326327e-05,
+        "angular_momentum": 5.689611800292705e-06,
+        "mass": 1.4155739913719492e-16
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 978912000.0,
+      "step_index": 1133,
+      "bodies": {
+        "Earth": {
+          "x": 0.9714964334991892,
+          "y": -0.24759852793989004,
+          "z": 0.0,
+          "vx": 7.346526470026113,
+          "vy": 28.825258365078525,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.9749654472862894,
+          "y": -0.23984948662889105,
+          "z": 0.0,
+          "vx": 7.346526470026113,
+          "vy": 28.825258365078525,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 2.448258912e+18
+      },
+      "ledger_drifts": {
+        "energy": 1.7088481708475368e-16,
+        "momentum": 3.138105639112863e-05,
+        "angular_momentum": 5.8636950638434185e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1017792000.0,
+      "step_index": 1178,
+      "bodies": {
+        "Earth": {
+          "x": 0.38362490161959684,
+          "y": 0.9263434082073804,
+          "z": 0.0,
+          "vx": -27.48221105953232,
+          "vy": 11.381347742361696,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.37644958802965983,
+          "y": 0.9308817529255264,
+          "z": 0.0,
+          "vx": -27.48221105953232,
+          "vy": 11.381347742361696,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 2.545497792e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 8.286244692804414e-05,
+        "angular_momentum": 5.986719845654901e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1057536000.0,
+      "step_index": 1224,
+      "bodies": {
+        "Earth": {
+          "x": -0.9364973953884935,
+          "y": 0.35842597779202967,
+          "z": 0.0,
+          "vx": -10.632537630028917,
+          "vy": -27.778719097517065,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.9408394788846102,
+          "y": 0.3511302249996572,
+          "z": 0.0,
+          "vx": -10.632537630028917,
+          "vy": -27.778719097517065,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 2.644897536e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010436000488672119,
+        "angular_momentum": 6.290089984569481e-06,
+        "mass": 1.4155739913719492e-16
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1096416000.0,
+      "step_index": 1269,
+      "bodies": {
+        "Earth": {
+          "x": -0.49043933418239416,
+          "y": -0.8747592478165981,
+          "z": 0.0,
+          "vx": 25.942522138911617,
+          "vy": -14.54557796135907,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.48384981786567177,
+          "y": -0.8801127487838445,
+          "z": 0.0,
+          "vx": 25.942522138911617,
+          "vy": -14.54557796135907,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 2.742136416e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 9.967173446017397e-05,
+        "angular_momentum": 6.6575069440016695e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1135296000.0,
+      "step_index": 1314,
+      "bodies": {
+        "Earth": {
+          "x": 0.7937806549416757,
+          "y": -0.6130658433373555,
+          "z": 0.0,
+          "vx": 18.179117755039,
+          "vy": 23.537607715840505,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.8000394682239528,
+          "y": -0.6073292106846356,
+          "z": 0.0,
+          "vx": 18.179117755039,
+          "vy": 23.537607715840505,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 2.839375296e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 6.178648796753859e-05,
+        "angular_momentum": 6.871505515208527e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1175040000.0,
+      "step_index": 1360,
+      "bodies": {
+        "Earth": {
+          "x": 0.5943411176616537,
+          "y": 0.8080012859802712,
+          "z": 0.0,
+          "vx": -23.9564952332049,
+          "vy": 17.621795554656675,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.5884592292310841,
+          "y": 0.8141237925245707,
+          "z": 0.0,
+          "vx": -23.9564952332049,
+          "vy": 17.621795554656675,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 2.93877504e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 7.469846936107733e-05,
+        "angular_momentum": 6.955072610568938e-06,
+        "mass": 1.4155739913719492e-16
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1213920000.0,
+      "step_index": 1405,
+      "bodies": {
+        "Earth": {
+          "x": -0.7109234197593767,
+          "y": 0.7077395289456337,
+          "z": 0.0,
+          "vx": -20.98120852531226,
+          "vy": -21.07472475306277,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.7178508957188308,
+          "y": 0.7028311916787127,
+          "z": 0.0,
+          "vx": -20.98120852531226,
+          "vy": -21.07472475306277,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.03601392e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010216478772037515,
+        "angular_momentum": 7.205094497136368e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1252800000.0,
+      "step_index": 1450,
+      "bodies": {
+        "Earth": {
+          "x": -0.8062146338087155,
+          "y": -0.5971287023327119,
+          "z": 0.0,
+          "vx": 17.697862427995577,
+          "vy": -23.89606087945052,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.8023975207287891,
+          "y": -0.6047123258485329,
+          "z": 0.0,
+          "vx": 17.697862427995577,
+          "vy": -23.89606087945052,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.1332528e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010313121070033382,
+        "angular_momentum": 7.602311068327916e-06,
+        "mass": 1.4155739913719492e-16
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1292544000.0,
+      "step_index": 1496,
+      "bodies": {
+        "Earth": {
+          "x": 0.6130368976848376,
+          "y": -0.7943241521474973,
+          "z": 0.0,
+          "vx": 23.53938529966502,
+          "vy": 18.166763935920148,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.6205433645510665,
+          "y": -0.7903574591822089,
+          "z": 0.0,
+          "vx": 23.53938529966502,
+          "vy": 18.166763935920148,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.232652544e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 7.37941240194564e-05,
+        "angular_momentum": 7.87186165596251e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1331424000.0,
+      "step_index": 1541,
+      "bodies": {
+        "Earth": {
+          "x": 0.8783231605046875,
+          "y": 0.485268130044084,
+          "z": 0.0,
+          "vx": -14.378852443192143,
+          "vy": 26.02539810804069,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.8755429154936512,
+          "y": 0.4932900958613427,
+          "z": 0.0,
+          "vx": -14.378852443192143,
+          "vy": 26.02539810804069,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.329891424e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 5.2449057930392815e-05,
+        "angular_momentum": 7.948644188524905e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1370304000.0,
+      "step_index": 1586,
+      "bodies": {
+        "Earth": {
+          "x": -0.34514902809451076,
+          "y": 0.9423347689079994,
+          "z": 0.0,
+          "vx": -27.91851792575576,
+          "vy": -10.225231320693245,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.3535019752764336,
+          "y": 0.9408149099439289,
+          "z": 0.0,
+          "vx": -27.91851792575576,
+          "vy": -10.225231320693245,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.427130304e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 9.779093807571389e-05,
+        "angular_momentum": 8.12270552704976e-06,
+        "mass": 1.4155739913719492e-16
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1410048000.0,
+      "step_index": 1632,
+      "bodies": {
+        "Earth": {
+          "x": -0.936716709509784,
+          "y": -0.3604498781468512,
+          "z": 0.0,
+          "vx": 10.67626032762892,
+          "vy": -27.74702911017843,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.935061136938137,
+          "y": -0.3687769891317408,
+          "z": 0.0,
+          "vx": 10.67626032762892,
+          "vy": -27.74702911017843,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.526530048e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010436252724518198,
+        "angular_momentum": 8.54837863492338e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1448928000.0,
+      "step_index": 1677,
+      "bodies": {
+        "Earth": {
+          "x": 0.21048105552635954,
+          "y": -0.9814712676809411,
+          "z": 0.0,
+          "vx": 29.06747223993829,
+          "vy": 6.233264378999951,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.21896428800216,
+          "y": -0.9811299984965964,
+          "z": 0.0,
+          "vx": 29.06747223993829,
+          "vy": 6.233264378999951,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.623768928e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 8.76972275656758e-05,
+        "angular_momentum": 8.871876131397085e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1487808000.0,
+      "step_index": 1722,
+      "bodies": {
+        "Earth": {
+          "x": 1.0024133114522116,
+          "y": 0.054189211483822275,
+          "z": 0.0,
+          "vx": -1.6046678521497968,
+          "vy": 29.68379148154207,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 1.0034045498352884,
+          "y": 0.06262124234018034,
+          "z": 0.0,
+          "vx": -1.6046678521497968,
+          "vy": 29.68379148154207,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.721007808e+18
+      },
+      "ledger_drifts": {
+        "energy": 1.7088481708475368e-16,
+        "momentum": 8.074955134859397e-06,
+        "angular_momentum": 8.969087065531483e-06,
+        "mass": 1.4155739913719492e-16
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1527552000.0,
+      "step_index": 1768,
+      "bodies": {
+        "Earth": {
+          "x": -0.06685218187060114,
+          "y": 1.0017376419400548,
+          "z": 0.0,
+          "vx": -29.660084820974728,
+          "vy": -1.9790558652869807,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.07529607900284702,
+          "y": 1.0026221186863344,
+          "z": 0.0,
+          "vx": -29.660084820974728,
+          "vy": -1.9790558652869807,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.820407552e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 9.345912941492787e-05,
+        "angular_momentum": 9.063703319692163e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1566432000.0,
+      "step_index": 1813,
+      "bodies": {
+        "Earth": {
+          "x": -0.999745541392599,
+          "y": 0.09316496981518595,
+          "z": 0.0,
+          "vx": -2.758781210771785,
+          "vy": -29.595947622307268,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -1.0019601268509433,
+          "y": 0.08496879331987127,
+          "z": 0.0,
+          "vx": -2.758781210771785,
+          "vy": -29.595947622307268,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 3.917646432e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010492294244670265,
+        "angular_momentum": 9.447790914637197e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1605312000.0,
+      "step_index": 1858,
+      "bodies": {
+        "Earth": {
+          "x": -0.2520296805044476,
+          "y": -0.9720532890895601,
+          "z": 0.0,
+          "vx": 28.770820395081838,
+          "vy": -7.460148438832034,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.2442935930173979,
+          "y": -0.975551095300226,
+          "z": 0.0,
+          "vx": 28.770820395081838,
+          "vy": -7.460148438832034,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 4.014885312e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 9.646485986020172e-05,
+        "angular_momentum": 9.846686419132033e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1645056000.0,
+      "step_index": 1904,
+      "bodies": {
+        "Earth": {
+          "x": 0.9743676470698395,
+          "y": -0.24333091873091708,
+          "z": 0.0,
+          "vx": 7.201148370140087,
+          "vy": 28.835349955755326,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.9777957833752197,
+          "y": -0.2355637069167335,
+          "z": 0.0,
+          "vx": 7.201148370140087,
+          "vy": 28.835349955755326,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 4.114285056e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 3.090739278711261e-05,
+        "angular_momentum": 9.981420004629283e-06,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1683936000.0,
+      "step_index": 1949,
+      "bodies": {
+        "Earth": {
+          "x": 0.3983585095959835,
+          "y": 0.9219998520783339,
+          "z": 0.0,
+          "vx": -27.282278091634776,
+          "vy": 11.787746330916923,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.391250976154515,
+          "y": 0.9266436292341701,
+          "z": 0.0,
+          "vx": -27.282278091634776,
+          "vy": 11.787746330916923,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 4.211523936e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 8.242916155877879e-05,
+        "angular_momentum": 1.0020210387182235e-05,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1722816000.0,
+      "step_index": 1994,
+      "bodies": {
+        "Earth": {
+          "x": -0.8445406585765345,
+          "y": 0.5438128974175258,
+          "z": 0.0,
+          "vx": -16.089707251769333,
+          "vy": -24.98603984441678,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.8502839524889354,
+          "y": 0.5375601961668313,
+          "z": 0.0,
+          "vx": -16.089707251769333,
+          "vy": -24.98603984441678,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 4.308762816e+18
+      },
+      "ledger_drifts": {
+        "energy": 1.7088481708475368e-16,
+        "momentum": 0.00010350375924540097,
+        "angular_momentum": 1.0324705902206737e-05,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1762560000.0,
+      "step_index": 2040,
+      "bodies": {
+        "Earth": {
+          "x": -0.5393204075970586,
+          "y": -0.8475622189762259,
+          "z": 0.0,
+          "vx": 25.070612537581436,
+          "vy": -15.953703849372033,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.53303666309155,
+          "y": -0.8532715317968856,
+          "z": 0.0,
+          "vx": 25.070612537581436,
+          "vy": -15.953703849372033,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 4.40816256e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010026390980301956,
+        "angular_momentum": 1.0806285526616532e-05,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1801440000.0,
+      "step_index": 2085,
+      "bodies": {
+        "Earth": {
+          "x": 0.7464127986646827,
+          "y": -0.6725342295419215,
+          "z": 0.0,
+          "vx": 19.890681665330806,
+          "vy": 22.075464913795113,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.7530853854496394,
+          "y": -0.6672846311294828,
+          "z": 0.0,
+          "vx": 19.890681665330806,
+          "vy": 22.075464913795113,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 4.50540144e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 6.576903450555125e-05,
+        "angular_momentum": 1.1017279310266996e-05,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1840320000.0,
+      "step_index": 2130,
+      "bodies": {
+        "Earth": {
+          "x": 0.7878299765999109,
+          "y": 0.6236417742338176,
+          "z": 0.0,
+          "vx": -18.44232650006605,
+          "vy": 23.297768625388702,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": 0.7837685396122229,
+          "y": 0.6310974048234927,
+          "z": 0.0,
+          "vx": -18.44232650006605,
+          "vy": 23.297768625388702,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 4.60264032e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 6.245540953001577e-05,
+        "angular_momentum": 1.1020853897912949e-05,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1880064000.0,
+      "step_index": 2176,
+      "bodies": {
+        "Earth": {
+          "x": -0.6251339259817992,
+          "y": 0.7867722873438987,
+          "z": 0.0,
+          "vx": -23.263465856286064,
+          "vy": -18.483369202589568,
+          "vz": 0.0,
+          "mass_kg": 5.9722e+24
+        },
+        "Sun": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0,
+          "vx": 0.0,
+          "vy": 0.0,
+          "vz": 0.0,
+          "mass_kg": 0.0
+        },
+        "Tug": {
+          "x": -0.6325820641144341,
+          "y": 0.7826971264572775,
+          "z": 0.0,
+          "vx": -23.263465856286064,
+          "vy": -18.483369202589568,
+          "vz": 0.0,
+          "mass_kg": 9.4e+20
+        }
+      },
+      "tug_telemetry": {
+        "thrust_n": 2.357951962801099e+17,
+        "effective_thrust_n": 2.3215849860473014e+17,
+        "gravitational_pull_n": 2.322694482989879e+17,
+        "photon_radiation_thrust_n": 3.6191704328999496e+16,
+        "thrust_per_cone_n": 1.1789759814005494e+17,
+        "tug_earth_distance_m": 1270100000.0,
+        "beam_power_w": 1.085e+25,
+        "beam_directions": [
+          [
+            0.0,
+            -0.9961946980917455,
+            0.08715574274765817
+          ],
+          [
+            0.0,
+            -0.9961946980917455,
+            -0.08715574274765817
+          ]
+        ],
+        "propellant_spent_kg": 4.702040064e+18
+      },
+      "ledger_drifts": {
+        "energy": 0.0,
+        "momentum": 0.00010124454896366772,
+        "angular_momentum": 1.1230547462412808e-05,
+        "mass": 0.0
+      },
+      "flag_count": 3,
+      "joint_angles_rad": null,
+      "segment_safety_factors": null
+    },
+    {
+      "time_s": 1921235760.0,
+      "step_index": 2221,
+      "bodies": {
+        "Earth": {
+          "x": -0.5812267208804609,
+          "y": -0.8199001286965447,
+          "z": 0.0,
+          "vx": 24.237298135712795,
+          "vy": -17.182531011805263,
           "vz": 0.0,
           "mass_kg": 5.9722e+24
         },
@@ -381,11 +3261,11 @@
           "mass_kg": 1.9884098709677423e+30
         },
         "Tug": {
-          "x": -0.5280444352667072,
-          "y": 0.8492319749465884,
+          "x": -0.5812267208804609,
+          "y": -0.8199001286965447,
           "z": 0.0,
-          "vx": -25.294079420722547,
-          "vy": -15.726994620641559,
+          "vx": 24.237298135712795,
+          "vy": -17.182531011805263,
           "vz": 0.0,
           "mass_kg": 9.4e+20
         }
@@ -410,12 +3290,12 @@
             -0.08715574274765817
           ]
         ],
-        "propellant_spent_kg": 2.5930368e+16
+        "propellant_spent_kg": 4.79711808e+18
       },
       "ledger_drifts": {
         "energy": 0.0,
-        "momentum": 0.00010011695972998856,
-        "angular_momentum": 6.726766647618989e-08,
+        "momentum": 0.00010075123316773405,
+        "angular_momentum": 1.1993506593930954e-05,
         "mass": 0.0
       },
       "flag_count": 3,
