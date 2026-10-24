@@ -17,7 +17,7 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Last Prior Commit Hash:** `c700566` (`step 4.1: verify tug run, closed-form trajectory test, moon hill stability, and renumber build steps`)
+- **Last Prior Commit Hash:** `b2ba8cd` (`step 3.4b: replay export draft v2 with hohmann and ceres tug replays, schema doc, and tests`)
 - **Current Test Count & Result:** 78 tests — **78 PASSED** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
