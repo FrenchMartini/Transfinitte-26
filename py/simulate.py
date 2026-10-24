@@ -34,8 +34,14 @@ from octo.core.exchange import Exchange
 from octo.core.flags import FlagRegistry
 from octo.core.thresholds import load_thresholds
 from octo.core.validator import RulebookValidator
+import importlib.util
 from octo.drivers.propulsion import lorentz_gamma
-from py.export_replay import export_parquet_to_replay_json
+
+_exp_path = ROOT_DIR / "py" / "export_replay.py"
+_exp_spec = importlib.util.spec_from_file_location("export_replay", _exp_path)
+_exp_mod = importlib.util.module_from_spec(_exp_spec)
+_exp_spec.loader.exec_module(_exp_mod)
+export_parquet_to_replay_json = _exp_mod.export_parquet_to_replay_json
 
 RESULTS_DIR = ROOT_DIR / "results"
 
@@ -99,20 +105,23 @@ def run_full_spiral_simulation(
     sim.add(name="Earth", m=m_earth, x=r0, y=0.0, z=0.0, vx=0.0, vy=v0, vz=0.0)
 
     is_cutoff = False
-    current_ext_force = np.zeros(3, dtype=np.float64)
+    last_applied_force_vec = np.zeros(3, dtype=np.float64)
 
     def af(sim_pointer):
+        f_from_ledger = ledger.net_force_on("Earth", exclude_sources={"Sun"})
+        last_applied_force_vec[:] = f_from_ledger
         if is_cutoff:
             return
         s = sim_pointer.contents
         pe = s.particles[1]
-        pe.ax += current_ext_force[0] / pe.m
-        pe.ay += current_ext_force[1] / pe.m
-        pe.az += current_ext_force[2] / pe.m
+        pe.ax += f_from_ledger[0] / pe.m
+        pe.ay += f_from_ledger[1] / pe.m
+        pe.az += f_from_ledger[2] / pe.m
 
     sim.additional_forces = af
 
     rows: list[dict] = []
+    step_force_audit: list[dict] = []
     times_yr: list[float] = []
     a_vals_au: list[float] = []
 
@@ -201,35 +210,15 @@ def run_full_spiral_simulation(
             print(f"Target radius {r_curr/constants.AU:.4f} AU reached at t = {t_yr:.2f} years!")
             break
 
-        # Tug tangential pull
+        # Tug gravitational pull on Earth (G * M_earth * M_tug / d0^2) and effective thrust on Tug
         tx = -dy / r_curr
         ty = dx / r_curr
-        f_pull_vec = np.array([f_eff * tx, f_eff * ty, 0.0], dtype=np.float64)
-        current_ext_force[:] = f_pull_vec
+        f_pull_vec = np.array([f_pull * tx, f_pull * ty, 0.0], dtype=np.float64)
+        f_eff_vec = np.array([f_eff * tx, f_eff * ty, 0.0], dtype=np.float64)
+        r_tug_x_pre = pe.x + d0 * tx
+        r_tug_y_pre = pe.y + d0 * ty
 
-        # Advance REBOUND
-        sim.integrate(sim.t + dt_s)
-        step_idx += 1
-
-        # Tug coordinates along orbit track
-        r_tug_x = pe.x + d0 * tx
-        r_tug_y = pe.y + d0 * ty
-        v_tug_x = pe.vx
-        v_tug_y = pe.vy
-
-        dm = mdot * dt_s
-        total_propellant_kg += dm
-        state.get_body("BeltSupply").mass_kg -= dm
-
-        # Update State
-        state.get_body("Sun").position_m = np.array([ps.x, ps.y, ps.z])
-        state.get_body("Sun").velocity_m_s = np.array([ps.vx, ps.vy, ps.vz])
-        state.get_body("Earth").position_m = np.array([pe.x, pe.y, pe.z])
-        state.get_body("Earth").velocity_m_s = np.array([pe.vx, pe.vy, pe.vz])
-        state.get_body("Tug").position_m = np.array([r_tug_x, r_tug_y, 0.0])
-        state.get_body("Tug").velocity_m_s = np.array([v_tug_x, v_tug_y, 0.0])
-
-        # Book exchanges
+        # Book exchanges into Ledger BEFORE advancing REBOUND so additional_forces reads from Ledger
         ledger.book(
             Exchange(
                 t=state.t,
@@ -248,8 +237,8 @@ def run_full_spiral_simulation(
                 t=state.t,
                 a="ExhaustSink",
                 b="Tug",
-                force_on_b=f_pull_vec,
-                point=np.array([r_tug_x, r_tug_y, 0.0]),
+                force_on_b=f_eff_vec,
+                point=np.array([r_tug_x_pre, r_tug_y_pre, 0.0]),
                 mass_out=mdot,
                 exhaust_v=v_ex_rel,
                 power_in=p_jet,
@@ -258,6 +247,37 @@ def run_full_spiral_simulation(
             ),
             dt=dt_s,
         )
+
+        booked_force_vec = ledger.net_force_on("Earth", exclude_sources={"Sun"}).copy()
+
+        # Advance REBOUND (callback reads net_force_on("Earth", exclude_sources={"Sun"}))
+        sim.integrate(sim.t + dt_s)
+        step_idx += 1
+
+        step_force_audit.append({
+            "step_index": step_idx,
+            "is_coast": False,
+            "booked_force_vec_n": booked_force_vec.tolist(),
+            "applied_force_vec_n": last_applied_force_vec.copy().tolist(),
+        })
+
+        # Tug coordinates along orbit track
+        r_tug_x = pe.x + d0 * tx
+        r_tug_y = pe.y + d0 * ty
+        v_tug_x = pe.vx
+        v_tug_y = pe.vy
+
+        dm = mdot * dt_s
+        total_propellant_kg += dm
+        state.get_body("BeltSupply").mass_kg -= dm
+
+        # Update State
+        state.get_body("Sun").position_m = np.array([ps.x, ps.y, ps.z])
+        state.get_body("Sun").velocity_m_s = np.array([ps.vx, ps.vy, ps.vz])
+        state.get_body("Earth").position_m = np.array([pe.x, pe.y, pe.z])
+        state.get_body("Earth").velocity_m_s = np.array([pe.vx, pe.vy, pe.vz])
+        state.get_body("Tug").position_m = np.array([r_tug_x, r_tug_y, 0.0])
+        state.get_body("Tug").velocity_m_s = np.array([v_tug_x, v_tug_y, 0.0])
 
         state.t += dt_s
 
@@ -311,12 +331,19 @@ def run_full_spiral_simulation(
     # Phase 2: 50-year unpowered ballistic coast
     print(f"Simulating {coast_years}-year unpowered coast...")
     is_cutoff = True
-    current_ext_force[:] = 0.0
     coast_end_t = sim.t + coast_years * constants.YEAR
 
     while sim.t < coast_end_t:
+        ledger.begin_step()
+        booked_coast_vec = ledger.net_force_on("Earth", exclude_sources={"Sun"}).copy()
         sim.integrate(min(coast_end_t, sim.t + dt_s * 5.0))
         step_idx += 1
+        step_force_audit.append({
+            "step_index": step_idx,
+            "is_coast": True,
+            "booked_force_vec_n": booked_coast_vec.tolist(),
+            "applied_force_vec_n": last_applied_force_vec.copy().tolist(),
+        })
         ps = sim.particles[0]
         pe = sim.particles[1]
         dx = pe.x - ps.x
@@ -530,6 +557,7 @@ def run_full_spiral_simulation(
         "simulation_json_path": str(out_unified),
         "validation_passed": verdict.passed,
         "winning_conditions": verdict.winning_conditions,
+        "step_force_audit": step_force_audit,
     }
 
 
