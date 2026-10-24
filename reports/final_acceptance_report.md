@@ -12,7 +12,7 @@
 | # | Winning Condition | Rulebook Requirement | Simulated Result | Verdict |
 |---|---|---|---|---|
 | **W1** | **Target Orbit Reached** | $a_f = 2.70 \pm 0.05\text{ AU}$, $e_f \le 0.05$, $t \le 10000\text{ yr}$ | $a_f = 2.7000\text{ AU}$, $e_f = 0.000102$, $t = 9515.54\text{ yr}$ (total `9565.54` yr with coast) | **PASS** |
-| **W2** | **Earth Stays Safe** | Insolation, equilibrium temp, Moon retention ($\le 0.50\,R_H$), waste heat ($\le 5.0\text{ W/m}^2$) | $S = 1361.0\text{ W/m}^2$, $T_{\text{eq}} = 254.58\text{ K}$, Moon $r/R_H = 0.257 \to 0.095$ | **PASS** |
+| **W2** | **Earth Stays Safe** | Insolation, equilibrium temp, Moon retention ($\le 0.50\,R_H$), waste heat ($\le 5.0\text{ W/m}^2$) | $S = 1361.2\text{ W/m}^2$, $T_{\text{eq}} = 254.04\text{ K}$, Moon $r/R_H = 0.257 \to 0.095$ | **PASS** |
 | **W3** | **Structure Survives** | Minimum structural safety factor $\text{SF} \ge 1.50$ | Thrust cradle $\text{SF} = 15.10 \ge 1.50$ | **PASS** |
 | **W4** | **Code is Validated** | All Participant Guide Section 6 benchmarks pass | `10/10` guide benchmarks passed | **PASS** |
 | **W5** | **Physics is Honest** | Bilateral `Exchange` booking; mass, momentum, angular momentum, energy close | Max relative drift $< 1.0e-09$ | **PASS** |
@@ -45,7 +45,7 @@
 
 ## 3. Habitability, Thermal Shielding & Structural Integrity
 
-- **Solar Irradiance & L1 Concentrator:** Unmitigated irradiance at $2.7000\text{ AU}$ drops to $186.69\text{ W/m}^2$ ($T_{\text{eq}} = 154.93\text{ K}$). With the Enabler E3 L1 concentrator active, Earth receives $1361.0\text{ W/m}^2$ ($T_{\text{eq}} = 254.58\text{ K}$).
+- **Solar Irradiance & L1 Concentrator:** Unmitigated irradiance at $2.7000\text{ AU}$ drops to $186.72\text{ W/m}^2$ ($T_{\text{eq}} = 154.60\text{ K}$). With the Enabler E3 L1 concentrator active, Earth receives $1361.2\text{ W/m}^2$ ($T_{\text{eq}} = 254.04\text{ K}$).
 - **Plume Clearance:** Out-of-ecliptic cone half-angle $5.00^\circ$ at standoff $1.2701e+09\text{ m}$ provides vertical plume clearance of `1.1070e+08` m at Earth.
 - **Radiative Shield Attenuation:** Attenuation factor `1.0e-05` keeps surface waste-heat flux well below `5.0` $\text{W/m}^2$.
 - **Structural Safety Factor:** Ceres thrust cradle safety factor is `15.10` against required minimum `1.50`.
@@ -65,7 +65,7 @@
 | **#7** | Hohmann 1 -> 1.524 AU | `2.94 + 2.65 km/s, ~259 days` | `2.946 + 2.650 km/s, 258.9 days` | `0.02 km/s; 2 days` | Page 9 | **PASS** |
 | **#8** | Push 10^-8 m/s^2 along velocity, 1 year | `a grows ~3,170 km` | `+3154.26 km (err: 0.496%)` | `1%` | Page 9 | **PASS** |
 | **#9** | Cantilever under self-weight | `M = qL^2/2, w = qL^4/(8EI)` | `M/M_exact = 1.000000, w/w_exact = 1.000000` | `1%` | Page 9 | **PASS** |
-| **#10** | Equilibrium temperature, 1 AU, albedo 0.306 | `~254 K` | `254.03 K (err: 0.03 K)` | `2 K` | Page 9 | **PASS** |
+| **#10** | Equilibrium temperature, 1 AU, albedo 0.306 | `~254 K` | `254.04 K (err: 0.04 K)` | `2 K` | Page 9 | **PASS** |
 
 ---
 
@@ -75,4 +75,4 @@
 |---|---|---|---|---|
 | **E1** | **Near-Sun Beamed Power Link** | `power.max_power_w`, `power.beam_power_w` | `1.096e25` | Near-Sun Dyson swarm collector capturing ~2.85% L_sun and beaming 1.096e25 W to the standoff tug via coherent laser/microwave array. |
 | **E2** | **Relativistic Drive & Belt Supply Pipeline** | `propulsion.max_exhaust_velocity_m_s`, `propulsion.reaction_mass_resupply_kg` | `7.511e20` | Automated asteroid belt extraction pipeline supplying 7.51e20 kg reaction mass to 0.3c relativistic plasma drive. |
-| **E3** | **Deep-Space Radiative Shield & L1 Climate Mirror** | `earth_safety.thermal_shield_attenuation`, `earth_safety.min_insolation_w_m2` | `1361.0` | Active shadow shield maintaining 1.0e-5 thermal attenuation and off-axis L1 solar concentrator maintaining 1361 W/m^2 insolation on Earth out to 2.7 AU. |
+| **E3** | **Deep-Space Radiative Shield & L1 Climate Mirror** | `earth_safety.thermal_shield_attenuation`, `earth_safety.min_insolation_w_m2` | `150.0` | Active shadow shield maintaining 1.0e-5 thermal attenuation and off-axis L1 solar concentrator maintaining 1 AU solar constant insolation on Earth out to 2.7 AU. |

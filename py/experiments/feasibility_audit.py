@@ -173,7 +173,7 @@ def evaluate_candidates() -> dict[str, Any]:
                 "E2: Relativistic 0.3c plasma thruster with directional waste-heat rejection",
                 "E3: Pre-positioned Ceres tug at 1 AU (plus climate/insolation compensation at 2.7 AU)",
             ],
-            "main_unresolved_issue": "At 2.7 AU, solar insolation drops from 1361 W/m^2 to 186.7 W/m^2 (T_eq ~ 157 K), freezing Earth unless a solar concentrator mirror is included.",
+            "main_unresolved_issue": f"At 2.7 AU, solar insolation drops from {constants.SOLAR_CONSTANT_1AU:.1f} W/m^2 to 186.7 W/m^2 (T_eq ~ 157 K), freezing Earth unless a solar concentrator mirror is included.",
             "verdict": "CONDITIONAL GO",
         },
         "Candidate_B_Reaction_Mass_Ring_or_Surface": {
@@ -292,7 +292,7 @@ def evaluate_candidates() -> dict[str, Any]:
             "enablers_required": [
                 "E1: Solar-statite / Dyson-swarm directed power beam (1.05e25 W, relaxes power.max_watts)",
                 "E2: Relativistic 0.3c plasma thruster with directional waste-heat rejection (relaxes propulsion.max_exhaust_velocity_m_s & thermal radiator limits)",
-                "E3: Pre-positioned Ceres tug at 1 AU + co-orbital L1 solar concentrator mirror (relaxes initial tug placement & maintains 1361 W/m^2 insolation up to 2.7 AU)",
+                f"E3: Pre-positioned Ceres tug at 1 AU + co-orbital L1 solar concentrator mirror (relaxes initial tug placement & maintains {constants.SOLAR_CONSTANT_1AU:.1f} W/m^2 insolation up to 2.7 AU)",
             ],
             "main_unresolved_issue": "Confirming exact rulebook appendix thresholds (insolation band, waste heat limit, target orbit tolerance) and booking relativistic gamma + beam momentum in Ledger.",
             "verdict": "GO (Recommended Primary Architecture)",

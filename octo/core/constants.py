@@ -13,6 +13,8 @@ Sources:
   speed of light in vacuum (C_LIGHT), Stefan-Boltzmann constant (SIGMA_SB).
 """
 
+import math
+
 # Nominal solar mass parameter GM_sun [m^3 s^-2]
 # Source: IAU 2015 Resolution B3 nominal value (1.3271244e20; JPL DE440: 1.32712440018e20)
 GM_SUN: float = 1.32712440018e20
@@ -56,14 +58,18 @@ YEAR: float = 31557600.0
 # Source: SI / CODATA exact definition
 C_LIGHT: float = 299792458.0
 
-# Nominal total solar irradiance at 1 AU [W m^-2]
-# Source: IAU 2015 Resolution B3 nominal value
-SOLAR_CONSTANT_1AU: float = 1361.0
+# Nominal solar luminosity L_sun [W]
+# Source: Participant Guide Section 3 (Page 6) / IAU 2015 Resolution B3
+L_SUN: float = 3.828e26
+
+# Solar constant (total solar irradiance) at 1 AU [W m^-2]
+# Source: Participant Guide Section 2.5 (Page 5): S = L_sun / (4 * pi * AU^2)
+SOLAR_CONSTANT_1AU: float = L_SUN / (4.0 * math.pi * (AU**2))
 
 # Stefan-Boltzmann constant [W m^-2 K^-4]
 # Source: CODATA 2018 exact derived value from h, c, k_B
 SIGMA_SB: float = 5.670374419e-8
 
 # Earth Bond albedo [dimensionless]
-# Source: NASA Earth Fact Sheet / Stephens et al. (2015)
-EARTH_BOND_ALBEDO: float = 0.30
+# Source: Participant Guide Section 6 Benchmark 10 (Page 9)
+EARTH_BOND_ALBEDO: float = 0.306

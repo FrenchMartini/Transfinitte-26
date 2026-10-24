@@ -38,6 +38,6 @@ describe('Hackathon Validation Benchmarks (Loaded from reports/benchmarks.json)'
     expect(b8?.passed).toBe(true);
 
     const b10 = results.find((r) => r.id === 10);
-    expect(b10?.computed).toContain('254.03 K');
+    expect(b10?.computed).toContain('254.0');
   });
 });

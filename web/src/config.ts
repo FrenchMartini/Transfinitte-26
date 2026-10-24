@@ -32,7 +32,6 @@ export const NOMINAL_SPIRAL_FORCE_N = 2.2e17; // Section 3: Constant force neede
 export const LORENTZ_FORCE_BENCHMARK_N = 60.0; // Section 3: 1 MA x 12,000 km x 5 nT (~60 N)
 
 // Guide Section 2.5 & Section 6 Benchmark 10: Habitability & Thermal Physics
-export const SOLAR_CONSTANT_1AU_W_M2 = 1361.0; // Nominal solar flux at 1 AU
 export const EARTH_ALBEDO = 0.306; // Section 6 Benchmark 10: Earth albedo
 export const STEFAN_BOLTZMANN_SIGMA = 5.670374e-8; // W/(m^2 K^4)
 export const EQUILIBRIUM_TEMP_1AU_K = 254.0; // Section 2.5 & Benchmark 10: ~254 K at 1 AU
@@ -45,7 +44,6 @@ export const MIN_STRUCTURAL_SAFETY_FACTOR = 1.5; // Winning Condition 3: Safety 
 export const CONSERVATION_TOLERANCE = 1.0e-9; // Section 6 Benchmarks 4, 5 & Ledger check: 10^-9
 export const EARTH_MOON_PERIOD_DAYS = 365.256; // Section 6 Benchmark 6: 365.256 days
 export const ASSUMED_BEAM_CANT_DEG = 5.0; // Dual out-of-ecliptic relativistic thruster exhaust canting (North/South)
-export const ASSUMED_SOLAR_CONSTANT_W_M2 = 1361.0;
 
 // Visual Scene Scales (in Scene Units where 1 AU = 10 units for depth resolution)
 export const SCENE_SCALE_AU = 10.0;

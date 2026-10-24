@@ -75,8 +75,9 @@ export function computeHudAnalytics(frame: SimulationFrame): HudAnalytics {
   const energy_delivered_j = mu_m * (1.0 / AU_METERS - 1.0 / (r_au * AU_METERS));
   const sun_output_days = energy_delivered_j / (SOLAR_LUMINOSITY_W * 86400.0);
 
-  // Guide Section 2.5: Teq = 254 K * (1 AU / r)^0.5, S = 1361 / r^2
-  const unshielded_insolation_w_m2 = 1361.0 / (r_au * r_au);
+  // Guide Section 2.5: S = L_sun / (4 * pi * r^2), Teq = 254 K * (1 AU / r)^0.5
+  const s0_1au_w_m2 = SOLAR_LUMINOSITY_W / (4.0 * Math.PI * AU_METERS * AU_METERS);
+  const unshielded_insolation_w_m2 = s0_1au_w_m2 / (r_au * r_au);
   const unshielded_temp_k = 254.0 * Math.pow(1.0 / r_au, 0.5);
 
   const tug = frame.tug_telemetry;
@@ -129,7 +130,7 @@ export function computeHudAnalytics(frame: SimulationFrame): HudAnalytics {
     ledger_pass,
     energy_drift,
     momentum_drift,
-    insolation_w_m2: frame.insolation_w_m2 ?? 1361.0,
+    insolation_w_m2: frame.insolation_w_m2 ?? s0_1au_w_m2,
     unshielded_insolation_w_m2,
     equilibrium_temp_k: 254.0, // Maintained by L1 lens
     unshielded_temp_k,
