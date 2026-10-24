@@ -16,6 +16,10 @@ Every simulation run is judged against **six mandatory winning conditions**:
 
 ## 2. Current Status
 
+- **Viewer update:** Earth now completes one axial turn per 24 simulated hours, tied to replay time for consistent pause, speed changes, and scrubbing.
+- **Playback speed:** Logarithmic slider starts at 1 simulated month per real second, with a maximum of 500 years per second.
+- **Tug visualization:** Corrected engine orientation so both exhaust plumes point opposite the forward gravitational pull on Earth.
+- **Exhaust clearance:** Engines remain centered on the tug; shortened illustrative flames leave a gap before Earth's enlarged atmosphere.
 - **Date:** 2026-10-24
 - **Current Test Count & Result:** 115 tests — **114 PASSED, 1 FAILED (`test_reduced_model_vs_full_nbody_window`: honest 6.40% 200-yr 1D PD droop discrepancy vs 1% target)** (`pytest -v`)
 - **Build Steps Progress:**
@@ -223,6 +227,10 @@ Until confirmed, any clean run reports `"PASS (with unconfirmed thresholds)"`:
 
 ## 10. Changelog
 
+- **2026-10-24 (Engine layout):** Kept the central engine gantry and shield, removed offset pods, and shortened the backward-facing illustrative flames from 1.1 to 0.32 scene units. Verified central placement, flame size, direction, and clearance from Earth's atmosphere across the full pulse envelope at four orbital positions.
+- **2026-10-24 (Tug orientation):** Corrected the Three.js group look-at target so the aft engines and dual exhaust plumes face backward. Added regression tests at four orbital positions and for the velocity fallback, preserving opposing out-of-plane cant angles.
+- **2026-10-24 (Viewer speed):** Lowered minimum and default playback speed to one simulated month per real second. Added logarithmic slider control, month-aware labels, and playback timing regression tests.
+- **2026-10-24 (Viewer):** Replaced Earth's frame-dependent decorative spin with a daily axial rotation based on replay time. Added scene regression tests for quarter-day phases, full-day wraparound, pause, and seeking across long runs.
 - **2026-10-24 (`1760db8`):** Pre-restructure baseline (Phase 0 & Phase 1 initial prototype).
 - **2026-10-24 (`341a176` — `20ae2c8`):** Step 1 — Restructured into `octo/` package, added `pyproject.toml`, `config/base.yaml`, `config/rulebook_thresholds.yaml`, `config/hypothetical_enablers.yaml`, `results/reference.json`, Section 2 physics benchmarks, and AST hard-coded limit check (`tests/test_no_hardcoded_limits.py`).
 - **2026-10-24 (`3d8cfca`):** Step 2.0 — Created `README.md` and `tests/test_readme.py`; removed default `rtol`/`atol` from `propagate_orbit` so `ALLOWLIST` only contains `0.5`.

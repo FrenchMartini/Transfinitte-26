@@ -14,6 +14,7 @@ import { shouldShowThresholdBanner } from './loader';
 import { YEAR_SECONDS } from './config';
 import { computeHudAnalytics, formatHudLines } from './hud';
 import { runAllBenchmarks } from './benchmarks';
+import { formatPlaybackSpeed, sliderToSpeed, speedToSlider } from './playback_speed';
 
 export class UIManager {
   private container: HTMLElement;
@@ -121,8 +122,8 @@ export class UIManager {
         </div>
         <div class="speed-control">
           <span>Speed:</span>
-          <input type="range" id="speed-slider" class="speed-slider" min="1" max="500" value="50" />
-          <span id="speed-label">50 yr/s</span>
+          <input type="range" id="speed-slider" class="speed-slider" min="0" max="1" step="0.001" value="${speedToSlider(this.timeline.speedYearsPerSec)}" aria-label="Playback speed" />
+          <span id="speed-label">${formatPlaybackSpeed(this.timeline.speedYearsPerSec)}</span>
         </div>
       </div>
       <div class="scrubber-container">
@@ -228,8 +229,7 @@ export class UIManager {
     // Speed slider
     this.speedSliderEl.addEventListener('input', (e) => {
       const val = parseFloat((e.target as HTMLInputElement).value);
-      this.timeline.setSpeedYearsPerSec(val);
-      this.speedLabelEl.textContent = `${Math.round(val)} yr/s`;
+      this.timeline.setSpeedYearsPerSec(sliderToSpeed(val));
     });
 
     // File loading buttons
@@ -430,6 +430,8 @@ export class UIManager {
 
   public updateTimelineState(state: TimelineState, totalFrames: number): void {
     this.playBtnEl.textContent = state.isPlaying ? '❚❚' : '▶';
+    this.speedSliderEl.value = String(speedToSlider(state.speedYearsPerSec));
+    this.speedLabelEl.textContent = formatPlaybackSpeed(state.speedYearsPerSec);
 
     const currentYear = state.currentYear.toFixed(2);
     const totalYears = (state.duration_s / YEAR_SECONDS).toFixed(2);

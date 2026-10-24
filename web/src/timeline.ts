@@ -3,7 +3,7 @@
  */
 
 import { ReplayData, ConditionRecord } from './types';
-import { YEAR_SECONDS } from './config';
+import { YEAR_SECONDS, DEFAULT_PLAYBACK_SPEED_YEARS_PER_SEC, MIN_PLAYBACK_SPEED_YEARS_PER_SEC, MAX_PLAYBACK_SPEED_YEARS_PER_SEC } from './config';
 
 export interface TimelineState {
   currentTime_s: number;
@@ -18,7 +18,7 @@ export class TimelineController {
   private replayData: ReplayData;
   public currentTime_s: number = 0.0;
   public isPlaying: boolean = false;
-  public speedYearsPerSec: number = 50.0; // Default: 50 sim-years per real second
+  public speedYearsPerSec: number = DEFAULT_PLAYBACK_SPEED_YEARS_PER_SEC;
   private lastRafTimestamp: number | null = null;
   private onUpdateCallback?: (state: TimelineState) => void;
 
@@ -79,7 +79,7 @@ export class TimelineController {
   }
 
   public setSpeedYearsPerSec(speed: number): void {
-    this.speedYearsPerSec = Math.max(0.1, Math.min(2000.0, speed));
+    this.speedYearsPerSec = Math.max(MIN_PLAYBACK_SPEED_YEARS_PER_SEC, Math.min(MAX_PLAYBACK_SPEED_YEARS_PER_SEC, speed));
     this.notify();
   }
 
