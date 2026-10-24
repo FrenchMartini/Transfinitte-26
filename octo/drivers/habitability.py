@@ -29,17 +29,16 @@ def compute_mirror_reflected_flux(
     Geometry:
     - Position: Earth-Sun L1 point (sub-solar point towards Sun, r_mirror = r - d_L1).
     - Solar flux at mirror: S_mirror = S_0 * (AU / r_mirror)^2.
-    - Intercepted and reflected power: P_refl = S_mirror * area_m2 * reflectivity * cos(orientation_deg).
-    - Distributed over Earth cross-sectional disk: S_added = P_refl / (pi * R_earth^2).
+    - Étendue limit: minimum spot diameter at Earth distance d_L1 is d_L1 * theta_sun = 13,925 km.
+      Earth diameter is 12,742 km. Maximum geometric capture efficiency is (12742 / 13925)^2 = 0.8373.
+    - Tilt schedule: orientation angle theta_tilt(t) tilts mirror (cos(theta_tilt)) to match the deficit.
     """
     if not mirror_config or not mirror_config.get("active", True):
         return 0.0
 
     area_m2 = float(mirror_config.get("area_m2", 8.44e14))
     reflectivity = float(mirror_config.get("reflectivity", 0.95))
-    orient_deg = float(mirror_config.get("orientation_deg", 0.0))
     capture_efficiency = float(mirror_config.get("capture_efficiency", 1.0))
-    cos_orient = max(0.0, math.cos(math.radians(orient_deg)))
 
     r = float(orbit_radius_m)
     if r <= constants.AU:
@@ -51,15 +50,25 @@ def compute_mirror_reflected_flux(
     r_mirror = max(r / 2.0, r - d_l1)
 
     s_at_mirror = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_mirror) ** 2)
-    p_reflected = s_at_mirror * area_m2 * reflectivity * cos_orient * capture_efficiency
     earth_disk_area = math.pi * (constants.R_EARTH ** 2)
 
-    # If throttle_by_deficit is requested, mirror articulates/apertures to provide only needed deficit
-    if mirror_config.get("throttle_by_deficit", False):
+    # Tilt schedule or throttle by deficit (active when requested in mirror_config)
+    if mirror_config.get("tilt_schedule", False) or mirror_config.get("throttle_by_deficit", False):
         direct_flux = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r) ** 2)
         deficit_flux = max(0.0, constants.SOLAR_CONSTANT_1AU - direct_flux)
-        p_reflected = min(p_reflected, deficit_flux * earth_disk_area)
+        max_possible_flux = (s_at_mirror * area_m2 * reflectivity * capture_efficiency) / earth_disk_area
+        if max_possible_flux > 0.0:
+            cos_tilt = min(1.0, max(0.0, deficit_flux / max_possible_flux))
+            tilt_rad = math.acos(cos_tilt)
+            orient_deg = math.degrees(tilt_rad)
+        else:
+            orient_deg = 90.0
+        cos_orient = math.cos(math.radians(orient_deg))
+    else:
+        orient_deg = float(mirror_config.get("orientation_deg", 0.0))
+        cos_orient = max(0.0, math.cos(math.radians(orient_deg)))
 
+    p_reflected = s_at_mirror * area_m2 * reflectivity * cos_orient * capture_efficiency
     return float(p_reflected / earth_disk_area)
 
 
@@ -123,11 +132,21 @@ def compute_hill_radius(
     return r * ((m_c / (3.0 * m_p)) ** (1.0 / 3.0))
 
 
-def compute_plume_clearance_m(standoff_d: float, cone_deg: float) -> float:
-    """Compute perpendicular clearance of canted exhaust plume cones at standoff distance."""
+def compute_plume_clearance_m(
+    standoff_d: float,
+    cone_deg: float,
+    target_radius_m: float = 0.0,
+    beam_half_width_m: float = 0.0,
+) -> float:
+    """Compute perpendicular clearance of canted exhaust plume cones at standoff distance.
+
+    Clearance is the perpendicular distance from plume centerline to the target body center
+    (d * sin(cone_deg)), minus target body radius and exhaust beam half-width.
+    """
     d = float(standoff_d)
     theta_rad = math.radians(float(cone_deg))
-    return d * math.sin(theta_rad)
+    d_perp = d * math.sin(theta_rad)
+    return float(d_perp - target_radius_m - beam_half_width_m)
 
 
 def compute_surface_waste_heat_flux(
