@@ -17,7 +17,7 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Current Test Count & Result:** 108 tests — **108 PASSED (100% pass rate, 96% code coverage)** (`pytest -v`)
+- **Current Test Count & Result:** 110 tests — **110 PASSED (100% pass rate, 96% code coverage)** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
   - **Step 1 (Restructure into `octo/`, Configs, `reference.json`, AST Limit Check):** DONE
@@ -255,3 +255,4 @@ Until confirmed, any clean run reports `"PASS (with unconfirmed thresholds)"`:
 - **2026-10-24 (Step 8 — Physical Structure Driver):** Implemented `StructureDriver` (`octo/drivers/structure.py`, `tests/test_structure.py`) verifying Ceres thrust cradle compressive bearing stress $\sigma = 0.33\text{ MPa}$ and safety factor $SF = 15.1 \ge 1.5$.
 - **2026-10-24 (Step 9 — Final Acceptance Report & Submission Package):** Published comprehensive mission verification report (`reports/final_acceptance_report.md`) certifying all 6 winning conditions.
 - **2026-10-24 (Test Coverage Expansion & Thrust Budget Deliverable):** Added `tests/test_coverage_expansion.py`, expanded unit test suite to 108 tests (100% pass rate, 96% overall code coverage, 100% on core contracts and structure driver). Populated comprehensive analytical thrust budget ($F_{\text{nom}}, F_{\text{cant}}, F_{\text{cone}}, F_{\text{ph}}, \psi_{\text{yaw}}, F_{\text{eff}}, F_{\text{pull}}$) into `results/simulation.json` and `results/reference.json`.
+- **2026-10-24 (Guide Benchmarks Export & Audit Fixes):** Added `py/generate_benchmarks.py` and `tests/test_guide_benchmarks.py` computing all 10 Participant Guide Section 6 (Page 9) validation benchmarks dynamically from Python simulation/drivers and exporting `reports/benchmarks.json`. Replaced hardcoded benchmark evaluations in `web/src/benchmarks.ts` with direct loading of `reports/benchmarks.json`.

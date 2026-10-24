@@ -154,17 +154,17 @@ export class UIManager {
     // 8. Hackathon Section 6 Validation Benchmarks Modal
     this.benchmarksModalEl = document.createElement('div');
     this.benchmarksModalEl.className = 'benchmarks-modal hidden';
-    const { results } = runAllBenchmarks();
+    const { results, passedCount, totalCount } = runAllBenchmarks();
     const rowsHtml = results
       .map(
         (r) => `
       <tr>
         <td class="bm-id">#${r.id}</td>
-        <td class="bm-name"><strong>${r.name}</strong><br><small class="text-dim">${r.notes}</small></td>
-        <td class="bm-exp">${r.expected}</td>
+        <td class="bm-name"><strong>${r.name}</strong><br><small class="text-dim">${r.notes} (${r.source_page})</small></td>
+        <td class="bm-exp">${r.expected_display}</td>
         <td class="bm-comp">${r.computed}</td>
-        <td class="bm-tol">${r.tolerance}</td>
-        <td class="bm-status"><span class="f3-pass">PASS</span></td>
+        <td class="bm-tol">${r.tolerance_display}</td>
+        <td class="bm-status"><span class="${r.passed ? 'f3-pass' : 'f3-fail'}">${r.status}</span></td>
       </tr>
     `
       )
@@ -173,11 +173,11 @@ export class UIManager {
     this.benchmarksModalEl.innerHTML = `
       <div class="modal-card">
         <div class="modal-header">
-          <div class="modal-title">Hackathon Section 6: Validation Benchmarks (10/10 PASS)</div>
+          <div class="modal-title">Hackathon Section 6: Validation Benchmarks (${passedCount}/${totalCount} PASS)</div>
           <button id="btn-close-benchmarks" class="btn-pill">✕ Close</button>
         </div>
         <div class="modal-desc">
-          Automated physics benchmarks defined in the Hackathon Participant Guide §6 & Momentum Conservation Ledger.
+          Automated physics benchmarks loaded directly from <code>reports/benchmarks.json</code> (Participant Guide §6, Page 9).
         </div>
         <div class="benchmarks-table-container">
           <table class="benchmarks-table">

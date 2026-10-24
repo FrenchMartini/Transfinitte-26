@@ -1,0 +1,179 @@
+{
+  "source_document": "Planetary Propulsion Simulation Hackathon \u2014 Participant Guide",
+  "source_section": "Section 6: Validation benchmarks (Page 9)",
+  "all_passed": true,
+  "passed_count": 10,
+  "total_count": 10,
+  "benchmarks": [
+    {
+      "id": 1,
+      "name": "Wire, I = 10 A, L = 2 m (x), B = 0.5 T (y)",
+      "value": 10.0,
+      "expected": 10.0,
+      "expected_display": "10.0 N along +z",
+      "computed": "10.0000 N along +z (err: 0.0e+00 N)",
+      "tolerance": 1e-09,
+      "tolerance_display": "1e-9 N",
+      "source_page": "Page 9",
+      "passed": true,
+      "status": "PASS",
+      "notes": "F = I (L x B) vector cross product"
+    },
+    {
+      "id": 2,
+      "name": "Closed loop in a uniform field",
+      "value": 9.256393239247444e-16,
+      "expected": 0.0,
+      "expected_display": "Net force 0 N",
+      "computed": "9.26e-16 N",
+      "tolerance": 1e-09,
+      "tolerance_display": "1e-9 of I*L*B",
+      "source_page": "Page 9",
+      "passed": true,
+      "status": "PASS",
+      "notes": "Discrete 360-segment closed loop integral sum(I dl x B)"
+    },
+    {
+      "id": 3,
+      "name": "Long wire, 1 kA at 1 m",
+      "value": 0.00019999999600000008,
+      "expected": 0.0002,
+      "expected_display": "2.000e-4 T",
+      "computed": "2.000000e-04 T (rel err: 2.00e-08)",
+      "tolerance": 1e-06,
+      "tolerance_display": "1e-6",
+      "source_page": "Page 9",
+      "passed": true,
+      "status": "PASS",
+      "notes": "Numerical Biot-Savart quadrature along finite wire"
+    },
+    {
+      "id": 4,
+      "name": "Kepler orbit, a = 1 AU, e = 0.3, 10 periods",
+      "value": {
+        "pos_rel_err": 2.5088998131733086e-14,
+        "energy_rel_err": 4.3522032638188945e-16
+      },
+      "expected": {
+        "pos_rel_err": 0.0,
+        "energy_rel_err": 0.0
+      },
+      "expected_display": "Return to start (pos < 1e-6 a, dE < 1e-9)",
+      "computed": "pos err: 2.51e-14 a, dE/E0: 4.35e-16",
+      "tolerance": {
+        "pos_rel_tol_a": 1e-06,
+        "energy_rel_tol": 1e-09
+      },
+      "tolerance_display": "1e-6 a; energy 1e-9",
+      "source_page": "Page 9",
+      "passed": true,
+      "status": "PASS",
+      "notes": "REBOUND IAS15 10-period eccentric orbit integration"
+    },
+    {
+      "id": 5,
+      "name": "Solar system, 5 years, no push",
+      "value": 2.238923297780609e-16,
+      "expected": 0.0,
+      "expected_display": "Energy constant (drift < 1e-9)",
+      "computed": "dE / E0: 2.24e-16",
+      "tolerance": 1e-09,
+      "tolerance_display": "1e-9",
+      "source_page": "Page 9",
+      "passed": true,
+      "status": "PASS",
+      "notes": "REBOUND IAS15 5-year unforced multi-planet N-body integration"
+    },
+    {
+      "id": 6,
+      "name": "Earth-Moon barycentre period",
+      "value": 365.25630792432054,
+      "expected": 365.256,
+      "expected_display": "365.256 days",
+      "computed": "365.2563 days (err: 0.0003 d)",
+      "tolerance": 0.1,
+      "tolerance_display": "0.1 day",
+      "source_page": "Page 9",
+      "passed": true,
+      "status": "PASS",
+      "notes": "REBOUND IAS15 3-body Sun-Earth-Moon barycentre zero-crossing period"
+    },
+    {
+      "id": 7,
+      "name": "Hohmann 1 -> 1.524 AU",
+      "value": {
+        "dv1_km_s": 2.9460551625085647,
+        "dv2_km_s": 2.6499820804508634,
+        "transfer_days": 258.9151502335679
+      },
+      "expected": {
+        "dv1_km_s": 2.94,
+        "dv2_km_s": 2.65,
+        "transfer_days": 259.0
+      },
+      "expected_display": "2.94 + 2.65 km/s, ~259 days",
+      "computed": "2.946 + 2.650 km/s, 258.9 days",
+      "tolerance": {
+        "dv_abs_tol_km_s": 0.02,
+        "time_abs_tol_days": 2.0
+      },
+      "tolerance_display": "0.02 km/s; 2 days",
+      "source_page": "Page 9",
+      "passed": true,
+      "status": "PASS",
+      "notes": "Vis-viva Hohmann transfer 1.0 AU -> 1.524 AU"
+    },
+    {
+      "id": 8,
+      "name": "Push 10^-8 m/s^2 along velocity, 1 year",
+      "value": 3154.2646968383788,
+      "expected": 3170.0,
+      "expected_display": "a grows ~3,170 km",
+      "computed": "+3154.26 km (err: 0.496%)",
+      "tolerance": 0.01,
+      "tolerance_display": "1%",
+      "source_page": "Page 9",
+      "passed": true,
+      "status": "PASS",
+      "notes": "REBOUND IAS15 1-year tangential acceleration integration"
+    },
+    {
+      "id": 9,
+      "name": "Cantilever under self-weight",
+      "value": {
+        "root_moment_n_m": 5000000.0,
+        "tip_deflection_m": 12.499999999999991,
+        "moment_ratio": 1.0,
+        "deflection_ratio": 0.9999999999999993
+      },
+      "expected": {
+        "root_moment_n_m": 5000000.0,
+        "tip_deflection_m": 12.5,
+        "moment_ratio": 1.0,
+        "deflection_ratio": 1.0
+      },
+      "expected_display": "M = qL^2/2, w = qL^4/(8EI)",
+      "computed": "M/M_exact = 1.000000, w/w_exact = 1.000000",
+      "tolerance": 0.01,
+      "tolerance_display": "1%",
+      "source_page": "Page 9",
+      "passed": true,
+      "status": "PASS",
+      "notes": "Numerical 2000-element Euler-Bernoulli cantilever integration"
+    },
+    {
+      "id": 10,
+      "name": "Equilibrium temperature, 1 AU, albedo 0.306",
+      "value": 254.0308532393655,
+      "expected": 254.0,
+      "expected_display": "~254 K",
+      "computed": "254.03 K (err: 0.03 K)",
+      "tolerance": 2.0,
+      "tolerance_display": "2 K",
+      "source_page": "Page 9",
+      "passed": true,
+      "status": "PASS",
+      "notes": "Radiative blackbody equilibrium Teq = [S(1-A)/(4*sigma)]^(1/4)"
+    }
+  ]
+}
