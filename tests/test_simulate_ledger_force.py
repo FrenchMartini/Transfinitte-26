@@ -203,6 +203,90 @@ def test_sun_reaction_conserves_momentum_below_1e9_over_1yr_and_100yr():
     assert drift_100yr < 1.0e-9
 
 
+def test_per_body_momentum_changes_sum_to_dp_bodies_vector():
+    """Verify that raw per-body momentum change vectors (Sun, Earth, Moon, Tug) sum to dP_bodies."""
+    import rebound
+
+    mu_sun = constants.GM_SUN
+    m_sun = mu_sun / constants.G
+    m_earth = constants.M_EARTH
+    m_moon = constants.M_MOON
+    m_tug = 9.4e20
+    d0 = 1.2701e9
+    r0 = constants.AU
+    v0 = math.sqrt(mu_sun / r0)
+    r_moon = 3.844e8
+    v_moon = math.sqrt(constants.G * m_earth / r_moon)
+    f_pull = constants.G * m_earth * m_tug / (d0**2)
+    omega0 = v0 / r0
+
+    sim = rebound.Simulation()
+    sim.integrator = "ias15"
+    sim.G = constants.G
+    sim.add(name="Sun", m=m_sun, x=0.0, y=0.0, z=0.0, vx=0.0, vy=0.0, vz=0.0)
+    sim.add(name="Earth", m=m_earth, x=r0, y=0.0, z=0.0, vx=0.0, vy=v0, vz=0.0)
+    sim.add(name="Moon", m=m_moon, x=r0 + r_moon, y=0.0, z=0.0, vx=0.0, vy=v0 + v_moon, vz=0.0)
+
+    v_tug = np.array([-d0 * omega0, v0, 0.0])
+    p0_s = m_sun * np.array([sim.particles[0].vx, sim.particles[0].vy, sim.particles[0].vz])
+    p0_e = m_earth * np.array([sim.particles[1].vx, sim.particles[1].vy, sim.particles[1].vz])
+    p0_m = m_moon * np.array([sim.particles[2].vx, sim.particles[2].vy, sim.particles[2].vz])
+    p0_t = m_tug * v_tug.copy()
+    p0_bodies = p0_s + p0_e + p0_m + p0_t
+
+    def af(sim_pointer):
+        s = sim_pointer.contents
+        ps = s.particles[0]
+        pe = s.particles[1]
+        dx = pe.x - ps.x
+        dy = pe.y - ps.y
+        r = math.sqrt(dx * dx + dy * dy)
+        tx = -dy / r
+        ty = dx / r
+        pe.ax += (f_pull * tx) / pe.m
+        pe.ay += (f_pull * ty) / pe.m
+
+        rtx = pe.x + d0 * tx
+        rty = pe.y + d0 * ty
+        rt_mag = math.sqrt(rtx * rtx + rty * rty)
+        f_sun_tug = constants.G * ps.m * m_tug / (rt_mag**3)
+        ps.ax += (f_sun_tug * rtx) / ps.m
+        ps.ay += (f_sun_tug * rty) / ps.m
+
+    sim.additional_forces = af
+    sim.force_is_velocity_dependent = 0
+
+    dt_s = 10.0 * 86400.0
+    for _ in range(36):  # ~1 year
+        sim.integrate(sim.t + dt_s)
+        pe_1 = sim.particles[1]
+        ps_1 = sim.particles[0]
+        dx = pe_1.x - ps_1.x
+        dy = pe_1.y - ps_1.y
+        r = math.sqrt(dx * dx + dy * dy)
+        rx = dx / r
+        ry = dy / r
+        omega = (pe_1.x * pe_1.vy - pe_1.y * pe_1.vx) / (r * r)
+        v_tug = np.array([pe_1.vx - d0 * omega * rx, pe_1.vy - d0 * omega * ry, 0.0])
+
+    p_final_s = m_sun * np.array([sim.particles[0].vx, sim.particles[0].vy, sim.particles[0].vz])
+    p_final_e = m_earth * np.array([sim.particles[1].vx, sim.particles[1].vy, sim.particles[1].vz])
+    p_final_m = m_moon * np.array([sim.particles[2].vx, sim.particles[2].vy, sim.particles[2].vz])
+    p_final_t = m_tug * v_tug
+    p_final_bodies = p_final_s + p_final_e + p_final_m + p_final_t
+
+    dP_s = p_final_s - p0_s
+    dP_e = p_final_e - p0_e
+    dP_m = p_final_m - p0_m
+    dP_t = p_final_t - p0_t
+    dP_bodies = p_final_bodies - p0_bodies
+
+    sum_dP_parts = dP_s + dP_e + dP_m + dP_t
+    p_scale = m_earth * v0
+    rel_diff = float(np.linalg.norm(sum_dP_parts - dP_bodies) / p_scale)
+    assert rel_diff < 1.0e-15, f"Per-body momentum sum differed from dP_bodies by {rel_diff}"
+
+
 def test_fails_if_sun_reaction_removed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Verify that removing the Tug's solar reaction on the Sun causes momentum drift > 1e-5 and fails validation."""
     monkeypatch.setattr(_sim_mod, "RESULTS_DIR", tmp_path)

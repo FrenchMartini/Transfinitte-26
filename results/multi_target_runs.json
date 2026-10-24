@@ -1,0 +1,30 @@
+{
+  "2.0_AU": {
+    "arrival_year": 7299.863107460644,
+    "final_a_au": 2.0000128888069693,
+    "final_e": 5.887344316459829e-05,
+    "total_propellant_kg": 5.7614576616076175e+20,
+    "winning_conditions": {
+      "W1_target_orbit_reached": true,
+      "W2_earth_stays_safe": true,
+      "W3_structure_survives": true,
+      "W4_code_is_validated": true,
+      "W5_physics_is_honest": true,
+      "W6_no_unresolved_flags": true
+    }
+  },
+  "3.5_AU": {
+    "arrival_year": 11891.1704312115,
+    "final_a_au": 3.500033207649404,
+    "final_e": 0.00016270706495927974,
+    "total_propellant_kg": 9.385172568011993e+20,
+    "winning_conditions": {
+      "W1_target_orbit_reached": false,
+      "W2_earth_stays_safe": true,
+      "W3_structure_survives": true,
+      "W4_code_is_validated": true,
+      "W5_physics_is_honest": true,
+      "W6_no_unresolved_flags": true
+    }
+  }
+}

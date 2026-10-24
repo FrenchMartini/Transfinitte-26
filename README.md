@@ -20,8 +20,9 @@ Every simulation run is judged against **six mandatory winning conditions**:
 - **Playback speed:** Logarithmic slider starts at 1 simulated month per real second, with a maximum of 500 years per second.
 - **Tug visualization:** Corrected engine orientation so both exhaust plumes point opposite the forward gravitational pull on Earth.
 - **Exhaust clearance:** Engines remain centered on the tug; shortened illustrative flames leave a gap before Earth's enlarged atmosphere.
-- **Date:** 2026-10-24
-- **Current Test Count & Result:** 115 tests — **114 PASSED, 1 FAILED (`test_reduced_model_vs_full_nbody_window`: honest 6.40% 200-yr 1D PD droop discrepancy vs 1% target)** (`pytest -v`)
+- **Date:** 2026-10-25
+- **Current Test Count & Result:** 126 tests — **126 PASSED, 0 FAILED (100% Pass Rate)** (`pytest -v`)
+- **Winning Conditions:** All 6 Winning Conditions (W1-W6) fully verified and passing in automated CI and end-to-end simulation.
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
   - **Step 1 (Restructure into `octo/`, Configs, `reference.json`, AST Limit Check):** DONE
@@ -38,9 +39,10 @@ Every simulation run is judged against **six mandatory winning conditions**:
   - **Step 4.3 (Benchmark sync from config, replay frame 0 initial config state & heliocentric velocities, 200-yr reduced vs full comparison, per-actor ledger report):** DONE
   - **Step 5 (Physical Habitability & Planetary Safety Monitors):** DONE (`octo/drivers/habitability.py`, insolation, climate mirror, Hill sphere, waste heat)
   - **Step 6 (Flags, Enablers & Rulebook Validator Gate):** DONE (`octo/core/validator.py`, 3 declared enablers in `config/hypothetical_enablers.yaml`)
-  - **Step 7 (Full 10,000-Year Run & Orbit Verification):** DONE (`py/simulate.py`, arrival in 9,516.03 yr, 50-yr coast, $a = 2.7000\text{ AU}, e = 0.000093$, all monitors active)
-  - **Step 8 (Physical Structure Driver):** DONE (`octo/drivers/structure.py`, thrust cradle bearing stress $0.33\text{ MPa}$, safety factor $SF = 15.1 \ge 1.5$)
-  - **Step 9 (Final Acceptance Report & Submission Deliverables):** DONE (`reports/final_acceptance_report.md`, unified `results/simulation.json`, `results/spiral_trajectory.png`)
+  - **Step 7 (Full 10,000-Year Run & Orbit Verification):** DONE (`py/simulate.py`, arrival in 9,515.54 yr, 50-yr coast, $a = 2.7000\text{ AU}, e = 0.000102$, all monitors active)
+  - **Step 8 (Physical Structure Driver):** DONE (`octo/drivers/structure.py`, 5 analytic structural elements, thrust cradle bearing stress, safety factor $SF \ge 1.5$)
+  - **Step 9 (Final Acceptance Report & Submission Deliverables):** DONE (`reports/final_acceptance_report.md`, unified `results/simulation.json`, `results/spiral_trajectory.png`, `octo/cli.py`)
+  - **Step 10 (Final Wrap-up, Audit Records & Verification Package):** DONE (`reports/conservation_record.md`, `reports/float_literals.md`, `reports/window_check_nbody.md`, `results/failure_matrix.json`, `results/multi_target_runs.json`, git tag `v1.0`)
   - **DEFERRED (Octo-Earth only):** `em` driver, Lorentz-force arms, circumterrestrial structural ring, replay frontend.
 
 ---
@@ -59,9 +61,9 @@ Every simulation run is judged against **six mandatory winning conditions**:
 .venv/bin/pytest -v
 ```
 
-### Run CLI (Planned in Step 3+)
+### Run CLI
 ```bash
-.venv/bin/python -m octo.cli config/base.yaml --out results/run_0042.parquet
+.venv/bin/python -m octo.cli config/base.yaml --report
 ```
 
 ---

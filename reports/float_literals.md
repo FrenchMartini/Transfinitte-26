@@ -1,0 +1,247 @@
+# Itemized Float Literals in `octo/` Codebase
+
+This report is generated via Python AST parsing (`ast.walk`) to guarantee complete compliance with the **One Home for Every Number** policy.
+Universal physical constants live in `octo/core/constants.py`; all rulebook limits and mission parameters are loaded dynamically from `config/`.
+
+**Total Float Literals Detected:** 238
+
+| File | Line | Float Literal | Purpose / Context |
+|---|---|---|---|
+| `octo/cli.py` | 58 | `50.0` | Mathematical algorithm parameter / geometry |
+| `octo/cli.py` | 87 | `14.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/constants.py` | 20 | `1.32712440018e+20` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 27 | `6.6743e-11` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 31 | `1.98847e+30` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 35 | `5.9722e+24` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 39 | `7.342e+22` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 43 | `384400000.0` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 47 | `6371000.0` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 51 | `149597870700.0` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 55 | `31557600.0` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 59 | `299792458.0` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 63 | `3.828e+26` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 71 | `5.670374419e-08` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 75 | `0.306` | Universal IAU / CODATA physical constant |
+| `octo/core/constants.py` | 67 | `4.0` | Universal IAU / CODATA physical constant |
+| `octo/core/coupler.py` | 173 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/coupler.py` | 274 | `86400.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/coupler.py` | 283 | `0.4` | Mathematical algorithm parameter / geometry |
+| `octo/core/coupler.py` | 303 | `0.4` | Mathematical algorithm parameter / geometry |
+| `octo/core/coupler.py` | 152 | `86400.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/coupler.py` | 234 | `1000.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/coupler.py` | 292 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/coupler.py` | 69 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/coupler.py` | 70 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/coupler.py` | 71 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/coupler.py` | 252 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/exchange.py` | 45 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/exchange.py` | 46 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/exchange.py` | 47 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/exchange.py` | 14 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 199 | `1.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 64 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 165 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 166 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 167 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 168 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 226 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 248 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 275 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 277 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 440 | `1.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 444 | `1.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 448 | `1.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 213 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 261 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 265 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 269 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 281 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 281 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 487 | `1.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 401 | `0.5` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 415 | `0.0` | Default numerical accumulator initialization (0.0) |
+| `octo/core/ledger.py` | 307 | `0.5` | Default numerical accumulator initialization (0.0) |
+| `octo/core/recorder.py` | 88 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/recorder.py` | 88 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/recorder.py` | 88 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/state.py` | 63 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/state.py` | 64 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/state.py` | 65 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/state.py` | 66 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/state.py` | 21 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/units.py` | 163 | `1000.0` | Unit conversion or dimension factor |
+| `octo/core/units.py` | 168 | `1000.0` | Unit conversion or dimension factor |
+| `octo/core/validator.py` | 57 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/validator.py` | 58 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/validator.py` | 59 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/core/validator.py` | 70 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 111 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 138 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 139 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 37 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 45 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 83 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 114 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 118 | `0.25` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 160 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 161 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 39 | `844000000000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 40 | `0.95` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 41 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 48 | `3.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 50 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 58 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 60 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 65 | `90.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 69 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 96 | `844000000000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 97 | `0.95` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 98 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 99 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 116 | `4.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 117 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 130 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 130 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 130 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 163 | `4.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 328 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 49 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 49 | `3.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 61 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 68 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 132 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 132 | `3.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 256 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 264 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 368 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 384 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 61 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 132 | `3.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 252 | `844000000000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 253 | `0.95` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 254 | `100000000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 255 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 258 | `3.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 260 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 264 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 367 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 370 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 383 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 259 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 259 | `3.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 263 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 276 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/habitability.py` | 378 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 175 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 409 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 29 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 43 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 52 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 86 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 118 | `0.5` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 128 | `0.5` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 166 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 67 | `0.5` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 189 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 189 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 436 | `1e-11` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 54 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 88 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 149 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 318 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 122 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 122 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 123 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 123 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/orbit.py` | 352 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 53 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 70 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 71 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 83 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 83 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 83 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 91 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 92 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 93 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 160 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 161 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 28 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 28 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 30 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 112 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 188 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 203 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 204 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 227 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 231 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 107 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 107 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 108 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 108 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 108 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 119 | `0.5` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 121 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 147 | `1e+25` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 148 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 150 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 151 | `684000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 152 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 153 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 156 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 186 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 209 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 235 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 248 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 249 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 261 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 351 | `0.5` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 352 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 30 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 46 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 113 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 113 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 146 | `0.3` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 194 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 195 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 248 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 248 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 248 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 352 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 194 | `1.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 194 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/propulsion.py` | 194 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 86 | `6.6743e-11` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 23 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 33 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 47 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 104 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 106 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 62 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 62 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 64 | `2.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 76 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 76 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 76 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 93 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 93 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 93 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 93 | `0.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 160 | `9.4e+20` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 142 | `2.3256e+17` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 143 | `473000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 144 | `5000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 151 | `3000000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 152 | `900000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 157 | `1000000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 158 | `100.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 159 | `250000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 160 | `5.9722e+24` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 160 | `7.3477e+22` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 166 | `500000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 167 | `0.0005` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 168 | `150000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 169 | `2e-10` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 173 | `1277000000.0` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 175 | `5.9722e+24` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 176 | `9.4e+20` | Mathematical algorithm parameter / geometry |
+| `octo/drivers/structure.py` | 95 | `2.0` | Mathematical algorithm parameter / geometry |

@@ -28,7 +28,7 @@
     "active_spiral_duration_years": 9515.537303216975,
     "unpowered_coast_duration_years": 50.0,
     "total_simulation_years": 9565.537303216975,
-    "wall_time_s": 222.24052970902994,
+    "wall_time_s": 178.46974458300974,
     "macro_steps_total": 349383,
     "replay_frames_total": 1200
   },
@@ -39,7 +39,7 @@
     "max_equilibrium_temp_k": 254.03862058145486,
     "min_plume_clearance_m": 110696508.86380063,
     "max_surface_waste_heat_w_m2": 0.05354022212869547,
-    "min_structural_safety_factor": 14.904149742729086,
+    "min_structural_safety_factor": 11.450614951428312,
     "max_structural_stress_pa": 335477.0373559367,
     "max_acceleration_m_s2": 3.841945876502129e-08,
     "max_mass_drift": 1.4155739913719492e-16,
@@ -65,7 +65,7 @@
       "semi_major_axis_tolerance_au": 0.05,
       "final_eccentricity": 0.00010157847199235808,
       "max_allowed_eccentricity": 0.05,
-      "min_structural_safety_factor": 14.904149742729086,
+      "min_structural_safety_factor": 11.450614951428312,
       "required_safety_factor": 1.5,
       "thresholds_confirmed": false
     },
