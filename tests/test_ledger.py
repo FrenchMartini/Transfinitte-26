@@ -524,7 +524,7 @@ def test_chunked_list_and_vec3_exact_match_fsum_on_multiscale_data():
 
     expected_fsum = math.fsum(raw_scalars)
     obtained_fsum = chunked.total_fsum()
-    assert obtained_fsum == pytest.approx(expected_fsum, rel=1e-15, abs=1e-16)
+    assert obtained_fsum == expected_fsum
 
     # Test ChunkedVec3List
     chunked_v3 = ChunkedVec3List(chunk_size=75)
@@ -543,6 +543,6 @@ def test_chunked_list_and_vec3_exact_match_fsum_on_multiscale_data():
     expected_vz = math.fsum(float(v[2]) for v in raw_v3)
     obtained_v3 = chunked_v3.total_vec3()
 
-    assert obtained_v3[0] == pytest.approx(expected_vx, rel=1e-14)
-    assert obtained_v3[1] == pytest.approx(expected_vy, rel=1e-14)
-    assert obtained_v3[2] == pytest.approx(expected_vz, rel=1e-14)
+    assert obtained_v3[0] == expected_vx
+    assert obtained_v3[1] == expected_vy
+    assert obtained_v3[2] == expected_vz

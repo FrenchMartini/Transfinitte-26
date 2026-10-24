@@ -178,10 +178,12 @@ Because outward radiation acceleration is $\sim 12.6 - 12.9\times$ stronger than
 
 ### Unshielded vs Shielded Surface Flux
 - **Unshielded incident flux on Earth:**
-  $$F_{\text{waste, unshielded}} = \frac{P_{\text{waste}}}{4\pi d_0^2} = \frac{1.085 \times 10^{23}\text{ W}}{4\pi (1.2701 \times 10^9\text{ m})^2} \approx \mathbf{5.352\text{ W/m}^2}$$
-  Because $5.352\text{ W/m}^2 > 5.0\text{ W/m}^2$ (the rulebook threshold `earth_safety.max_surface_waste_heat_w_m2`), unshielded isotropic waste radiation violates planetary habitability.
+  $$F_{\text{waste, unshielded}} = \frac{P_{\text{waste}}}{4\pi d_0^2} = \frac{1.085 \times 10^{23}\text{ W}}{4\pi (1.2701 \times 10^9\text{ m})^2} \approx \mathbf{5,351\text{ W/m}^2}$$
+  Because $5,351\text{ W/m}^2 > 5.0\text{ W/m}^2$ (the rulebook threshold `earth_safety.max_surface_waste_heat_w_m2`), unshielded isotropic waste radiation violates planetary habitability.
+- **Sphere-average unshielded flux on Earth ($F/4$):**
+  $$\bar{F}_{\text{waste, sphere}} = \frac{5,351\text{ W/m}^2}{4} \approx \mathbf{1,338\text{ W/m}^2}$$
 - **Shielded incident flux (with attenuation $\tau = 1.0 \times 10^{-5}$):**
-  $$F_{\text{waste, shielded}} = \tau\,F_{\text{waste, unshielded}} = 1.0 \times 10^{-5} \times 5.352 \approx \mathbf{5.352 \times 10^{-5}\text{ W/m}^2} \ll 5.0\text{ W/m}^2$$
+  $$F_{\text{waste, shielded}} = \tau\,F_{\text{waste, unshielded}} = 1.0 \times 10^{-5} \times 5,351 \approx \mathbf{0.05351\text{ W/m}^2} \quad (\text{sphere-average } \mathbf{0.01338\text{ W/m}^2}) \ll 5.0\text{ W/m}^2$$
 - **Radiator View Factor Geometric Derivation:**
   For a planar radiator oriented edge-on toward Earth with area $A_{\text{rad}}$ and pointing error angle $\delta\theta$:
   The projected radiator area visible from Earth is $A_{\text{proj}} = A_{\text{rad}} \sin(\delta\theta) \approx A_{\text{rad}} \delta\theta$.

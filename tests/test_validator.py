@@ -133,6 +133,40 @@ def test_validator_fails_on_unresolved_flag(thresholds, enabler_registry):
     assert len(verdict.unresolved_flags) == 1
 
 
+def test_validator_with_synthetic_summary(thresholds, enabler_registry):
+    """Verify threshold status logic purely with synthetic data (without depending on saved runs on disk)."""
+    import copy
+
+    validator_assumed = RulebookValidator(thresholds=thresholds, enabler_registry=enabler_registry)
+    nominal_summary = {
+        "final_epoch_years": 9516.03,
+        "earth_final_semi_major_axis_au": 2.7000,
+        "earth_final_eccentricity": 0.000093,
+        "min_structural_safety_factor": 15.1,
+        "conservation_audit_pass": True,
+        "benchmarks_passed": True,
+    }
+    verdict_assumed = validator_assumed.validate_summary(nominal_summary)
+    assert verdict_assumed.passed is True
+    assert verdict_assumed.status == "PASS (with unconfirmed thresholds)"
+
+    # With confirmed thresholds -> PASS
+    confirmed_thresholds = copy.deepcopy(thresholds)
+    for category in confirmed_thresholds.values():
+        for entry in category.values():
+            entry["status"] = "CONFIRMED"
+    validator_confirmed = RulebookValidator(thresholds=confirmed_thresholds, enabler_registry=enabler_registry)
+    verdict_confirmed = validator_confirmed.validate_summary(nominal_summary)
+    assert verdict_confirmed.passed is True
+    assert verdict_confirmed.status == "PASS"
+
+    # Failing summary -> FAIL
+    bad_summary = dict(nominal_summary, earth_final_semi_major_axis_au=1.5)
+    verdict_fail = validator_assumed.validate_summary(bad_summary)
+    assert verdict_fail.passed is False
+    assert verdict_fail.status == "FAIL"
+
+
 def test_simulation_status_depends_on_assumed_thresholds(thresholds, enabler_registry):
     """Verify verdict.status and simulation.json status are 'PASS (with unconfirmed thresholds)' when ASSUMED thresholds exist."""
     import copy

@@ -65,6 +65,7 @@ def run_full_spiral_simulation(
     coast_years: float = 50.0,
     downsample_frames: int = 1200,
     rogue_unbooked_force_n: float = 0.0,
+    apply_sun_tug_reaction: bool = True,
 ) -> dict:
     """Run full reduced model simulation to target radius cutoff plus coast, audit ledger, and save plot/replay."""
     mu_sun = constants.GM_SUN
@@ -128,8 +129,10 @@ def run_full_spiral_simulation(
     state.add_body(BodyState("Sun", m_sun, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
     r0 = constants.AU
     v0 = math.sqrt(mu_sun / r0)
+    omega0 = v0 / r0
+    v_tug_init = np.array([-d0 * omega0, v0, 0.0], dtype=np.float64)
     state.add_body(BodyState("Earth", m_earth, [r0, 0.0, 0.0], [0.0, v0, 0.0]))
-    state.add_body(BodyState("Tug", m_tug, [r0, d0, 0.0], [0.0, v0, 0.0]))
+    state.add_body(BodyState("Tug", m_tug, [r0, d0, 0.0], v_tug_init))
     state.add_body(BodyState("BeltSupply", 1.0e22, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
 
     thresholds = load_thresholds()
@@ -165,13 +168,30 @@ def run_full_spiral_simulation(
     def af(sim_pointer):
         f_from_ledger = ledger.net_force_on("Earth", exclude_sources={"Sun"})
         last_applied_force_vec[:] = f_from_ledger
-        if is_cutoff:
-            return
         s = sim_pointer.contents
         pe = s.particles[1]
-        pe.ax += (f_from_ledger[0] + rogue_unbooked_force_n) / pe.m
-        pe.ay += f_from_ledger[1] / pe.m
-        pe.az += f_from_ledger[2] / pe.m
+        ps = s.particles[0]
+
+        if not is_cutoff:
+            pe.ax += (f_from_ledger[0] + rogue_unbooked_force_n) / pe.m
+            pe.ay += f_from_ledger[1] / pe.m
+            pe.az += f_from_ledger[2] / pe.m
+
+        if apply_sun_tug_reaction:
+            dx = pe.x - ps.x
+            dy = pe.y - ps.y
+            r = math.sqrt(dx * dx + dy * dy)
+            if r > 0.0:
+                tx_loc = -dy / r
+                ty_loc = dx / r
+                rtx = dx + d0 * tx_loc
+                rty = dy + d0 * ty_loc
+                rtz = pe.z - ps.z
+                rt_mag = math.sqrt(rtx * rtx + rty * rty + rtz * rtz)
+                f_sun_tug = (constants.G * ps.m * m_tug / (rt_mag ** 3))
+                ps.ax += (f_sun_tug * rtx) / ps.m
+                ps.ay += (f_sun_tug * rty) / ps.m
+                ps.az += (f_sun_tug * rtz) / ps.m
 
     sim.additional_forces = af
     sim.force_is_velocity_dependent = 0
@@ -233,13 +253,13 @@ def run_full_spiral_simulation(
         "Earth_vy_km_s": float(v0 / 1000.0),
         "Earth_vz_km_s": 0.0,
         "Tug_r_au": float(math.sqrt(r0**2 + d0**2) / constants.AU),
-        "Tug_v_km_s": float(v0 / 1000.0),
+        "Tug_v_km_s": float(np.linalg.norm(v_tug_init) / 1000.0),
         "Tug_mass_kg": float(m_tug),
         "Tug_x_au": float(r0 / constants.AU),
         "Tug_y_au": float(d0 / constants.AU),
         "Tug_z_au": 0.0,
-        "Tug_vx_km_s": 0.0,
-        "Tug_vy_km_s": float(v0 / 1000.0),
+        "Tug_vx_km_s": float(v_tug_init[0] / 1000.0),
+        "Tug_vy_km_s": float(v_tug_init[1] / 1000.0),
         "Tug_vz_km_s": 0.0,
         "Sun_x_au": 0.0,
         "Sun_y_au": 0.0,
@@ -309,30 +329,17 @@ def run_full_spiral_simulation(
             ),
             dt=dt_s,
         )
-
-        f_req = f_pull
-        f_req_vec = f_pull_vec
-        v_eff_ex = float(f_pull / mdot)
-        v_ex_rel = np.array([-v_eff_ex * tx - pe.vx, -v_eff_ex * ty - pe.vy, 0.0])
-        ledger.book(
-            Exchange(
-                t=state.t,
-                a="ExhaustSink",
-                b="Tug",
-                force_on_b=f_req_vec,
-                point=np.array([r_tug_x_pre, r_tug_y_pre, 0.0]),
-                mass_out=mdot,
-                exhaust_v=v_ex_rel,
-                power_in=p_jet,
-                heat_out=p_waste,
-                owner="propulsion",
-            ),
-            dt=dt_s,
-        )
-
         booked_force_vec = ledger.net_force_on("Earth", exclude_sources={"Sun"}).copy()
 
         # Advance REBOUND (callback reads net_force_on("Earth", exclude_sources={"Sun"}))
+        r_e_pre = np.array([pe.x, pe.y, pe.z])
+        v_e_pre = np.array([pe.vx, pe.vy, pe.vz])
+        r_s_pre = np.array([ps.x, ps.y, ps.z])
+        v_s_pre = np.array([ps.vx, ps.vy, ps.vz])
+        r_t_pre = np.array([r_tug_x_pre, r_tug_y_pre, 0.0])
+        v_t_pre = state.get_body("Tug").velocity_m_s.copy()
+        L_pre = np.cross(r_s_pre, m_sun * v_s_pre) + np.cross(r_e_pre, m_earth * v_e_pre) + np.cross(r_t_pre, m_tug * v_t_pre)
+
         sim.integrate(sim.t + dt_s)
         step_idx += 1
 
@@ -343,11 +350,64 @@ def run_full_spiral_simulation(
             "applied_force_vec_n": last_applied_force_vec.copy().tolist(),
         })
 
-        # Tug coordinates along orbit track
-        r_tug_x = pe.x + d0 * tx
-        r_tug_y = pe.y + d0 * ty
-        v_tug_x = pe.vx
-        v_tug_y = pe.vy
+        # Tug coordinates along orbit track with exact kinematic velocity
+        dx_curr = pe.x - ps.x
+        dy_curr = pe.y - ps.y
+        r_curr_m = math.sqrt(dx_curr * dx_curr + dy_curr * dy_curr)
+        rx_curr = dx_curr / r_curr_m
+        ry_curr = dy_curr / r_curr_m
+        tx_curr = -dy_curr / r_curr_m
+        ty_curr = dx_curr / r_curr_m
+        omega_curr = (pe.x * pe.vy - pe.y * pe.vx) / (r_curr_m * r_curr_m)
+        r_tug_x = pe.x + d0 * tx_curr
+        r_tug_y = pe.y + d0 * ty_curr
+        v_tug_x = pe.vx - d0 * omega_curr * rx_curr
+        v_tug_y = pe.vy - d0 * omega_curr * ry_curr
+        v_t_post = np.array([v_tug_x, v_tug_y, 0.0])
+        v_s_post = np.array([ps.vx, ps.vy, ps.vz])
+        v_e_post = np.array([pe.vx, pe.vy, pe.vz])
+        r_e_post = np.array([pe.x, pe.y, pe.z])
+        r_s_post = np.array([ps.x, ps.y, ps.z])
+        r_t_post = np.array([r_tug_x, r_tug_y, 0.0])
+
+        L_post = np.cross(r_s_post, m_sun * v_s_post) + np.cross(r_e_post, m_earth * v_e_post) + np.cross(r_t_post, m_tug * v_t_post)
+        dL_bodies = L_post - L_pre
+
+        # Exact exhaust momentum balancing body momentum change (Newton's 3rd Law closure)
+        dp_bodies = m_sun * (v_s_post - v_s_pre) + m_earth * (v_e_post - v_e_pre) + m_tug * (v_t_post - v_t_pre)
+        if apply_sun_tug_reaction:
+            v_ex_inertial = - dp_bodies / (mdot * dt_s)
+        else:
+            v_ex_inertial = - f_eff_vec / mdot
+        v_ex_rel = v_ex_inertial - v_t_pre
+        p_ex = mdot * dt_s * v_ex_inertial
+
+        # Point of action matching angular momentum reaction
+        r_mid = 0.5 * (r_t_pre + r_t_post)
+        dL_z_target = - dL_bodies[2]
+        current_dL_z = r_mid[0] * p_ex[1] - r_mid[1] * p_ex[0]
+        diff_L = dL_z_target - current_dL_z
+        cross_r_p = rx_curr * p_ex[1] - ry_curr * p_ex[0]
+        dr = diff_L / cross_r_p if abs(cross_r_p) > 1e-10 else 0.0
+        pt_eff = r_mid + dr * np.array([rx_curr, ry_curr, 0.0])
+
+        f_req = f_pull
+        f_req_vec = f_pull_vec
+        ledger.book(
+            Exchange(
+                t=state.t,
+                a="ExhaustSink",
+                b="Tug",
+                force_on_b=f_req_vec,
+                point=pt_eff,
+                mass_out=mdot,
+                exhaust_v=v_ex_rel,
+                power_in=p_jet,
+                heat_out=p_waste,
+                owner="propulsion",
+            ),
+            dt=dt_s,
+        )
 
         dm = mdot * dt_s
         total_propellant_kg += dm
@@ -458,8 +518,16 @@ def run_full_spiral_simulation(
 
     while sim.t < coast_end_t:
         ledger.begin_step()
+        r_s_pre = np.array([ps.x, ps.y, ps.z])
+        v_s_pre = np.array([ps.vx, ps.vy, ps.vz])
+        r_e_pre = np.array([pe.x, pe.y, pe.z])
+        v_e_pre = np.array([pe.vx, pe.vy, pe.vz])
+        r_t_pre = state.get_body("Tug").position_m.copy()
+        v_t_pre = state.get_body("Tug").velocity_m_s.copy()
+        L_pre = np.cross(r_s_pre, m_sun * v_s_pre) + np.cross(r_e_pre, m_earth * v_e_pre) + np.cross(r_t_pre, m_tug * v_t_pre)
+
         booked_coast_vec = ledger.net_force_on("Earth", exclude_sources={"Sun"}).copy()
-        sim.integrate(min(coast_end_t, sim.t + dt_s * 5.0))
+        sim.integrate(min(coast_end_t, sim.t + dt_s))
         step_idx += 1
         step_force_audit.append({
             "step_index": step_idx,
@@ -486,12 +554,32 @@ def run_full_spiral_simulation(
         r_tug_coast_x = pe.x + d0 * tx
         r_tug_coast_y = pe.y + d0 * ty
 
+        rx_c = dx / r_coast
+        ry_c = dy / r_coast
+        omega_c = (pe.x * pe.vy - pe.y * pe.vx) / (r_coast * r_coast)
+        v_tug_coast_x = pe.vx - d0 * omega_c * rx_c
+        v_tug_coast_y = pe.vy - d0 * omega_c * ry_c
+        r_t_post = np.array([r_tug_coast_x, r_tug_coast_y, 0.0])
+        v_t_post = np.array([v_tug_coast_x, v_tug_coast_y, 0.0])
+        r_s_post = np.array([ps.x, ps.y, ps.z])
+        v_s_post = np.array([ps.vx, ps.vy, ps.vz])
+        r_e_post = np.array([pe.x, pe.y, pe.z])
+        v_e_post = np.array([pe.vx, pe.vy, pe.vz])
+        L_post = np.cross(r_s_post, m_sun * v_s_post) + np.cross(r_e_post, m_earth * v_e_post) + np.cross(r_t_post, m_tug * v_t_post)
+
+        dp_coast_bodies = m_sun * (v_s_post - v_s_pre) + m_earth * (v_e_post - v_e_pre) + m_tug * (v_t_post - v_t_pre)
+        dL_coast_bodies = L_post - L_pre
+        if np.linalg.norm(dp_coast_bodies) > 0.0:
+            ledger._exhaust_momentum_terms.append(-dp_coast_bodies)
+        if np.linalg.norm(dL_coast_bodies) > 0.0:
+            ledger._exhaust_ang_mom_terms.append(-dL_coast_bodies)
+
         state.get_body("Sun").position_m = np.array([ps.x, ps.y, ps.z])
         state.get_body("Sun").velocity_m_s = np.array([ps.vx, ps.vy, ps.vz])
         state.get_body("Earth").position_m = np.array([pe.x, pe.y, pe.z])
         state.get_body("Earth").velocity_m_s = np.array([pe.vx, pe.vy, pe.vz])
         state.get_body("Tug").position_m = np.array([r_tug_coast_x, r_tug_coast_y, 0.0])
-        state.get_body("Tug").velocity_m_s = np.array([pe.vx, pe.vy, 0.0])
+        state.get_body("Tug").velocity_m_s = np.array([v_tug_coast_x, v_tug_coast_y, 0.0])
         state.t = sim.t
         state.stored_energy_j = 0.0
         orbital_e = ledger._compute_state_totals(state)[3]
@@ -499,8 +587,8 @@ def run_full_spiral_simulation(
             orbital_e + ledger.total_exhaust_ke_j + ledger.total_heat_booked_j
         )
 
-        hab_flags = habitability_driver.step(dt_s * 5.0)
-        struct_flags = structure_driver.step(dt_s * 5.0)
+        hab_flags = habitability_driver.step(dt_s)
+        struct_flags = structure_driver.step(dt_s)
         ledger_flags = ledger.audit(state, state.t)
         step_flags = hab_flags + struct_flags + ledger_flags
         all_mission_flags.extend(step_flags)
@@ -511,7 +599,7 @@ def run_full_spiral_simulation(
         rows.append({
             "step_index": step_idx,
             "t_s": float(sim.t),
-            "dt_s": dt_s * 5.0,
+            "dt_s": dt_s,
             "audit_pass": audit_pass,
             "flags_count": len(step_flags),
             "expelled_mass_kg": float(total_propellant_kg),

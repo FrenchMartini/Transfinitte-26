@@ -1,7 +1,7 @@
 # Final Acceptance & Mission Verification Report — OrbitShift (`octo`)
 
 **Architecture:** Ceres Tug (`mode: averaged`, Reduced Model Validated against Full N-Body)  
-**Overall Verdict:** **FAIL**  
+**Overall Verdict:** **PASS (with unconfirmed thresholds)**  
 **Config Hash:** `sha256:b50109a64bf6ef7a336b71035606de65fc901156f5c0ad2c5284bd552c21e4b2`  
 **Validation Benchmarks Passed:** **10/10**
 
@@ -11,11 +11,11 @@
 
 | # | Winning Condition | Rulebook Requirement | Simulated Result | Verdict |
 |---|---|---|---|---|
-| **W1** | **Target Orbit Reached** | $a_f = 2.70 \pm 0.05\text{ AU}$, $e_f \le 0.05$, $t \le 10000\text{ yr}$ | $a_f = 1.0000\text{ AU}$, $e_f = 0.000021$, $t = 0.33\text{ yr}$ (total `0.34` yr with coast) | **FAIL** |
-| **W2** | **Earth Stays Safe** | Insolation, equilibrium temp, Moon retention ($\le 0.50\,R_H$), waste heat ($\le 5.0\text{ W/m}^2$) | $S = 10093.3\text{ W/m}^2$, $T_{\text{eq}} = 419.21\text{ K}$, Moon $r/R_H = 0.257 \to 0.257$ | **PASS** |
+| **W1** | **Target Orbit Reached** | $a_f = 2.70 \pm 0.05\text{ AU}$, $e_f \le 0.05$, $t \le 10000\text{ yr}$ | $a_f = 2.7000\text{ AU}$, $e_f = 0.000102$, $t = 9515.54\text{ yr}$ (total `9565.54` yr with coast) | **PASS** |
+| **W2** | **Earth Stays Safe** | Insolation, equilibrium temp, Moon retention ($\le 0.50\,R_H$), waste heat ($\le 5.0\text{ W/m}^2$) | $S = 1384.6\text{ W/m}^2$, $T_{\text{eq}} = 255.13\text{ K}$, Moon $r/R_H = 0.257 \to 0.095$ | **PASS** |
 | **W3** | **Structure Survives** | Minimum structural safety factor $\text{SF} \ge 1.50$ | Thrust cradle $\text{SF} = 14.90 \ge 1.50$ | **PASS** |
 | **W4** | **Code is Validated** | All Participant Guide Section 6 benchmarks pass | `10/10` guide benchmarks passed | **PASS** |
-| **W5** | **Physics is Honest** | Bilateral `Exchange` booking; mass, momentum, angular momentum, energy close | Max relative drift $< 1.0e-09$ | **FAIL** |
+| **W5** | **Physics is Honest** | Bilateral `Exchange` booking; mass, momentum, angular momentum, energy close | Max relative drift $< 1.0e-09$ | **PASS** |
 | **W6** | **No Unresolved Flags** | Zero unexplained flags ($\le 3$ declared enablers) | `0` unresolved flags (`0` enabler-matched flags) | **PASS** |
 
 ---
@@ -23,16 +23,16 @@
 ## 2. Trajectory & Propulsion Telemetry (`results/simulation.json`)
 
 - **Initial Orbit ($t = 0$):** $a_0 = 1.0000\text{ AU}$
-- **Active Spiral Duration:** `0.33` years (`14` total steps, `5` exported replay frames)
-- **Post-Cutoff Ballistic Coast:** `0.01` years (total epoch `0.34` years, wall time `0.01` s)
+- **Active Spiral Duration:** `9515.54` years (`349383` total steps, `1200` exported replay frames)
+- **Post-Cutoff Ballistic Coast:** `50.00` years (total epoch `9565.54` years, wall time `222.24` s)
 - **Final Orbit Elements:**
-  - Semi-major axis: $a_f = 1.0000\text{ AU}$
-  - Eccentricity: $e_f = 0.000021$
+  - Semi-major axis: $a_f = 2.7000\text{ AU}$
+  - Eccentricity: $e_f = 0.000102$
 - **Relativistic Propulsion & Thrust Budget:**
   - Tug Mass: $M_{\text{tug}} = 9.4000e+20\text{ kg}$ at standoff $d_0 = 1.2701e+09\text{ m}$
   - Exhaust Velocity: $v_e = 0.30c = 89937737.4\text{ m/s}$
   - Mass Flow Rate: $\dot{m} = 2.5010e+09\text{ kg/s}$
-  - Total Propellant Expelled: `2.5930e+16` kg (`0.00%` of Ceres mass)
+  - Total Propellant Expelled: `7.5102e+20` kg (`79.90%` of Ceres mass)
   - Relativistic Jet Power: `1.0853e+25` W (Beamed Power: `1.0850e+25` W)
   - Nominal Engine Thrust: `2.3580e+17` N (`1.1790e+17` N per exhaust cone)
   - Canted Thrust ($\pm 5.00^\circ$ out-of-ecliptic): `2.3490e+17` N (cant loss `0.3805%`)
@@ -45,7 +45,7 @@
 
 ## 3. Habitability, Thermal Shielding & Structural Integrity
 
-- **Solar Irradiance & L1 Concentrator:** Unmitigated irradiance at $1.0000\text{ AU}$ drops to $1361.10\text{ W/m}^2$ ($T_{\text{eq}} = 254.04\text{ K}$). With the Enabler E3 L1 concentrator active, Earth receives $10093.3\text{ W/m}^2$ ($T_{\text{eq}} = 419.21\text{ K}$).
+- **Solar Irradiance & L1 Concentrator:** Unmitigated irradiance at $2.7000\text{ AU}$ drops to $186.72\text{ W/m}^2$ ($T_{\text{eq}} = 154.60\text{ K}$). With the Enabler E3 L1 concentrator active, Earth receives $1384.6\text{ W/m}^2$ ($T_{\text{eq}} = 255.13\text{ K}$).
 - **Plume Clearance:** Out-of-ecliptic cone half-angle $5.00^\circ$ at standoff $1.2701e+09\text{ m}$ provides vertical plume clearance of `1.1070e+08` m at Earth.
 - **Radiative Shield Attenuation:** Attenuation factor `1.0e-05` keeps surface waste-heat flux well below `5.0` $\text{W/m}^2$.
 - **Structural Safety Factor:** Ceres thrust cradle safety factor is `14.90` against required minimum `1.50`.
