@@ -32,7 +32,7 @@ from octo.core.state import State, BodyState
 from octo.core.ledger import Ledger
 from octo.core.exchange import Exchange
 from octo.core.flags import FlagRegistry
-from octo.core.thresholds import load_thresholds
+from octo.core.thresholds import has_assumed_thresholds, load_thresholds
 from octo.core.validator import RulebookValidator
 import importlib.util
 from octo.drivers.propulsion import lorentz_gamma
@@ -446,6 +446,9 @@ def run_full_spiral_simulation(
     plt.close()
     print(f"Saved plot to {fig_path}")
 
+    thresholds = load_thresholds()
+    thresholds_confirmed = not has_assumed_thresholds(thresholds)
+
     # Export replay JSON
     out_replay = RESULTS_DIR / "replay_ceres_tug.json"
     replay_doc = export_parquet_to_replay_json(
@@ -453,13 +456,12 @@ def run_full_spiral_simulation(
         out_replay,
         max_frames=downsample_frames,
         concept="Ceres Tug",
-        thresholds_confirmed=False,
+        thresholds_confirmed=thresholds_confirmed,
     )
 
     # Run official RulebookValidator Gate (Step 6)
     enablers_path = ROOT_DIR / "config" / "hypothetical_enablers.yaml"
     enabler_reg = FlagRegistry.from_yaml(enablers_path)
-    thresholds = load_thresholds()
     validator = RulebookValidator(thresholds=thresholds, enabler_registry=enabler_reg)
 
     summary_eval = {
@@ -477,7 +479,7 @@ def run_full_spiral_simulation(
     simulation_doc = {
         "format": "OCTO_SIMULATION_JSON",
         "version": 2,
-        "status": "VALIDATED" if verdict.passed else "FLAGGED",
+        "status": verdict.status,
         "meta": replay_doc.get("meta", {}),
         "mission_summary": {
             "arrival_year": arrival_year,

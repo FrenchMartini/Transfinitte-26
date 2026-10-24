@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from octo.core.flags import Flag, FlagRegistry
-from octo.core.thresholds import get_threshold_value, load_thresholds
+from octo.core.thresholds import get_threshold_value, has_assumed_thresholds, load_thresholds
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,6 +24,7 @@ class ValidationVerdict:
     unresolved_flags: list[Flag] = field(default_factory=list)
     allowed_flags: list[Flag] = field(default_factory=list)
     details: dict[str, Any] = field(default_factory=dict)
+    status: str = "FAIL"
 
 
 class RulebookValidator:
@@ -90,6 +91,13 @@ class RulebookValidator:
         }
 
         overall_pass = all(winning_conditions.values())
+        any_assumed = has_assumed_thresholds(self.thresholds)
+        if not overall_pass:
+            status_str = "FAIL"
+        elif any_assumed:
+            status_str = "PASS (with unconfirmed thresholds)"
+        else:
+            status_str = "PASS"
 
         details = {
             "final_epoch_years": epoch_yr,
@@ -101,6 +109,7 @@ class RulebookValidator:
             "max_allowed_eccentricity": max_e,
             "min_structural_safety_factor": sf,
             "required_safety_factor": min_sf,
+            "thresholds_confirmed": not any_assumed,
         }
 
         return ValidationVerdict(
@@ -109,4 +118,5 @@ class RulebookValidator:
             unresolved_flags=unresolved,
             allowed_flags=allowed,
             details=details,
+            status=status_str,
         )
