@@ -1,10 +1,14 @@
 """Orbital mechanics, closed-form transfers, Section 2 energetics, and two-body integrator (SI units)."""
 
 from typing import Any
+import time
 import numpy as np
+import rebound
 from scipy.integrate import solve_ivp
 
 from octo.core import constants
+from octo.core.ledger import Ledger
+from octo.core.state import BodyState, State
 from octo.drivers.propulsion import PropulsionCallable, zero_thrust_propulsion
 
 
@@ -260,4 +264,166 @@ def propagate_orbit(
         "mass_flow": mass_flows,
         "exhaust_velocity": exhaust_velocities,
         "thrust_acceleration": non_grav_accels,
+    }
+
+
+class OrbitDriver:
+    """N-body orbit propagator using REBOUND IAS15 and Ledger interaction."""
+
+    def __init__(
+        self,
+        state: State,
+        ledger: Ledger | None = None,
+        config: dict[str, Any] | None = None,
+        rtol: float | None = None,
+        atol: float | None = None,
+    ) -> None:
+        self.state = state
+        self.ledger = ledger
+        self.config = config or {}
+
+        self.sim = rebound.Simulation()
+        self.sim.integrator = "ias15"
+        self.sim.G = constants.G
+
+        cfg_integrator = self.config.get("integrator", {})
+        eff_rtol = rtol if rtol is not None else cfg_integrator.get("rtol")
+        if eff_rtol is not None:
+            self.sim.integrator.epsilon = float(eff_rtol)
+
+        self._name_to_index: dict[str, int] = {}
+
+        for idx, body in enumerate(state.bodies()):
+            self.sim.add(
+                m=float(body.mass_kg),
+                x=float(body.position_m[0]),
+                y=float(body.position_m[1]),
+                z=float(body.position_m[2]),
+                vx=float(body.velocity_m_s[0]),
+                vy=float(body.velocity_m_s[1]),
+                vz=float(body.velocity_m_s[2]),
+                name=str(body.name),
+            )
+            self._name_to_index[str(body.name)] = idx
+
+        self.sim.t = float(state.t)
+
+        if self.ledger is not None:
+            self._setup_additional_forces()
+
+    def _setup_additional_forces(self) -> None:
+        def af_callback(sim_pointer: Any) -> None:
+            if self.ledger is None:
+                return
+            s = sim_pointer.contents
+            for i in range(s.N):
+                p = s.particles[i]
+                p_name = p.name
+                if isinstance(p_name, bytes):
+                    p_name = p_name.decode("utf-8")
+                if p_name and p.m > 0.0:
+                    try:
+                        f_net = self.ledger.net_force_on(p_name)
+                    except Exception:
+                        continue
+                    p.ax += float(f_net[0]) / p.m
+                    p.ay += float(f_net[1]) / p.m
+                    p.az += float(f_net[2]) / p.m
+
+        self.sim.additional_forces = af_callback
+        self.sim.force_is_velocity_dependent = 0
+
+    def sync_from_state(self, state: State) -> None:
+        """Sync positions, velocities, and masses from State into REBOUND particles."""
+        self.state = state
+        self.sim.t = float(state.t)
+        for body in state.bodies():
+            name_str = str(body.name)
+            if name_str in self._name_to_index:
+                idx = self._name_to_index[name_str]
+                p = self.sim.particles[idx]
+                p.m = float(body.mass_kg)
+                p.x = float(body.position_m[0])
+                p.y = float(body.position_m[1])
+                p.z = float(body.position_m[2])
+                p.vx = float(body.velocity_m_s[0])
+                p.vy = float(body.velocity_m_s[1])
+                p.vz = float(body.velocity_m_s[2])
+
+    def sync_to_state(self, state: State) -> State:
+        """Sync positions, velocities, and masses from REBOUND particles into State."""
+        state.t = float(self.sim.t)
+        for body in state.bodies():
+            name_str = str(body.name)
+            if name_str in self._name_to_index:
+                idx = self._name_to_index[name_str]
+                p = self.sim.particles[idx]
+                body.mass_kg = float(p.m)
+                body.position_m[0] = float(p.x)
+                body.position_m[1] = float(p.y)
+                body.position_m[2] = float(p.z)
+                body.velocity_m_s[0] = float(p.vx)
+                body.velocity_m_s[1] = float(p.vy)
+                body.velocity_m_s[2] = float(p.vz)
+        return state
+
+    def step(self, dt: float) -> State:
+        """Integrate simulation forward by dt seconds and update State."""
+        target_t = float(self.sim.t + dt)
+        self.sim.integrate(target_t)
+        return self.sync_to_state(self.state)
+
+
+def measure_rebound_performance(
+    sim_years: float = 1.0,
+    with_callback: bool = True,
+    config: dict[str, Any] | None = None,
+    extrapolate_years: float | None = None,
+) -> dict[str, float]:
+    """Measure REBOUND IAS15 execution speed and extrapolate to target time span."""
+    m_sun = constants.GM_SUN / constants.G
+    m_earth = constants.M_EARTH
+    mu_tot = constants.G * (m_sun + m_earth)
+    r_earth = constants.AU
+    v_earth = float(np.sqrt(mu_tot / r_earth))
+
+    sim = rebound.Simulation()
+    sim.integrator = "ias15"
+    sim.G = constants.G
+
+    if config and "integrator" in config and "rtol" in config["integrator"]:
+        sim.integrator.epsilon = float(config["integrator"]["rtol"])
+
+    sim.add(m=m_sun, name="Sun")
+    sim.add(m=m_earth, x=r_earth, vy=v_earth, name="Earth")
+    sim.move_to_com()
+
+    if with_callback:
+        def af(sim_p: Any) -> None:
+            s = sim_p.contents
+            p = s.particles[1]
+            p.ax += 1.0e-11
+
+        sim.additional_forces = af
+        sim.force_is_velocity_dependent = 0
+
+    t_duration_s = float(sim_years * constants.YEAR)
+    t0 = time.perf_counter()
+    sim.integrate(t_duration_s)
+    t1 = time.perf_counter()
+
+    wall_time_s = t1 - t0
+    target_years = (
+        float(extrapolate_years)
+        if extrapolate_years is not None
+        else float(config.get("time_span_years", sim_years))
+        if config is not None
+        else float(sim_years)
+    )
+    extrapolated_s = (wall_time_s / sim_years) * target_years
+
+    return {
+        "sim_years": float(sim_years),
+        "wall_time_1yr_s": float(wall_time_s),
+        "extrapolated_10kyr_s": float(extrapolated_s),
     }
