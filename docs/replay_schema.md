@@ -115,16 +115,16 @@ Each element of `frames` represents a simulation snapshot:
 
 ### 2.1 Per-Body Telemetry (`bodies.<name>`)
 
-All positions are expressed in AU relative to the focus body (`Sun`), ensuring `Sun` is always at `(0, 0, 0)`:
+Both positions and velocities are expressed in the **heliocentric frame** relative to the focus body (`Sun`), ensuring `Sun` has position `(0.0, 0.0, 0.0)` AU and velocity `(0.0, 0.0, 0.0)` km/s in every frame:
 
 | Field | Type | Unit | Description |
 |---|---|---|---|
-| `x` | float | AU | Position x relative to focus body |
-| `y` | float | AU | Position y relative to focus body |
-| `z` | float | AU | Position z relative to focus body |
-| `vx` | float | km/s | Inertial velocity x component |
-| `vy` | float | km/s | Inertial velocity y component |
-| `vz` | float | km/s | Inertial velocity z component |
+| `x` | float | AU | Heliocentric position x relative to focus body (`Sun`) |
+| `y` | float | AU | Heliocentric position y relative to focus body (`Sun`) |
+| `z` | float | AU | Heliocentric position z relative to focus body (`Sun`) |
+| `vx` | float | km/s | Heliocentric velocity x relative to focus body (`Sun`) |
+| `vy` | float | km/s | Heliocentric velocity y relative to focus body (`Sun`) |
+| `vz` | float | km/s | Heliocentric velocity z relative to focus body (`Sun`) |
 | `mass_kg` | float | kg | Instantaneous mass of body |
 
 ### 2.2 Tug Telemetry (`tug_telemetry`)

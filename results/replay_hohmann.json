@@ -3,9 +3,9 @@
   "version": 2,
   "status": "DRAFT",
   "meta": {
-    "concept": "Test Probe Hohmann Transfer",
+    "concept": "Hohmann Probe",
     "thresholds_confirmed": false,
-    "config_hash": "sha256:21a4cb2cc0520d1982cc4a89464e33be4f7ebd7f16dd106fbfbcad2993007703",
+    "config_hash": "sha256:f1ed6b99d54bdb28832f5f6ef27f5b5114889f9996fb2bb39e1ab81a6b1f8458",
     "units": {
       "time": "s",
       "distance": "AU",
@@ -16,7 +16,7 @@
     },
     "focus_body_id": "Sun",
     "frame_count": 301,
-    "downsampling_note": "Decimated from 301 simulation steps to 301 frames with t=0 preserved."
+    "downsampling_note": "Uniform decimation from 301 Parquet rows to 301 frames (spanning 0.00 to 1.26 yr) in heliocentric coordinates (Sun position and velocity at 0) with frame 0 guaranteed equal to the initial config state at t=0 s."
   },
   "num_bodies": 2,
   "num_arm_segments": null,
