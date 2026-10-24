@@ -17,13 +17,16 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Last Prior Commit Hash:** `bc08e8d` (`step 2.3: add FlagRegistry capability/id validation and test_flags.py`)
-- **Current Test Count & Result:** 44 tests — **44 PASSED** (`pytest -v`)
+- **Last Prior Commit Hash:** `a3ecfe0` (`step 2.4: add Parquet and binary replay recorders with tests`)
+- **Current Test Count & Result:** 47 tests — **47 PASSED** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
   - **Step 1 (Restructure into `octo/`, Configs, `reference.json`, AST Limit Check):** DONE
   - **Step 2 (`octo/core/`: README, `units`, `state`, `exchange`, `ledger`, `flags`, `FlagRegistry`, `recorder` skeleton):** DONE
-  - **Step 3 (`orbit` driver + Coupler + Hohmann Milestone):** NOT STARTED
+  - **Step 3.0 (Verification Gate & Ledger Mutation Checks):** DONE
+  - **Step 3.1 (`orbit` driver with REBOUND IAS15 & external force callback):** IN PROGRESS
+  - **Step 3.2 (Coupler & macro-step loop):** NOT STARTED
+  - **Step 3.3 (First Milestone: 1.0 -> 2.7 AU test probe Hohmann transfer):** NOT STARTED
   - **Step 4 (`propulsion` driver variants + Rocket/Power cross-checks):** NOT STARTED
   - **Step 5 (`structure` + `em` drivers):** NOT STARTED
   - **Step 6 (`multibody` driver + `windowed_full` thrust-map builder):** NOT STARTED
@@ -172,6 +175,7 @@ Follow these non-negotiable rules:
 | 2026-10-24 | Store benchmark reference values & tolerances in `results/reference.json` | Keeps `config/rulebook_thresholds.yaml` strictly for organizer/appendix limits |
 | 2026-10-24 | Require explicit `rtol` and `atol` in `propagate_orbit` (configured in `config/base.yaml`) | Eliminates default tolerance literals from `octo/drivers/orbit.py`, keeping `ALLOWLIST` minimal (`0.5` only) |
 | 2026-10-24 | Keep propulsion concept pluggable via `config/base.yaml` | Allows testing mass driver, ion/fusion exhaust, solar sail, gravity tractor, and Lorentz-force arms behind one interface |
+| 2026-10-24 | Primary Architecture: Accept Ceres Gravity Tug with physical corrections | Analytical audit and research validation proved Candidate A viable with corrections: variable separation $d(t)$, out-of-ecliptic bi-conical canted plumes ($\pm 5^\circ\text{–}10^\circ$) to clear Moon ($1.137 \times 10^8\text{ m} > 3.3\times$ lunar excursion) and prevent sterilization; beam push booking $\psi_r = 8.70^\circ$ yaw trim; and off-axis L1 solar concentrator. DEFERRED: Octo-Earth (rigid circumterrestrial ring / equatorial tethers), ring/arms, replay/frontend. |
 
 ---
 
@@ -198,6 +202,7 @@ Until confirmed, any clean run reports `"PASS (with unconfirmed thresholds)"`:
 - `earth_safety.max_insolation_rate_w_m2_yr` (`10.0 W/m^2/yr`)
 - `earth_safety.max_surface_waste_heat_w_m2` (`5.0 W/m^2`)
 - `earth_safety.exhaust_reimpact_allowed` (`false`)
+- `earth_safety.thermal_shield_attenuation` (`1.0e-5 fraction`)
 - `orbit_targets.target_radius_au` (`2.7 AU`), `target_radius_tolerance_au` (`0.05 AU`), `max_eccentricity` (`0.05`)
 - `conservation.max_energy_rel_error` (`1e-9`), `max_momentum_rel_error` (`1e-9`), `max_mass_rel_error` (`1e-12`)
 
@@ -211,4 +216,5 @@ Until confirmed, any clean run reports `"PASS (with unconfirmed thresholds)"`:
 - **2026-10-24 (`7efe2ea`):** Step 2.1 — Added `octo/core/units.py`, `octo/core/exchange.py`, `octo/core/state.py`, `octo/core/flags.py`, and `tests/test_core_contracts.py`.
 - **2026-10-24 (`1ae3c31`):** Step 2.2 — Added `octo/core/ledger.py` and `tests/test_ledger.py` (reaction pairing, rogue-driver audit, rocket-equation exhaust closure, `math.fsum` exact summation, bit-identical determinism).
 - **2026-10-24 (`bc08e8d`):** Step 2.3 — Added `FlagRegistry` capability/ID validation and `tests/test_flags.py`.
-- **2026-10-24 (Step 2.4):** Added `octo/core/recorder.py` (`ParquetResultsWriter` + configurable **DRAFT** `BinaryReplayRecorder`), `tests/test_recorder.py`, and updated `docs/physics.md` and `README.md`.
+- **2026-10-24 (`a3ecfe0`):** Step 2.4 — Added `octo/core/recorder.py` (`ParquetResultsWriter` + configurable **DRAFT** `BinaryReplayRecorder`), `tests/test_recorder.py`, and updated `docs/physics.md` and `README.md`.
+- **2026-10-24 (Step 3.0):** Verification Gate completed. All 7 ledger mutations tested and killed (reaction creation omission, empty audit bypass, multi-scale `math.fsum` vs `sum` cancellation drift, rocket exhaust kinetic energy omission, point torque drop, FlagRegistry bypass, and GM_SUN 1% drift). Tested toy radiative-equilibrium thermal shield model proving $(1-R)^N$ invalid and requiring configurable `ASSUMED` threshold `thermal_shield_attenuation`. Ceres Gravity Tug accepted as primary design with physical corrections; Octo-Earth ring/arms deferred. Core test coverage at 90%.

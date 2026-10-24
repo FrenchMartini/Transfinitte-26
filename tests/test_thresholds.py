@@ -29,6 +29,7 @@ REQUIRED_SCHEMA_KEYS = [
     ("earth_safety", "max_insolation_rate_w_m2_yr"),
     ("earth_safety", "max_surface_waste_heat_w_m2"),
     ("earth_safety", "exhaust_reimpact_allowed"),
+    ("earth_safety", "thermal_shield_attenuation"),
     ("orbit_targets", "target_radius_au"),
     ("orbit_targets", "target_radius_tolerance_au"),
     ("orbit_targets", "max_eccentricity"),

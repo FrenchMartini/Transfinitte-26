@@ -96,6 +96,12 @@ earth_safety:
     status: ASSUMED
     severity: hard
     source: "placeholder - replace from appendix"
+  thermal_shield_attenuation:
+    value: 1.0e-5
+    units: fraction
+    status: ASSUMED
+    severity: hard
+    source: "placeholder radiative-equilibrium shield attenuation"
 
 orbit_targets:
   target_radius_au:

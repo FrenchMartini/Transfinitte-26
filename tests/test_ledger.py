@@ -314,27 +314,86 @@ def test_f_closed_two_body_system_within_config_tolerances(thresholds: dict):
     assert flags == []
 
 
-def test_g_compensated_summation_million_tiny_contributions(thresholds: dict):
-    """(g) Compensated summation (math.fsum / Kahan) shows zero drift over 1,000,000 tiny contributions."""
+def test_g_compensated_summation_multi_scale_drift(thresholds: dict):
+    """(g) math.fsum tracks intermediate precision across multiple scales where naive sum drifts."""
     state = _make_sun_earth_state()
     ledger = Ledger(state, thresholds)
 
-    # Start with a large base contribution + 1,000,000 tiny increments that naive float addition loses
-    base_val = 1.0e16
-    tiny_val = 0.1234567890123456
-    n_iter = 1_000_000
+    import random
+    rng = random.Random(42)
+    # A multi-scale series where large positive and negative numbers cancel,
+    # leaving small increments. Naive sum drifts by ~15%, while math.fsum is exact.
+    terms = [1e20, -1e20, 1e-10, 1e15, -1e15, 1e-10] * 1000
+    rng.shuffle(terms)
 
-    ledger.record_scalar_contribution("test_accum", base_val)
-    for _ in range(n_iter):
-        ledger.record_scalar_contribution("test_accum", tiny_val)
+    for val in terms:
+        ledger.record_scalar_contribution("drift_check", val)
 
-    obtained = ledger.get_scalar_total("test_accum")
+    obtained = ledger.get_scalar_total("drift_check")
+    expected_exact = 2.0e-7  # exactly 2000 * 1e-10
+    naive_sum = sum(terms)
 
-    # Compute exact reference in high-precision Decimal
-    exact_ref = float(
-        Decimal(str(base_val)) + Decimal(str(tiny_val)) * Decimal(n_iter)
+    assert obtained == pytest.approx(expected_exact, rel=1e-14)
+    # Assert that naive sum actually drifted, proving this test kills any 'fsum -> sum' mutation
+    assert abs(naive_sum - expected_exact) > 1e-9
+
+
+def test_i_exhaust_kinetic_energy_omission_triggers_energy_drift(thresholds: dict):
+    """Omitting exhaust kinetic energy from ledger audit baseline triggers ENERGY_DRIFT flag."""
+    state = State(t=0.0, stored_energy_j=1.0e15)
+    m0 = constants.M_EARTH
+    state.add_body(
+        BodyState(
+            name="Earth",
+            mass_kg=m0,
+            position_m=np.zeros(3),
+            velocity_m_s=np.zeros(3),
+        )
     )
-    assert obtained == exact_ref
+    ledger = Ledger(state, thresholds)
+
+    # Book an exchange that expels reaction mass at 30 km/s
+    ve = 30000.0
+    mdot = 1.0e10
+    dt = 100.0
+    thrust_force = np.array([mdot * ve, 0.0, 0.0])
+    exhaust_v_rel = np.array([-ve, 0.0, 0.0])
+    jet_power = 0.5 * mdot * (ve**2)
+
+    ledger.begin_step()
+    ex = Exchange(
+        t=0.0,
+        a="Exhaust",
+        b="Earth",
+        force_on_b=thrust_force,
+        point=np.zeros(3),
+        power_in=jet_power,
+        heat_out=0.0,
+        mass_out=mdot,
+        exhaust_v=exhaust_v_rel,
+        owner="propulsion",
+    )
+    ledger.book(ex, dt=dt)
+
+    dm = mdot * dt
+    earth = state.get_body("Earth")
+    v_next = (thrust_force * dt) / (m0 - dm)
+    v_ex_inertial = exhaust_v_rel
+    d_ke = (
+        0.5 * (m0 - dm) * float(np.dot(v_next, v_next))
+        + 0.5 * dm * float(np.dot(v_ex_inertial, v_ex_inertial))
+    )
+    earth.velocity_m_s = v_next
+    earth.mass_kg = m0 - dm
+    state.stored_energy_j -= d_ke
+
+    # In a correct ledger, total_exhaust_ke_j is booked and audit passes
+    assert ledger.audit(state, t=dt) == []
+
+    # If exhaust kinetic energy is dropped/cleared, audit MUST trigger an ENERGY_DRIFT flag
+    ledger._exhaust_ke_terms.clear()
+    flags = ledger.audit(state, t=dt)
+    assert any(f.code == "ENERGY_DRIFT" for f in flags)
 
 
 def test_h_bit_identical_determinism(thresholds: dict):

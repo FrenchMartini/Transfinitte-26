@@ -63,6 +63,7 @@ REQUIRED_SCHEMA: dict[str, tuple[str, ...]] = {
         "max_insolation_rate_w_m2_yr",
         "max_surface_waste_heat_w_m2",
         "exhaust_reimpact_allowed",
+        "thermal_shield_attenuation",
     ),
     "orbit_targets": (
         "target_radius_au",
