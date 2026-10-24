@@ -7,7 +7,7 @@ Flag and enabler contracts:
 - Audit verdict: Any unexplained or mismatched flag results in an unresolved audit failure.
 """
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 import yaml
@@ -50,6 +50,7 @@ class HypotheticalEnabler:
     sources: tuple[str, ...]
     units: str = ""
     efficiency: str = ""
+    key_sources: dict[str, str] = field(default_factory=dict)
 
 
 class FlagRegistry:
@@ -61,6 +62,7 @@ class FlagRegistry:
         self,
         enablers_data: dict[str, Any] | list[Any] | tuple[Any, ...] | None = None,
         thresholds: dict[str, Any] | None = None,
+        baseline_capabilities: dict[str, Any] | None = None,
     ) -> None:
         raw_list: list[Any] = []
         if enablers_data is None:
@@ -79,14 +81,20 @@ class FlagRegistry:
                 f"At most {self.MAX_ENABLERS} hypothetical enablers are allowed; got {len(raw_list)}."
             )
 
-        # Build valid threshold keys if thresholds are provided
-        valid_threshold_keys: set[str] | None = None
-        if thresholds is not None:
-            valid_threshold_keys = set()
-            for cat, entries in thresholds.items():
-                if isinstance(entries, dict):
-                    for k in entries.keys():
-                        valid_threshold_keys.add(f"{cat}.{k}")
+        # Build valid keys and their file labels from thresholds and baseline_capabilities
+        valid_key_sources: dict[str, str] | None = None
+        if thresholds is not None or baseline_capabilities is not None:
+            valid_key_sources = {}
+            if thresholds is not None:
+                for cat, entries in thresholds.items():
+                    if isinstance(entries, dict):
+                        for k in entries.keys():
+                            valid_key_sources[f"{cat}.{k}"] = "rulebook_thresholds.yaml"
+            if baseline_capabilities is not None:
+                for cat, entries in baseline_capabilities.items():
+                    if isinstance(entries, dict):
+                        for k in entries.keys():
+                            valid_key_sources[f"{cat}.{k}"] = "baseline_capabilities.yaml"
 
         self._enablers: list[HypotheticalEnabler] = []
         seen_ids: set[str] = set()
@@ -95,11 +103,11 @@ class FlagRegistry:
                 if item.id in seen_ids:
                     raise EnablerValidationError(f"Duplicate enabler id {item.id!r}.")
                 seen_ids.add(item.id)
-                if valid_threshold_keys is not None:
+                if valid_key_sources is not None:
                     for q in item.relaxes:
-                        if q not in valid_threshold_keys:
+                        if q not in valid_key_sources:
                             raise EnablerValidationError(
-                                f"Enabler '{item.id}' relaxes unknown threshold key '{q}' not found in rulebook_thresholds.yaml."
+                                f"Enabler '{item.id}' relaxes unknown threshold key '{q}' not found in rulebook_thresholds.yaml or baseline_capabilities.yaml."
                             )
                 self._enablers.append(item)
                 continue
@@ -118,12 +126,14 @@ class FlagRegistry:
                 raise EnablerValidationError(f"Enabler '{enabler_id}' field 'relaxes' must be a non-empty list.")
 
             relaxes_tuple = tuple(str(q) for q in item["relaxes"])
-            if valid_threshold_keys is not None:
+            item_key_sources: dict[str, str] = {}
+            if valid_key_sources is not None:
                 for q in relaxes_tuple:
-                    if q not in valid_threshold_keys:
+                    if q not in valid_key_sources:
                         raise EnablerValidationError(
-                            f"Enabler '{enabler_id}' relaxes unknown threshold key '{q}' not found in rulebook_thresholds.yaml."
+                            f"Enabler '{enabler_id}' relaxes unknown threshold key '{q}' not found in rulebook_thresholds.yaml or baseline_capabilities.yaml."
                         )
+                    item_key_sources[q] = valid_key_sources[q]
 
             # Parse numeric value and units
             val_raw = item["value"]
@@ -157,6 +167,7 @@ class FlagRegistry:
                     sources=tuple(str(s) for s in item["sources"]),
                     units=val_units,
                     efficiency=efficiency_field,
+                    key_sources=item_key_sources,
                 )
             )
 
@@ -167,14 +178,19 @@ class FlagRegistry:
         cls,
         path: str | Path,
         thresholds: dict[str, Any] | None = None,
+        baseline_capabilities: dict[str, Any] | None = None,
     ) -> "FlagRegistry":
-        """Load hypothetical_enablers.yaml, verify every relaxes key against thresholds, and return a FlagRegistry."""
+        """Load hypothetical_enablers.yaml, verify every relaxes key against thresholds & baseline capabilities, and return a FlagRegistry."""
         p = Path(path)
         data = yaml.safe_load(p.read_text())
         if thresholds is None:
             from octo.core.thresholds import load_thresholds
             thresholds = load_thresholds()
-        return cls(data, thresholds=thresholds)
+        if baseline_capabilities is None:
+            base_cap_path = p.parent / "baseline_capabilities.yaml"
+            if base_cap_path.is_file():
+                baseline_capabilities = yaml.safe_load(base_cap_path.read_text())
+        return cls(data, thresholds=thresholds, baseline_capabilities=baseline_capabilities)
 
     @property
     def enablers(self) -> tuple[HypotheticalEnabler, ...]:

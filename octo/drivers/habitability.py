@@ -38,16 +38,20 @@ def compute_mirror_reflected_flux(
     area_m2 = float(mirror_config.get("area_m2", 8.44e14))
     reflectivity = float(mirror_config.get("reflectivity", 0.95))
     orient_deg = float(mirror_config.get("orientation_deg", 0.0))
+    capture_efficiency = float(mirror_config.get("capture_efficiency", 1.0))
     cos_orient = max(0.0, math.cos(math.radians(orient_deg)))
 
     r = float(orbit_radius_m)
+    if r <= constants.AU:
+        return 0.0
+
     # L1 standoff distance: d_L1 ~ r * (M_earth / (3 * M_sun))^(1/3)
     m_ratio = constants.M_EARTH / (3.0 * (constants.GM_SUN / constants.G))
     d_l1 = r * (m_ratio ** (1.0 / 3.0))
     r_mirror = max(r / 2.0, r - d_l1)
 
     s_at_mirror = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_mirror) ** 2)
-    p_reflected = s_at_mirror * area_m2 * reflectivity * cos_orient
+    p_reflected = s_at_mirror * area_m2 * reflectivity * cos_orient * capture_efficiency
     earth_disk_area = math.pi * (constants.R_EARTH ** 2)
     return float(p_reflected / earth_disk_area)
 
@@ -76,15 +80,13 @@ def compute_insolation(
             "area_m2": 8.44e14,
             "reflectivity": 0.95,
             "orientation_deg": 0.0,
+            "capture_efficiency": 1.0,
         }
     elif not cfg.get("active", True):
         return s_raw
 
     s_added = compute_mirror_reflected_flux(r, cfg)
-    s_total = s_raw + s_added
-
-    # The mirror tracking controller trims tilt/focus so total insolation does not exceed 1 AU nominal
-    return min(s_total, constants.SOLAR_CONSTANT_1AU)
+    return s_raw + s_added
 
 
 def compute_equilibrium_temperature(
@@ -218,6 +220,36 @@ class HabitabilityDriver:
                     limit=max_s,
                 )
             )
+
+        # Mirror Station Keeping Check: Outward radiation pressure vs solar gravity (when deployed beyond 1 AU)
+        if is_mirror_active and self.mirror_config and r_earth > constants.AU:
+            area_m2 = float(self.mirror_config.get("area_m2", 8.44e14))
+            refl = float(self.mirror_config.get("reflectivity", 0.95))
+            mass_kg = float(self.mirror_config.get("mass_kg", 1.0e11))
+            orient_deg = float(self.mirror_config.get("orientation_deg", 0.0))
+            cos_orient = max(0.0, math.cos(math.radians(orient_deg)))
+
+            m_ratio = constants.M_EARTH / (3.0 * (constants.GM_SUN / constants.G))
+            d_l1 = r_earth * (m_ratio ** (1.0 / 3.0))
+            r_mirror = max(r_earth / 2.0, r_earth - d_l1)
+            s_at_mirror = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_mirror) ** 2)
+
+            f_rad = (s_at_mirror * area_m2 / constants.C_LIGHT) * (1.0 + refl) * (cos_orient ** 2)
+            a_rad = f_rad / mass_kg if mass_kg > 0.0 else 0.0
+            g_solar = constants.GM_SUN / (r_mirror ** 2)
+
+            station_keeping_modelled = bool(self.mirror_config.get("station_keeping_modelled", False))
+            if a_rad > g_solar and not station_keeping_modelled:
+                flags.append(
+                    Flag(
+                        code="MIRROR_STATION_KEEPING_UNMODELLED",
+                        t=t,
+                        source=self.name,
+                        quantity="climate_mirror.station_keeping_modelled",
+                        value=float(a_rad / g_solar),
+                        limit=1.0,
+                    )
+                )
 
         # 2. Equilibrium Temperature
         t_eq = compute_equilibrium_temperature(s)

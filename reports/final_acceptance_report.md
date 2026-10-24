@@ -12,7 +12,7 @@
 | # | Winning Condition | Rulebook Requirement | Simulated Result | Verdict |
 |---|---|---|---|---|
 | **W1** | **Target Orbit Reached** | $a_f = 2.70 \pm 0.05\text{ AU}$, $e_f \le 0.05$, $t \le 10000\text{ yr}$ | $a_f = 2.7000\text{ AU}$, $e_f = 0.000102$, $t = 9515.54\text{ yr}$ (total `9565.54` yr with coast) | **PASS** |
-| **W2** | **Earth Stays Safe** | Insolation, equilibrium temp, Moon retention ($\le 0.50\,R_H$), waste heat ($\le 5.0\text{ W/m}^2$) | $S = 1361.2\text{ W/m}^2$, $T_{\text{eq}} = 254.04\text{ K}$, Moon $r/R_H = 0.257 \to 0.095$ | **PASS** |
+| **W2** | **Earth Stays Safe** | Insolation, equilibrium temp, Moon retention ($\le 0.50\,R_H$), waste heat ($\le 5.0\text{ W/m}^2$) | $S = 1384.6\text{ W/m}^2$, $T_{\text{eq}} = 255.13\text{ K}$, Moon $r/R_H = 0.257 \to 0.095$ | **PASS** |
 | **W3** | **Structure Survives** | Minimum structural safety factor $\text{SF} \ge 1.50$ | Thrust cradle $\text{SF} = 15.10 \ge 1.50$ | **PASS** |
 | **W4** | **Code is Validated** | All Participant Guide Section 6 benchmarks pass | `10/10` guide benchmarks passed | **PASS** |
 | **W5** | **Physics is Honest** | Bilateral `Exchange` booking; mass, momentum, angular momentum, energy close | Max relative drift $< 1.0e-09$ | **PASS** |
@@ -45,7 +45,7 @@
 
 ## 3. Habitability, Thermal Shielding & Structural Integrity
 
-- **Solar Irradiance & L1 Concentrator:** Unmitigated irradiance at $2.7000\text{ AU}$ drops to $186.72\text{ W/m}^2$ ($T_{\text{eq}} = 154.60\text{ K}$). With the Enabler E3 L1 concentrator active, Earth receives $1361.2\text{ W/m}^2$ ($T_{\text{eq}} = 254.04\text{ K}$).
+- **Solar Irradiance & L1 Concentrator:** Unmitigated irradiance at $2.7000\text{ AU}$ drops to $186.72\text{ W/m}^2$ ($T_{\text{eq}} = 154.60\text{ K}$). With the Enabler E3 L1 concentrator active, Earth receives $1384.6\text{ W/m}^2$ ($T_{\text{eq}} = 255.13\text{ K}$).
 - **Plume Clearance:** Out-of-ecliptic cone half-angle $5.00^\circ$ at standoff $1.2701e+09\text{ m}$ provides vertical plume clearance of `1.1070e+08` m at Earth.
 - **Radiative Shield Attenuation:** Attenuation factor `1.0e-05` keeps surface waste-heat flux well below `5.0` $\text{W/m}^2$.
 - **Structural Safety Factor:** Ceres thrust cradle safety factor is `15.10` against required minimum `1.50`.
@@ -73,6 +73,6 @@
 
 | ID | Name | Relaxes | Capability Bound | Justification |
 |---|---|---|---|---|
-| **E1** | **Near-Sun Beamed Power Link (power)** | `power.beam_power_w` | `1.096e25 W` | Near-Sun Dyson swarm collector capturing ~2.85% L_sun and beaming 1.096e25 W to the standoff tug via coherent laser/microwave array. |
-| **E2** | **Asteroid Relocation & Mining Pipeline (asteroid and material)** | `propulsion.reaction_mass_resupply_kg` | `7.511e20 kg` | Relocation of Ceres-class asteroid to Earth standoff position and continuous automated reaction-mass extraction pipeline supplying 7.511e20 kg total. |
-| **E3** | **Relativistic Plasma Exhaust Accelerator (exhaust accelerator)** | `propulsion.max_exhaust_velocity_m_s` | `89937737.4 m/s` | 0.3c relativistic ion/plasma accelerator driving 2.501e9 kg/s reaction mass at Lorentz gamma = 1.0483. |
+| **E1** | **Near-Sun Beamed Power Link (power)** | `power.beam_power_w` | `1.096e+25` | Near-Sun Dyson swarm collector capturing ~2.85% L_sun and beaming 1.096e25 W to the standoff tug via coherent laser/microwave array. |
+| **E2** | **Asteroid Relocation & Mining Pipeline (asteroid and material)** | `propulsion.reaction_mass_resupply_kg` | `1.6911e+21` | Relocation of Ceres-class asteroid (9.4e20 kg) to Earth standoff position plus continuous automated reaction-mass extraction pipeline supplying 7.511e20 kg propellant (1.6911e21 kg total asteroid material). |
+| **E3** | **Relativistic Plasma Exhaust Accelerator (exhaust accelerator)** | `propulsion.max_exhaust_velocity_m_s` | `89937737.4` | 0.3c relativistic ion/plasma accelerator driving 2.501e9 kg/s reaction mass at Lorentz gamma = 1.0483. |

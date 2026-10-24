@@ -10,7 +10,7 @@ enablers:
     name: "Near-Sun Beamed Power Link (power)"
     relaxes:
       - "power.beam_power_w"
-    value: "1.096e25 W"
+    value: 1.096e+25
     units: "W"
     efficiency: "1.00 (coherent phased-array power transmission)"
     justification: "Near-Sun Dyson swarm collector capturing ~2.85% L_sun and beaming 1.096e25 W to the standoff tug via coherent laser/microwave array."
@@ -22,19 +22,19 @@ enablers:
     name: "Asteroid Relocation & Mining Pipeline (asteroid and material)"
     relaxes:
       - "propulsion.reaction_mass_resupply_kg"
-    value: "7.511e20 kg"
+    value: 1.6911e+21
     units: "kg"
     efficiency: "1.00 (continuous automated belt mass resupply pipeline)"
-    justification: "Relocation of Ceres-class asteroid to Earth standoff position and continuous automated reaction-mass extraction pipeline supplying 7.511e20 kg total."
+    justification: "Relocation of Ceres-class asteroid (9.4e20 kg) to Earth standoff position plus continuous automated reaction-mass extraction pipeline supplying 7.511e20 kg propellant (1.6911e21 kg total asteroid material)."
     sources:
-      - "team estimate (automated asteroid-belt continuous reaction-mass pipeline)"
+      - "team estimate (automated asteroid-belt continuous reaction-mass pipeline and Ceres tug relocation)"
       - "docs/feasibility_corrections.md Section 5"
 
   - id: "E3"
     name: "Relativistic Plasma Exhaust Accelerator (exhaust accelerator)"
     relaxes:
       - "propulsion.max_exhaust_velocity_m_s"
-    value: "89937737.4 m/s"
+    value: 89937737.4
     units: "m/s"
     efficiency: "0.99 (magnetic nozzle and relativistic ion accelerator)"
     justification: "0.3c relativistic ion/plasma accelerator driving 2.501e9 kg/s reaction mass at Lorentz gamma = 1.0483."

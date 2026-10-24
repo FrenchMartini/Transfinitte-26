@@ -93,6 +93,7 @@ def run_exhaust_speed_sweep() -> dict[str, Any]:
             pt.ay += (f_tot * (pt.x / rt)) / pt.m
 
         sim.additional_forces = af
+        sim.force_is_velocity_dependent = 1
         sim.integrate(constants.YEAR)
 
         results_constant_thrust.append({

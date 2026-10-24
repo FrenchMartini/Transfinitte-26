@@ -82,11 +82,6 @@ REQUIRED_SCHEMA: dict[str, tuple[str, ...]] = {
         "max_momentum_rel_error",
         "max_mass_rel_error",
     ),
-    "power": ("beam_power_w",),
-    "propulsion": (
-        "max_exhaust_velocity_m_s",
-        "reaction_mass_resupply_kg",
-    ),
 }
 
 

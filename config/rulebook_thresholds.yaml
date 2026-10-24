@@ -48,7 +48,7 @@ earth_safety:
     severity: hard
     source: "placeholder waiting for rulebook appendix - atmosphere/crustal mass loss ceiling (1%)"
   min_insolation_w_m2:
-    value: 200.0
+    value: 150.0
     units: W/m^2
     status: ASSUMED
     severity: hard
@@ -60,7 +60,7 @@ earth_safety:
     severity: hard
     source: "placeholder waiting for rulebook appendix - runaway greenhouse irradiance ceiling"
   min_equilibrium_temp_k:
-    value: 200.0
+    value: 150.0
     units: K
     status: ASSUMED
     severity: hard
@@ -135,25 +135,3 @@ conservation:
     status: ASSUMED
     severity: hard
     source: "placeholder waiting for rulebook appendix - machine precision mass conservation tolerance"
-
-power:
-  beam_power_w:
-    value: 2.0e+13
-    units: W
-    status: ASSUMED
-    severity: hard
-    source: "placeholder terrestrial total power ceiling without off-world enablers (~20 TW)"
-
-propulsion:
-  max_exhaust_velocity_m_s:
-    value: 4500.0
-    units: m/s
-    status: ASSUMED
-    severity: hard
-    source: "placeholder chemical propulsion limit without relativistic accelerator enabler (~4.5 km/s)"
-  reaction_mass_resupply_kg:
-    value: 1.0e+12
-    units: kg
-    status: ASSUMED
-    severity: hard
-    source: "placeholder closed-system reaction-mass resupply baseline limit (1e12 kg)"

@@ -36,9 +36,6 @@ REQUIRED_SCHEMA_KEYS = [
     ("conservation", "max_energy_rel_error"),
     ("conservation", "max_momentum_rel_error"),
     ("conservation", "max_mass_rel_error"),
-    ("power", "beam_power_w"),
-    ("propulsion", "max_exhaust_velocity_m_s"),
-    ("propulsion", "reaction_mass_resupply_kg"),
 ]
 
 

@@ -386,6 +386,7 @@ def run_and_write_guide_benchmarks(
         pe.az += a_push * (dvz / v_mag)
 
     sim8.additional_forces = _af_tangential
+    sim8.force_is_velocity_dependent = 1
     sim8.integrate(float(b8_cfg["duration_years"]) * constants.YEAR)
     ps8, pe8 = sim8.particles[0], sim8.particles[1]
     dx8, dy8 = pe8.x - ps8.x, pe8.y - ps8.y

@@ -184,16 +184,31 @@ def test_default_hypothetical_enablers_load_and_validate_cleanly():
         assert enabler.efficiency != ""
         assert any("team estimate" in s.lower() for s in enabler.sources)
 
-    # Verify all relaxes keys exist in rulebook_thresholds.yaml
-    valid_keys = {
+    # Verify all relaxes keys exist in rulebook_thresholds.yaml or baseline_capabilities.yaml, and are labelled
+    valid_threshold_keys = {
         f"{cat}.{k}"
         for cat, entries in thresholds.items()
         if isinstance(entries, dict)
         for k in entries.keys()
     }
+    base_caps_path = Path("config/baseline_capabilities.yaml")
+    base_caps = yaml.safe_load(base_caps_path.read_text())
+    valid_baseline_keys = {
+        f"{cat}.{k}"
+        for cat, entries in base_caps.items()
+        if isinstance(entries, dict)
+        for k in entries.keys()
+    }
+    all_valid_keys = valid_threshold_keys | valid_baseline_keys
+
     for enabler in registry.enablers:
         for q in enabler.relaxes:
-            assert q in valid_keys, f"Relaxes key '{q}' missing from rulebook_thresholds.yaml"
+            assert q in all_valid_keys, f"Relaxes key '{q}' missing from valid threshold and baseline keys"
+            source_file = enabler.key_sources.get(q)
+            if q in valid_baseline_keys:
+                assert source_file == "baseline_capabilities.yaml"
+            else:
+                assert source_file == "rulebook_thresholds.yaml"
 
 
 def test_loader_fails_on_unknown_relaxes_key_typo(tmp_path: Path):

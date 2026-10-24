@@ -98,7 +98,7 @@ def test_habitability_driver_step_and_flag_emission(thresholds):
     state.add_body(BodyState("Tug", 9.4e20, [constants.AU, 1.2701e9, 0.0], [0.0, 29784.7, 0.0]))
 
     ledger = Ledger(state, thresholds)
-    driver = HabitabilityDriver(state=state, ledger=ledger, config={"l1_mirror_active": True})
+    driver = HabitabilityDriver(state=state, ledger=ledger, config={"l1_mirror_active": False})
 
     # Step 1: Nominal
     flags = driver.evaluate(dt=86400.0)
@@ -124,7 +124,7 @@ def test_habitability_coupler_integration(thresholds):
     config = {
         "macro_step_s": 86400.0,
         "drivers": ["habitability"],
-        "l1_mirror_active": True,
+        "l1_mirror_active": False,
     }
 
     registry = create_default_driver_registry()
@@ -149,13 +149,26 @@ def test_mirror_geometry_and_unexplained_flags_when_disabled(thresholds):
         "orientation_deg": 0.0,
     }
 
-    # 1. With mirror:
+    # 1. With mirror (efficiency = 1.0):
     s_reflected = compute_mirror_reflected_flux(r_2_7, mirror_cfg)
-    assert s_reflected > 1100.0  # Delivers ~1174 W/m^2 to compensate 186.7 W/m^2 direct flux
+    assert s_reflected > 1100.0  # Delivers ~1198 W/m^2 to compensate 186.7 W/m^2 direct flux
     s_with_mirror = compute_insolation(r_2_7, mirror_active=True, mirror_config=mirror_cfg)
     t_eq_with = compute_equilibrium_temperature(s_with_mirror)
-    assert pytest.approx(s_with_mirror, rel=1e-3) == constants.SOLAR_CONSTANT_1AU
-    assert pytest.approx(t_eq_with, abs=1.0) == 254.1
+    assert pytest.approx(s_with_mirror, rel=1e-3) == 1384.52
+    assert pytest.approx(t_eq_with, abs=1.0) == 255.2
+
+    # Capture efficiency sweep: 0.1, 0.5, 1.0
+    mirror_cfg_01 = dict(mirror_cfg, capture_efficiency=0.1)
+    s_01 = compute_insolation(r_2_7, mirror_active=True, mirror_config=mirror_cfg_01)
+    t_eq_01 = compute_equilibrium_temperature(s_01)
+    assert pytest.approx(s_01, rel=1e-3) == 306.47
+    assert pytest.approx(t_eq_01, abs=1.0) == 175.7
+
+    mirror_cfg_05 = dict(mirror_cfg, capture_efficiency=0.5)
+    s_05 = compute_insolation(r_2_7, mirror_active=True, mirror_config=mirror_cfg_05)
+    t_eq_05 = compute_equilibrium_temperature(s_05)
+    assert pytest.approx(s_05, rel=1e-3) == 785.60
+    assert pytest.approx(t_eq_05, abs=1.0) == 222.3
 
     # 2. Without mirror:
     s_no_mirror = compute_insolation(r_2_7, mirror_active=False)
@@ -164,13 +177,32 @@ def test_mirror_geometry_and_unexplained_flags_when_disabled(thresholds):
     assert pytest.approx(s_no_mirror, rel=1e-3) == 186.69
     assert pytest.approx(t_eq_without, abs=1.0) == 154.9
 
-    # 3. HabitabilityDriver evaluates Earth at 2.7 AU without mirror:
+    # 3. HabitabilityDriver evaluates Earth at 2.7 AU with mirror but without station-keeping modelled:
+    # Must raise MIRROR_STATION_KEEPING_UNMODELLED because radiation force exceeds solar gravity
+    state_sk = State(t=0.0)
+    state_sk.add_body(BodyState("Sun", constants.GM_SUN / constants.G, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
+    state_sk.add_body(BodyState("Earth", constants.M_EARTH, [r_2_7, 0.0, 0.0], [0.0, 18130.0, 0.0]))
+    driver_sk = HabitabilityDriver(
+        state=state_sk,
+        thresholds=thresholds,
+        config={"climate_mirror": mirror_cfg},
+    )
+    flags_sk = driver_sk.evaluate(dt=86400.0)
+    assert any(f.code == "MIRROR_STATION_KEEPING_UNMODELLED" for f in flags_sk)
+
+    # 4. HabitabilityDriver evaluates Earth at 2.7 AU without mirror:
+    # Explicit stricter limits (e.g. 200 W/m^2, 200 K) passed as arguments to verify failure when unshielded
+    import copy
+    explicit_thresholds = copy.deepcopy(thresholds)
+    explicit_thresholds["earth_safety"]["min_insolation_w_m2"]["value"] = 200.0
+    explicit_thresholds["earth_safety"]["min_equilibrium_temp_k"]["value"] = 200.0
+
     state = State(t=0.0)
     state.add_body(BodyState("Sun", constants.GM_SUN / constants.G, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
     state.add_body(BodyState("Earth", constants.M_EARTH, [r_2_7, 0.0, 0.0], [0.0, 18130.0, 0.0]))
     driver = HabitabilityDriver(
         state=state,
-        thresholds=thresholds,
+        thresholds=explicit_thresholds,
         config={"climate_mirror": {"active": False}},
     )
     flags = driver.evaluate(dt=86400.0)
@@ -180,7 +212,7 @@ def test_mirror_geometry_and_unexplained_flags_when_disabled(thresholds):
 
     # 4. Enabler check: The mirror is NOT in hypothetical_enablers.yaml (only power, belt supply, exhaust accelerator)
     # So both flags must remain UNEXPLAINED by any enabler
-    registry = FlagRegistry.from_yaml("config/hypothetical_enablers.yaml", thresholds=thresholds)
+    registry = FlagRegistry.from_yaml("config/hypothetical_enablers.yaml", thresholds=explicit_thresholds)
     resolved_flags = registry.register_many(flags)
     assert all(rf.enabler_id is None for rf in resolved_flags)
     assert registry.has_unresolved_flags() is True

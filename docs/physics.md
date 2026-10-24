@@ -131,3 +131,61 @@ $$E_{\text{total}}(t) = \sum_i \frac{1}{2}m_i\|\mathbf{v}_i\|^2 - \sum_{i < j} \
 $$\frac{\left|E_{\text{total}}(t) - E_{\text{total}}(t_0)\right|}{E_{\text{scale}}} \le \varepsilon_{\text{energy}}$$
 All sums use Python's exact floating-point accumulator (`math.fsum`) in a fixed deterministic order.
 
+---
+
+## 7. Climate Mirror Optics & Radiation Pressure (`octo/drivers/habitability.py`)
+
+### Mirror Sizing & Geometry
+To maintain Earth's solar insolation at $1\text{ AU}$ levels ($S_0 = 1361.166\text{ W/m}^2$) when Earth reaches $r = 2.700\text{ AU}$:
+1. **Unmitigated solar flux at $2.7\text{ AU}$:**
+   $$S_{\text{raw}}(2.7\text{ AU}) = \frac{S_0}{(2.7)^2} = \frac{1361.166}{7.29} \approx 186.72\text{ W/m}^2$$
+2. **Deficit irradiance requiring supplementation:**
+   $$\Delta S = S_0 - S_{\text{raw}} = 1361.166 - 186.72 = 1174.45\text{ W/m}^2$$
+3. **Total supplemental power across Earth's cross-sectional disk ($\pi R_\oplus^2 = 1.2752 \times 10^{14}\text{ m}^2$):**
+   $$P_{\text{deficit}} = \Delta S \times \pi R_\oplus^2 \approx 1.4976 \times 10^{17}\text{ W}$$
+4. **Collector area sizing:**
+   Positioned at the Earth-Sun L1 sub-solar point ($d_{L1} \approx r (M_\oplus / 3M_\odot)^{1/3} \approx 0.0100\,r$, $r_{\text{mirror}} = 2.673\text{ AU}$, $S_{\text{mirror}} \approx 190.50\text{ W/m}^2$), with specular reflectivity $R = 0.95$ and normal orientation $\theta = 0^\circ$:
+   $$A_{\text{mirror}} = \frac{P_{\text{deficit}}}{S_{\text{mirror}}\,R\,\eta_{\text{capture}}} \approx \frac{1.4976 \times 10^{17}\text{ W}}{190.50\text{ W/m}^2 \times 0.95 \times 1.0} \approx 8.27 \times 10^{14}\text{ m}^2$$
+   Using the conservative heliocentric distance $2.700\text{ AU}$ ($S \approx 186.72\text{ W/m}^2$) yields the adopted configuration area:
+   $$A_{\text{mirror}} = \frac{1.4976 \times 10^{17}\text{ W}}{186.72\text{ W/m}^2 \times 0.95} = \mathbf{8.44 \times 10^{14}\text{ m}^2}$$
+
+### Areal Density & Radiation Pressure Instability
+For a gossamer reflective membrane of mass $M_{\text{mirror}} = 1.0 \times 10^{11}\text{ kg}$:
+- **Areal density:**
+  $$\sigma = \frac{M_{\text{mirror}}}{A_{\text{mirror}}} = \frac{1.0 \times 10^{11}\text{ kg}}{8.44 \times 10^{14}\text{ m}^2} \approx 1.185 \times 10^{-4}\text{ kg/m}^2 = \mathbf{0.1185\text{ g/m}^2}$$
+- **Solar radiation force:**
+  $$F_{\text{rad}} = \frac{S_{\text{mirror}} A_{\text{mirror}}}{c}\,(1 + R)\,\cos^2\theta \approx \frac{190.50 \times 8.44 \times 10^{14}}{2.9979 \times 10^8}\,(1 + 0.95) \approx \mathbf{1.045 \times 10^9\text{ N}}$$
+- **Radiation acceleration:**
+  $$a_{\text{rad}} = \frac{F_{\text{rad}}}{M_{\text{mirror}}} = \frac{1.045 \times 10^9\text{ N}}{1.0 \times 10^{11}\text{ kg}} \approx \mathbf{0.01045\text{ m/s}^2}$$
+- **Solar gravity at mirror location ($r_{\text{mirror}} \approx 2.673\text{ AU}$):**
+  $$g_\odot = \frac{GM_\odot}{r_{\text{mirror}}^2} = \frac{1.3271 \times 10^{20}}{(3.9987 \times 10^{11})^2} \approx \mathbf{8.300 \times 10^{-4}\text{ m/s}^2}$$
+- **Acceleration ratio:**
+  $$\frac{a_{\text{rad}}}{g_\odot} = \frac{0.01045}{0.0008300} \approx \mathbf{12.60} \quad (\text{or } \mathbf{12.85} \text{ at } 2.700\text{ AU})$$
+Because outward radiation acceleration is $\sim 12.6 - 12.9\times$ stronger than the Sun's entire gravitational pull, a passive L1 orbit does not exist. Without active station-keeping propulsion, the mirror is blown away into deep space, raising `MIRROR_STATION_KEEPING_UNMODELLED`.
+
+---
+
+## 8. Tug Waste Heat Flux & Radiator View Factors (`octo/drivers/habitability.py`)
+
+### Waste Heat Dissipation & Solid-Angle Geometry
+- **Tug jet power:** $P_{\text{jet}} = (\gamma - 1)\dot{m}c^2 = 1.0847 \times 10^{25}\text{ W}$
+- **Beamed input power:** $P_{\text{beam}} = 1.0956 \times 10^{25}\text{ W}$
+- **Accelerator waste heat ($99.0\%$ efficiency):**
+  $$P_{\text{waste}} = P_{\text{beam}} - P_{\text{jet}} \approx 1.085 \times 10^{23}\text{ W}$$
+- **Equilibrium standoff distance:** $d_0 = 1.2701 \times 10^9\text{ m}$
+- **Sky solid-angle fraction subtended by Earth:**
+  $$f_{\text{sky}} = \frac{\pi R_\oplus^2}{4\pi d_0^2} = \frac{R_\oplus^2}{4 d_0^2} = \frac{(6.371 \times 10^6)^2}{4 (1.2701 \times 10^9)^2} \approx 6.290 \times 10^{-6}$$
+
+### Unshielded vs Shielded Surface Flux
+- **Unshielded incident flux on Earth:**
+  $$F_{\text{waste, unshielded}} = \frac{P_{\text{waste}}}{4\pi d_0^2} = \frac{1.085 \times 10^{23}\text{ W}}{4\pi (1.2701 \times 10^9\text{ m})^2} \approx \mathbf{5.352\text{ W/m}^2}$$
+  Because $5.352\text{ W/m}^2 > 5.0\text{ W/m}^2$ (the rulebook threshold `earth_safety.max_surface_waste_heat_w_m2`), unshielded isotropic waste radiation violates planetary habitability.
+- **Shielded incident flux (with attenuation $\tau = 1.0 \times 10^{-5}$):**
+  $$F_{\text{waste, shielded}} = \tau\,F_{\text{waste, unshielded}} = 1.0 \times 10^{-5} \times 5.352 \approx \mathbf{5.352 \times 10^{-5}\text{ W/m}^2} \ll 5.0\text{ W/m}^2$$
+- **Radiator View Factor Geometric Derivation:**
+  For a planar radiator oriented edge-on toward Earth with area $A_{\text{rad}}$ and pointing error angle $\delta\theta$:
+  The projected radiator area visible from Earth is $A_{\text{proj}} = A_{\text{rad}} \sin(\delta\theta) \approx A_{\text{rad}} \delta\theta$.
+  To achieve geometric attenuation $\tau \le 1.0 \times 10^{-5}$, the radiator view factor requires:
+  $$\delta\theta \le 1.0 \times 10^{-5}\text{ rad} \approx \mathbf{2.06\text{ arcseconds}}$$
+  Because holding $2.06\text{ arcsecond}$ attitude precision across $10,000\text{ years}$ is an operational assumption, attenuation is maintained as `ASSUMED` in `config/rulebook_thresholds.yaml` and listed explicitly in report limitations.
+

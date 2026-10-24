@@ -1,0 +1,26 @@
+# Baseline capabilities without declared hypothetical enablers.
+#
+# These entries represent reference technological/civilizational baselines
+# relaxed by declared hypothetical enablers in config/hypothetical_enablers.yaml.
+
+power:
+  beam_power_w:
+    value: 2.0e+13
+    units: W
+    status: ASSUMED
+    severity: hard
+    source: "placeholder terrestrial total power ceiling without off-world enablers (~20 TW)"
+
+propulsion:
+  max_exhaust_velocity_m_s:
+    value: 4500.0
+    units: m/s
+    status: ASSUMED
+    severity: hard
+    source: "placeholder chemical propulsion limit without relativistic accelerator enabler (~4.5 km/s)"
+  reaction_mass_resupply_kg:
+    value: 1.0e+12
+    units: kg
+    status: ASSUMED
+    severity: hard
+    source: "placeholder closed-system reaction-mass resupply baseline limit (1e12 kg)"

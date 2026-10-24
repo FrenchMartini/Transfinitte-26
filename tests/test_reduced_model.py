@@ -71,6 +71,7 @@ def test_reduced_model_vs_full_nbody_window(base_config: dict):
     sim_full = rebound.Simulation()
     sim_full.integrator = "ias15"
     sim_full.G = constants.G
+    sim_full.force_is_velocity_dependent = 1
     sim_full.add(name="Sun", m=m_sun, x=0, y=0, z=0, vx=0, vy=0, vz=0)
     sim_full.add(name="Earth", m=m_earth, x=r0, y=0, z=0, vx=0, vy=v0, vz=0)
     sim_full.add(name="Tug", m=m_tug, x=r0, y=d0, z=0, vx=0, vy=v0, vz=0)
@@ -106,6 +107,7 @@ def test_reduced_model_vs_full_nbody_window(base_config: dict):
     sim_red = rebound.Simulation()
     sim_red.integrator = "ias15"
     sim_red.G = constants.G
+    sim_red.force_is_velocity_dependent = 0
     sim_red.add(name="Sun", m=m_sun, x=0, y=0, z=0, vx=0, vy=0, vz=0)
     sim_red.add(name="Earth", m=m_earth, x=r0, y=0, z=0, vx=0, vy=v0, vz=0)
 

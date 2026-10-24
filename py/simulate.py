@@ -119,6 +119,7 @@ def run_full_spiral_simulation(
         pe.az += f_from_ledger[2] / pe.m
 
     sim.additional_forces = af
+    sim.force_is_velocity_dependent = 0
 
     rows: list[dict] = []
     step_force_audit: list[dict] = []
