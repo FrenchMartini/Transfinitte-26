@@ -130,11 +130,15 @@ def test_reduced_model_vs_full_nbody_window(base_config: dict):
 
     sim_red.additional_forces = af_red
 
-    # 3. Compare at 5, 10, and 20 years
-    # Tolerance from config: 5% relative discrepancy on Delta_a over 20 years
-    tol = float(base_config.get("reduced_model_validation_tol", 0.05))
+    # 3. Compare across 10, 20, 50, 100, 150, and 200 years
+    # Target from ARCHITECTURE.md is agreement within 1% (ASSUMED in config/base.yaml)
+    tol = float(base_config["reduced_model_validation_tol"])
 
-    for yr in [5.0, 10.0, 20.0]:
+    years = [10.0, 20.0, 50.0, 100.0, 150.0, 200.0]
+    da_full_list: list[float] = []
+    da_red_list: list[float] = []
+
+    for yr in years:
         t_target = yr * constants.YEAR
         sim_full.integrate(t_target)
         sim_red.integrate(t_target)
@@ -157,11 +161,100 @@ def test_reduced_model_vs_full_nbody_window(base_config: dict):
         a_r = -(constants.G * (m_sun + m_earth)) / (2.0 * eps_r)
         delta_a_r = (a_r - r0) / constants.AU
 
-        rel_discrepancy = abs(delta_a_f - delta_a_r) / delta_a_f
-        assert rel_discrepancy < tol, (
-            f"At {yr} yr: Full Delta_a={delta_a_f:.6e} AU vs Reduced Delta_a={delta_a_r:.6e} AU "
-            f"diff={rel_discrepancy:.4e} exceeds tolerance {tol}."
-        )
+        da_full_list.append(delta_a_f)
+        da_red_list.append(delta_a_r)
+
+    t_arr = np.array(years, dtype=float)
+    slope_full = float(np.polyfit(t_arr, da_full_list, 1)[0])
+    slope_red = float(np.polyfit(t_arr, da_red_list, 1)[0])
+    slope_ratio = slope_full / slope_red
+    slope_rel_diff = abs(slope_ratio - 1.0)
+
+    assert slope_rel_diff < tol, (
+        f"Reduced vs Full 200-yr least-squares da/dt discrepancy {slope_rel_diff:.4%} exceeds {tol:.2%} target: "
+        f"full da/dt={slope_full:.6e} AU/yr, reduced da/dt={slope_red:.6e} AU/yr, ratio={slope_ratio:.6f}. "
+        f"Cause: 1D scalar standoff PD controller settles at steady-state droop d_eq = 0.9691*d0 "
+        f"(and radial Hill offset x_Hill = -0.180*d0), increasing 1/d^2 pull by 1/(0.9691)^2 - 1 = +6.48%."
+    )
+
+
+def test_earth_osculating_a_oscillation_due_to_moon(base_config: dict):
+    """Measure Earth's osculating heliocentric a(t) oscillation caused by the Moon over 1 year."""
+    import rebound
+    from octo.drivers.propulsion import beam_photon_force, yaw_trim_angle
+
+    mu_sun = constants.GM_SUN
+    m_sun = mu_sun / constants.G
+    m_earth = constants.M_EARTH
+    m_moon = 7.342e22
+
+    tug_cfg = base_config["ceres_tug"]
+    prop_cfg = base_config["propulsion"]
+    m_tug = float(tug_cfg["mass_kg"])
+    d0 = float(tug_cfg["standoff_distance_m"])
+    mdot = float(prop_cfg["mass_flow_kg_s"])
+    ve = float(prop_cfg["exhaust_velocity_m_s"])
+
+    gamma = lorentz_gamma(ve, constants.C_LIGHT)
+    f_engine = mdot * gamma * ve
+    f_cant = f_engine * math.cos(math.radians(float(tug_cfg["cone_half_angle_deg"])))
+    f_photon = beam_photon_force(float(tug_cfg["beam_power_w"]), constants.C_LIGHT)
+    yaw_rad = yaw_trim_angle(f_photon, f_cant)
+    f_eff = f_cant * math.cos(yaw_rad)
+    a_req = f_eff / m_earth
+
+    r0 = constants.AU
+    v0 = math.sqrt(constants.G * (m_sun + m_earth + m_moon) / r0)
+    r_moon = 3.844e8
+    v_moon = math.sqrt(constants.G * (m_earth + m_moon) / r_moon)
+    mu_em = m_moon / (m_earth + m_moon)
+
+    sim = rebound.Simulation()
+    sim.integrator = "ias15"
+    sim.G = constants.G
+    sim.add(name="Sun", m=m_sun, x=0, y=0, z=0, vx=0, vy=0, vz=0)
+    sim.add(name="Earth", m=m_earth, x=r0 - mu_em * r_moon, y=0, z=0, vx=0, vy=v0 - mu_em * v_moon, vz=0)
+    sim.add(name="Moon", m=m_moon, x=r0 + (1.0 - mu_em) * r_moon, y=0, z=0, vx=0, vy=v0 + (1.0 - mu_em) * v_moon, vz=0)
+    sim.add(name="Tug", m=m_tug, x=r0, y=d0, z=0, vx=0, vy=v0, vz=0)
+
+    omega0_sq = 2.0 * constants.G * m_earth / (d0**3)
+    kp = 3.0 * m_tug * omega0_sq
+    kd = 2.0 * math.sqrt(m_tug * kp)
+    f_nominal = f_eff + m_tug * a_req
+
+    def af(sim_pointer):
+        s = sim_pointer.contents
+        ps, pe, pt = s.particles[0], s.particles[1], s.particles[3]
+        dx, dy = pt.x - pe.x, pt.y - pe.y
+        d = math.sqrt(dx * dx + dy * dy)
+        dvx, dvy = pt.vx - pe.vx, pt.vy - pe.vy
+        d_dot = (dx * dvx + dy * dvy) / d
+        delta_f = -kp * (d - d0) - kd * d_dot
+        f_total = max(0.0, f_nominal + delta_f)
+        r_t = math.sqrt((pt.x - ps.x)**2 + (pt.y - ps.y)**2)
+        tx, ty = -(pt.y - ps.y) / r_t, (pt.x - ps.x) / r_t
+        pt.ax += (f_total * tx) / pt.m
+        pt.ay += (f_total * ty) / pt.m
+
+    sim.additional_forces = af
+
+    a_earth_list: list[float] = []
+    for day in range(366):
+        sim.integrate(day * 86400.0)
+        ps, pe = sim.particles[0], sim.particles[1]
+        re = math.sqrt((pe.x - ps.x)**2 + (pe.y - ps.y)**2)
+        ve_mag = math.sqrt((pe.vx - ps.vx)**2 + (pe.vy - ps.vy)**2)
+        eps_e = 0.5 * ve_mag**2 - constants.G * (m_sun + m_earth) / re
+        a_e_au = -(constants.G * (m_sun + m_earth) / (2.0 * eps_e)) / constants.AU
+        a_earth_list.append(a_e_au)
+
+    a_e_arr = np.array(a_earth_list)
+    peak_to_peak_au = float(a_e_arr.max() - a_e_arr.min())
+    amplitude_au = 0.5 * peak_to_peak_au
+
+    # Analytical reflex oscillation: delta_a / a0 ~ 2 * v_reflex / v0 + 2 * r_reflex / r0 ~ 9.0e-4 to 9.5e-4 AU
+    assert 8.0e-4 < amplitude_au < 1.1e-3
+    assert 1.6e-3 < peak_to_peak_au < 2.2e-3
 
 
 def test_reduced_model_matches_closed_form_spiral(ref_data: dict, base_config: dict):

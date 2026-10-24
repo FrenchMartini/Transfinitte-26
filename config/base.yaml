@@ -34,6 +34,9 @@ ceres_tug:
   station_keeping_kp: 1.0e-5
   station_keeping_kd: 1.0e-2
   balance_tolerance_rel: 0.05
+  reduced_model_validation_tol: 0.01  # ASSUMED (1% target from ARCHITECTURE.md)
+
+reduced_model_validation_tol: 0.01  # ASSUMED (1% target from ARCHITECTURE.md)
 
 initial_conditions:
   semi_major_axis_au: 1.0
