@@ -309,7 +309,7 @@ class OrbitDriver:
             body_name = str(body.name)
             if body_name in NON_SIMULATED_ACTORS or body.mass_kg <= 0.0:
                 continue
-            if is_averaged_mode and body_name not in {"Sun", "Earth"}:
+            if is_averaged_mode and body_name in {"Tug", "BeltSupply"}:
                 continue
             self.sim.add(
                 m=float(body.mass_kg),
