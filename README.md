@@ -17,8 +17,8 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Last Prior Commit Hash:** `3bddeac` (`step 3.2: coupler with driver registry, strang splitting macro-step loop, and parquet/matplotlib outputs`)
-- **Current Test Count & Result:** 59 tests — **59 PASSED** (`pytest -v`)
+- **Last Prior Commit Hash:** `ecb010c` (`step 3.3: first milestone hohmann 1.0 to 2.7 au test probe transfer with full ledger closure`)
+- **Current Test Count & Result:** 62 tests — **62 PASSED** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
   - **Step 1 (Restructure into `octo/`, Configs, `reference.json`, AST Limit Check):** DONE
@@ -27,6 +27,8 @@ Every simulation run is judged against **six mandatory winning conditions**:
   - **Step 3.1 (`orbit` driver with REBOUND IAS15 & external force callback):** DONE
   - **Step 3.2 (Coupler & macro-step loop):** DONE
   - **Step 3.3 (First Milestone: 1.0 -> 2.7 AU test probe Hohmann transfer):** DONE
+  - **Step 3.4 (Replay JSON Exporter with frame cap & null preservation):** DONE
+  - **Step 4 (`propulsion` driver variants + Rocket/Power cross-checks):** IN PROGRESS
   - **Step 4 (`propulsion` driver variants + Rocket/Power cross-checks):** NOT STARTED
   - **Step 5 (`structure` + `em` drivers):** NOT STARTED
   - **Step 6 (`multibody` driver + `windowed_full` thrust-map builder):** NOT STARTED
@@ -176,6 +178,7 @@ Follow these non-negotiable rules:
 | 2026-10-24 | Require explicit `rtol` and `atol` in `propagate_orbit` (configured in `config/base.yaml`) | Eliminates default tolerance literals from `octo/drivers/orbit.py`, keeping `ALLOWLIST` minimal (`0.5` only) |
 | 2026-10-24 | Keep propulsion concept pluggable via `config/base.yaml` | Allows testing mass driver, ion/fusion exhaust, solar sail, gravity tractor, and Lorentz-force arms behind one interface |
 | 2026-10-24 | Primary Architecture: Accept Ceres Gravity Tug with physical corrections | Analytical audit and research validation proved Candidate A viable with corrections: variable separation $d(t)$, out-of-ecliptic bi-conical canted plumes ($\pm 5^\circ\text{–}10^\circ$) to clear Moon ($1.137 \times 10^8\text{ m} > 3.3\times$ lunar excursion) and prevent sterilization; beam push booking $\psi_r = 8.70^\circ$ yaw trim; and off-axis L1 solar concentrator. DEFERRED: Octo-Earth (rigid circumterrestrial ring / equatorial tethers), ring/arms, replay/frontend. |
+| 2026-10-24 | Propose Enablers E1, E2, E3 (Pending Section 7 confirmation) | E1: power collector plus beamed link; E2: Ceres-class tug moved to Earth's orbit, the 0.3c accelerator and the asteroid belt reaction-mass supply; E3: shadow shield, radiators and off-axis sunlight lens. Kept proposed until Section 7 rulebook text confirmed. |
 
 ---
 
@@ -221,3 +224,4 @@ Until confirmed, any clean run reports `"PASS (with unconfirmed thresholds)"`:
 - **2026-10-24 (Step 3.1):** Added `OrbitDriver` in `octo/drivers/orbit.py` with REBOUND IAS15 integrator, body population from `State`, external forces from `Ledger` via `sim.additional_forces` callback, and integrator tolerances loaded from `config/base.yaml`. Added tests in `tests/test_orbit_rebound.py` verifying 1-year Sun-Earth orbit closure within reference tolerances, zero audit drift via `Ledger.audit()`, Kepler third law period matching, external force acceleration, and wall-time performance (1 yr = 0.0020 s, 10,000 yr extrapolated = 19.8 s). All 53 tests passing.
 - **2026-10-24 (Step 3.2):** Added `octo/core/coupler.py` implementing `DriverRegistry` from config, macro-step Strang splitting loop (`dt / 2` power/propulsion, `dt` orbit, `dt / 2` propulsion/power, post-step structure/habitability), `ledger.audit` called every step, Parquet writing via `ParquetResultsWriter`, and trajectory/telemetry plotting with Matplotlib. Added unit and integration tests in `tests/test_coupler.py`. All 58 tests passing, AST limit scan clean.
 - **2026-10-24 (Step 3.3):** First Milestone completed! Simulated complete Hohmann transfer $1.0\text{ AU} \to 2.7\text{ AU}$ for test probe (mass and engine parameters from `config/base.yaml`). Both impulsive burns booked as mass-ejection `Exchange`s with counterparties declared in `State` (`ExhaustSink`, `PowerPlant`). Verified $\Delta v_1 \approx 6.198\text{ km/s}$, $\Delta v_2 \approx 4.800\text{ km/s}$, total $\Delta v \approx 10.997\text{ km/s}$, transfer duration $\approx 1.258\text{ yr}$ against `results/reference.json`. Audit passed with zero flags across both burns and coast; exhaust momentum and kinetic energy confirmed to match the rocket equation. Total tests: 59 passing.
+- **2026-10-24 (Step 3.4):** Implemented `py/export_replay.py` exporting Parquet telemetry to `results/replay.json` following the DRAFT schema. Tested schema compliance, frame cap ($\le 2000$ frames with even decimation), preservation of nulls for unproduced fields (arms/structure), and round-trip position accuracy. Total tests: 62 passing.
