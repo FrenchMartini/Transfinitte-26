@@ -4,7 +4,7 @@
   "status": "DRAFT",
   "meta": {
     "concept": "Ceres Tug",
-    "thresholds_confirmed": false,
+    "thresholds_confirmed": true,
     "config_hash": "sha256:f1ed6b99d54bdb28832f5f6ef27f5b5114889f9996fb2bb39e1ab81a6b1f8458",
     "units": {
       "time": "s",
