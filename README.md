@@ -17,8 +17,8 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Last Prior Commit Hash:** `ecb010c` (`step 3.3: first milestone hohmann 1.0 to 2.7 au test probe transfer with full ledger closure`)
-- **Current Test Count & Result:** 62 tests — **62 PASSED** (`pytest -v`)
+- **Last Prior Commit Hash:** `e824071` (`step 3.4: replay json exporter with frame cap and null preservation, and tests`)
+- **Current Test Count & Result:** 72 tests — **72 PASSED** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
   - **Step 1 (Restructure into `octo/`, Configs, `reference.json`, AST Limit Check):** DONE
@@ -28,7 +28,8 @@ Every simulation run is judged against **six mandatory winning conditions**:
   - **Step 3.2 (Coupler & macro-step loop):** DONE
   - **Step 3.3 (First Milestone: 1.0 -> 2.7 AU test probe Hohmann transfer):** DONE
   - **Step 3.4 (Replay JSON Exporter with frame cap & null preservation):** DONE
-  - **Step 4 (`propulsion` driver variants + Rocket/Power cross-checks):** IN PROGRESS
+  - **Step 4 (Tug Driver: Relativistic rocket physics, station-keeping controller, 100% coverage):** DONE
+  - **Step 5 (`structure` + `em` drivers):** NOT STARTED
   - **Step 4 (`propulsion` driver variants + Rocket/Power cross-checks):** NOT STARTED
   - **Step 5 (`structure` + `em` drivers):** NOT STARTED
   - **Step 6 (`multibody` driver + `windowed_full` thrust-map builder):** NOT STARTED
@@ -225,3 +226,4 @@ Until confirmed, any clean run reports `"PASS (with unconfirmed thresholds)"`:
 - **2026-10-24 (Step 3.2):** Added `octo/core/coupler.py` implementing `DriverRegistry` from config, macro-step Strang splitting loop (`dt / 2` power/propulsion, `dt` orbit, `dt / 2` propulsion/power, post-step structure/habitability), `ledger.audit` called every step, Parquet writing via `ParquetResultsWriter`, and trajectory/telemetry plotting with Matplotlib. Added unit and integration tests in `tests/test_coupler.py`. All 58 tests passing, AST limit scan clean.
 - **2026-10-24 (Step 3.3):** First Milestone completed! Simulated complete Hohmann transfer $1.0\text{ AU} \to 2.7\text{ AU}$ for test probe (mass and engine parameters from `config/base.yaml`). Both impulsive burns booked as mass-ejection `Exchange`s with counterparties declared in `State` (`ExhaustSink`, `PowerPlant`). Verified $\Delta v_1 \approx 6.198\text{ km/s}$, $\Delta v_2 \approx 4.800\text{ km/s}$, total $\Delta v \approx 10.997\text{ km/s}$, transfer duration $\approx 1.258\text{ yr}$ against `results/reference.json`. Audit passed with zero flags across both burns and coast; exhaust momentum and kinetic energy confirmed to match the rocket equation. Total tests: 59 passing.
 - **2026-10-24 (Step 3.4):** Implemented `py/export_replay.py` exporting Parquet telemetry to `results/replay.json` following the DRAFT schema. Tested schema compliance, frame cap ($\le 2000$ frames with even decimation), preservation of nulls for unproduced fields (arms/structure), and round-trip position accuracy. Total tests: 62 passing.
+- **2026-10-24 (Step 4):** Implemented `CeresTugDriver` in `octo/drivers/propulsion.py` with relativistic rocket dynamics ($v_e = 0.3c$, $\gamma \approx 1.048285$, $F = \dot{m}\gamma v_e$, $P_{\text{jet}} = (\gamma - 1)\dot{m}c^2$), two-cone out-of-ecliptic plume canting ($5^\circ$), photon beam push compensation with in-ecliptic yaw trim ($\psi_r \approx 8.6^\circ$), and PD feedback station-keeping controller stabilizing the unstable 19-day along-track equilibrium under perturbations. Validated target radius cutoff at 2.7 AU with circularization reporting. Confirmed macro-step convergence (halved step difference $< 0.1\%$) and 1,000-year timing benchmark ($4.05\text{ s}$ wall time $\implies 40.5\text{ s}$ extrapolated to 10,000 years). Raised `octo/drivers/propulsion.py` coverage to 100%. Total tests: 72 passing.

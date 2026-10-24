@@ -24,7 +24,7 @@ from octo.core.ledger import Ledger
 from octo.core.recorder import ParquetResultsWriter
 from octo.core.state import State
 from octo.drivers.orbit import OrbitDriver
-from octo.drivers.propulsion import PropulsionModel
+from octo.drivers.propulsion import CeresTugDriver, PropulsionModel
 
 
 class DriverProtocol(Protocol):
@@ -104,12 +104,12 @@ def create_default_driver_registry() -> DriverRegistry:
             state=state, ledger=ledger, config=config, **kw
         ),
     )
-    registry.register(
-        "propulsion",
-        lambda state, ledger=None, config=None, **kw: PropulsionDriverWrapper(
-            state=state, ledger=ledger, config=config
-        ),
-    )
+    def _create_propulsion(state: Any, ledger: Any = None, config: Any = None, **kw: Any) -> Any:
+        if state.has_body("Tug") or (config and "ceres_tug" in config):
+            return CeresTugDriver(state=state, ledger=ledger, config=config)
+        return PropulsionDriverWrapper(state=state, ledger=ledger, config=config)
+
+    registry.register("propulsion", _create_propulsion)
     registry.register(
         "power",
         lambda state, ledger=None, config=None, **kw: StubDriver(
