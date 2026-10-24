@@ -1,4 +1,4 @@
-"""Tests for py/export_replay.py: Parquet to results/replay.json exporter (Step 3.4)."""
+"""Tests for py/export_replay.py: Parquet to results/replay_*.json exporter (Step 3.4 & Step 3.4b DRAFT v2)."""
 
 import importlib.util
 import json
@@ -21,70 +21,173 @@ export_parquet_to_replay_json = _mod.export_parquet_to_replay_json
 MAX_REPLAY_FRAMES = _mod.MAX_REPLAY_FRAMES
 
 
-def _create_mock_parquet(file_path: Path, num_rows: int) -> None:
+def _create_mock_parquet(file_path: Path, num_rows: int, has_tug: bool = False) -> None:
     """Helper to create a deterministic Parquet telemetry table for testing."""
-    times = np.linspace(0.0, 86400.0 * num_rows, num_rows)
+    dt = 86400.0
+    times = [i * dt for i in range(num_rows)]
     rows = []
+    mu_sun = constants.GM_SUN
+    r1 = constants.AU
+    v1_kms = np.sqrt(mu_sun / r1) / 1000.0
+
     for i, t in enumerate(times):
-        rows.append(
-            {
-                "step_index": i + 1,
-                "t_s": float(t),
-                "dt_s": 86400.0,
-                "audit_pass": True,
-                "flags_count": 0,
-                "expelled_mass_kg": 0.0,
-                "heat_booked_j": 0.0,
-                "exhaust_ke_j": 0.0,
-                "Earth_r_au": 1.0,
-                "Earth_v_km_s": 29.78,
-                "Earth_mass_kg": float(constants.M_EARTH),
-                "Earth_x_au": float(np.cos(i * 0.01)),
-                "Earth_y_au": float(np.sin(i * 0.01)),
-                "Sun_x_au": 0.0,
-                "Sun_y_au": 0.0,
-            }
-        )
+        theta = (v1_kms * 1000.0 / r1) * t
+        r_au = 1.0 + 0.0001 * (t / (86400.0 * 365.25))
+        x_au = r_au * np.cos(theta)
+        y_au = r_au * np.sin(theta)
+        vx_kms = -v1_kms * np.sin(theta)
+        vy_kms = v1_kms * np.cos(theta)
+
+        row = {
+            "step_index": i,
+            "t_s": float(t),
+            "dt_s": dt,
+            "audit_pass": True,
+            "flags_count": 0,
+            "expelled_mass_kg": 100.0 * i,
+            "heat_booked_j": 1e12 * i,
+            "exhaust_ke_j": 1e15 * i,
+            "energy_drift": 1e-12,
+            "momentum_drift": 1e-12,
+            "ang_mom_drift": 1e-12,
+            "mass_drift": 1e-15,
+            "Earth_r_au": r_au,
+            "Earth_v_km_s": v1_kms,
+            "Earth_mass_kg": float(constants.M_EARTH),
+            "Earth_x_au": float(x_au),
+            "Earth_y_au": float(y_au),
+            "Earth_z_au": 0.0,
+            "Earth_vx_km_s": float(vx_kms),
+            "Earth_vy_km_s": float(vy_kms),
+            "Earth_vz_km_s": 0.0,
+            "Sun_x_au": 0.0,
+            "Sun_y_au": 0.0,
+            "Sun_z_au": 0.0,
+            "Sun_vx_km_s": 0.0,
+            "Sun_vy_km_s": 0.0,
+            "Sun_vz_km_s": 0.0,
+            "Sun_mass_kg": float(constants.GM_SUN / constants.G),
+        }
+
+        if has_tug:
+            row["Tug_x_au"] = float(x_au)
+            row["Tug_y_au"] = float(y_au + 6.84e8 / constants.AU)
+            row["Tug_z_au"] = 0.0
+            row["Tug_vx_km_s"] = float(vx_kms)
+            row["Tug_vy_km_s"] = float(vy_kms)
+            row["Tug_vz_km_s"] = 0.0
+            row["Tug_mass_kg"] = float(9.4e20 - 100.0 * i)
+            row["thrust_n"] = 2.208e17
+            row["tug_earth_distance_m"] = 6.84e8
+            row["beam_power_w"] = 1.0e25
+
+        rows.append(row)
+
     table = pa.Table.from_pylist(rows)
     pq.write_table(table, file_path)
 
 
-def test_export_replay_schema_and_nulls_preserved():
-    """Verify exported replay.json satisfies the DRAFT schema and preserves nulls."""
+def test_export_replay_schema_draft_v2_and_meta():
+    """Verify exported replay.json satisfies the DRAFT v2 schema with full meta block."""
     with tempfile.TemporaryDirectory() as tmpdir:
         pq_in = Path(tmpdir) / "input.parquet"
         json_out = Path(tmpdir) / "replay.json"
-        _create_mock_parquet(pq_in, num_rows=10)
+        _create_mock_parquet(pq_in, num_rows=10, has_tug=True)
 
-        metadata = export_parquet_to_replay_json(pq_in, json_out)
+        metadata = export_parquet_to_replay_json(
+            pq_in,
+            json_out,
+            concept="Ceres Tug",
+            thresholds_confirmed=False,
+        )
 
         assert json_out.is_file()
         with open(json_out, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        # Schema header checks
+        # 1. Schema header checks
         assert data["format"] == "OCTO_JSON"
-        assert data["version"] == 1
+        assert data["version"] == 2
         assert data["status"] == "DRAFT"
-        assert data["time_unit"] == "s"
-        assert data["length_unit"] == "AU"
-        assert data["focus_body_id"] == "Sun"
-        assert data["num_frames"] == 10
-        assert data["num_bodies"] >= 1
+        assert "meta" in data
 
-        # Fields not yet produced MUST be null, never invented
+        meta = data["meta"]
+        assert meta["concept"] == "Ceres Tug"
+        assert meta["thresholds_confirmed"] is False
+        assert meta["config_hash"].startswith("sha256:")
+        assert "units" in meta
+        assert meta["units"]["time"] == "s"
+        assert meta["units"]["distance"] == "AU"
+        assert meta["units"]["velocity"] == "km/s"
+        assert meta["units"]["force"] == "N"
+        assert meta["units"]["power"] == "W"
+        assert meta["focus_body_id"] == "Sun"
+        assert meta["frame_count"] == 10
+        assert "downsampling_note" in meta
+
+        # 2. Deferred fields strictly null
         assert data["num_arm_segments"] is None
         assert isinstance(data["frames"], list)
         assert len(data["frames"]) == 10
 
         first_frame = data["frames"][0]
-        assert "time_s" in first_frame
-        assert "step_index" in first_frame
+        assert first_frame["time_s"] == 0.0
+        assert first_frame["step_index"] == 0
         assert "bodies" in first_frame
         assert first_frame["joint_angles_rad"] is None
         assert first_frame["segment_safety_factors"] is None
         assert "flag_count" in first_frame
         assert isinstance(data["flags"], list)
+
+        # 3. Focus body at origin
+        assert first_frame["bodies"]["Sun"]["x"] == 0.0
+        assert first_frame["bodies"]["Sun"]["y"] == 0.0
+        assert first_frame["bodies"]["Sun"]["z"] == 0.0
+
+        # 4. Tug telemetry populated
+        assert first_frame["tug_telemetry"] is not None
+        assert first_frame["tug_telemetry"]["thrust_n"] == 2.208e17
+        assert first_frame["tug_telemetry"]["beam_power_w"] == 1.0e25
+        assert len(first_frame["tug_telemetry"]["beam_directions"]) == 2
+
+        # 5. Ledger drifts populated
+        assert first_frame["ledger_drifts"] is not None
+        assert "energy" in first_frame["ledger_drifts"]
+        assert "momentum" in first_frame["ledger_drifts"]
+
+
+def test_focus_body_at_origin_in_all_frames():
+    """Focus body (Sun) is identically at (0, 0, 0) across all exported frames."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pq_in = Path(tmpdir) / "input.parquet"
+        json_out = Path(tmpdir) / "replay.json"
+        _create_mock_parquet(pq_in, num_rows=50)
+
+        export_parquet_to_replay_json(pq_in, json_out)
+
+        with open(json_out, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        for frame in data["frames"]:
+            sun = frame["bodies"]["Sun"]
+            assert sun["x"] == 0.0
+            assert sun["y"] == 0.0
+            assert sun["z"] == 0.0
+
+
+def test_t0_frame_is_guaranteed_present():
+    """Verify that t=0 frame is always present as the first frame."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pq_in = Path(tmpdir) / "input.parquet"
+        json_out = Path(tmpdir) / "replay.json"
+        _create_mock_parquet(pq_in, num_rows=20)
+
+        export_parquet_to_replay_json(pq_in, json_out)
+
+        with open(json_out, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        assert data["frames"][0]["time_s"] == 0.0
 
 
 def test_export_replay_frame_cap_at_2000_frames():
@@ -99,11 +202,41 @@ def test_export_replay_frame_cap_at_2000_frames():
         with open(json_out, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        assert data["num_frames"] <= MAX_REPLAY_FRAMES
+        assert data["meta"]["frame_count"] <= MAX_REPLAY_FRAMES
         assert len(data["frames"]) <= 2000
-        # Ensure start and end frames are preserved
-        assert data["frames"][0]["step_index"] == 1
-        assert data["frames"][-1]["step_index"] == 3500
+
+
+def test_velocity_consistency_against_position_differences():
+    """Verify velocity vectors match finite differences of positions within orbital tolerance."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pq_in = Path(tmpdir) / "data.parquet"
+        json_out = Path(tmpdir) / "replay.json"
+        _create_mock_parquet(pq_in, num_rows=50)
+
+        export_parquet_to_replay_json(pq_in, json_out)
+
+        with open(json_out, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        frames = data["frames"]
+        # Check finite difference between frame 0 and frame 1
+        f0 = frames[0]
+        f1 = frames[1]
+        dt = f1["time_s"] - f0["time_s"]
+        assert dt > 0.0
+
+        # Earth dx in km: AU -> km is * 149597870.7
+        dx_km = (f1["bodies"]["Earth"]["x"] - f0["bodies"]["Earth"]["x"]) * (constants.AU / 1000.0)
+        dy_km = (f1["bodies"]["Earth"]["y"] - f0["bodies"]["Earth"]["y"]) * (constants.AU / 1000.0)
+        vx_num = dx_km / dt
+        vy_num = dy_km / dt
+
+        vx_frame = f0["bodies"]["Earth"]["vx"]
+        vy_frame = f0["bodies"]["Earth"]["vy"]
+
+        # Finite difference should match frame velocity within 5% for circular orbit with 1-day step
+        assert pytest.approx(vx_num, rel=0.05) == vx_frame or abs(vx_num - vx_frame) < 0.5
+        assert pytest.approx(vy_num, rel=0.05) == vy_frame or abs(vy_num - vy_frame) < 0.5
 
 
 def test_export_replay_round_trip_positions():

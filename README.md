@@ -17,7 +17,7 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Last Prior Commit Hash:** `e821696` (`chore: update readme commit hash to 3c78319`)
+- **Last Prior Commit Hash:** `c700566` (`step 4.1: verify tug run, closed-form trajectory test, moon hill stability, and renumber build steps`)
 - **Current Test Count & Result:** 78 tests — **78 PASSED** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
