@@ -84,5 +84,13 @@
       "units": "dimensionless",
       "source": "ARCHITECTURE.md Section 2: insolation at 2.7 AU is ~7 times lower (2.7^2 = 7.29)"
     }
+  },
+  "spiral_trajectory_benchmark": {
+    "earth_a_100yr_au": 1.0076,
+    "earth_a_500yr_au": 1.0401,
+    "earth_a_1000yr_au": 1.0832,
+    "rel_tol": 5.0e-3,
+    "status": "ASSUMED",
+    "source": "Independent closed-form constant tangential thrust v = v0 - (F_eff/M)*t, r = GM/v^2"
   }
 }

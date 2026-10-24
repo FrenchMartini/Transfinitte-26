@@ -17,8 +17,8 @@ Every simulation run is judged against **six mandatory winning conditions**:
 ## 2. Current Status
 
 - **Date:** 2026-10-24
-- **Last Prior Commit Hash:** `3c78319` (`step 4: ceres gravity tug driver with relativistic physics, station-keeping controller, and 100% test coverage`)
-- **Current Test Count & Result:** 72 tests — **72 PASSED** (`pytest -v`)
+- **Last Prior Commit Hash:** `e821696` (`chore: update readme commit hash to 3c78319`)
+- **Current Test Count & Result:** 78 tests — **78 PASSED** (`pytest -v`)
 - **Build Steps Progress:**
   - **Step 0 (Audit & Architecture Mapping):** DONE
   - **Step 1 (Restructure into `octo/`, Configs, `reference.json`, AST Limit Check):** DONE
@@ -28,16 +28,15 @@ Every simulation run is judged against **six mandatory winning conditions**:
   - **Step 3.2 (Coupler & macro-step loop):** DONE
   - **Step 3.3 (First Milestone: 1.0 -> 2.7 AU test probe Hohmann transfer):** DONE
   - **Step 3.4 (Replay JSON Exporter with frame cap & null preservation):** DONE
+  - **Step 3.4b (Replay Export DRAFT v2 with Hohmann & Ceres Tug replays, schema doc, and tests):** DONE
   - **Step 4 (Tug Driver: Relativistic rocket physics, station-keeping controller, 100% coverage):** DONE
-  - **Step 5 (`structure` + `em` drivers):** NOT STARTED
-  - **Step 4 (`propulsion` driver variants + Rocket/Power cross-checks):** NOT STARTED
-  - **Step 5 (`structure` + `em` drivers):** NOT STARTED
-  - **Step 6 (`multibody` driver + `windowed_full` thrust-map builder):** NOT STARTED
-  - **Step 7 (`power` + `habitability` drivers + threshold validator):** NOT STARTED
-  - **Step 8 (`averaged` mode in coupler + thrust-map agreement report):** NOT STARTED
-  - **Step 9 (`py/experiments/`: sweep, montecarlo, optimize, surrogate):** NOT STARTED
-  - **Step 10 (Three.js frontend + live WebSocket server):** NOT STARTED
-  - **Step 11 (Final report generator):** NOT STARTED
+  - **Step 4.1 (Verify Tug Run, closed-form trajectory test, 2.7 AU arrival time, Moon Hill stability, build step renumbering):** DONE
+  - **Step 5 (Monitors):** NOT STARTED
+  - **Step 6 (Flags, Enablers, and Rulebook Validator):** NOT STARTED
+  - **Step 7 (Full 10,000-Year Run & Final Orbit):** NOT STARTED
+  - **Step 8 (Structure):** NOT STARTED
+  - **Step 9 (Acceptance Report):** NOT STARTED
+  - **DEFERRED (Octo-Earth only):** `em` driver, Lorentz-force arms, circumterrestrial structural ring, replay frontend.
 
 ---
 
@@ -130,8 +129,14 @@ Abstract base interface for all physics drivers:
 - Signature: `(time_s: float, position_m: np.ndarray, velocity_m_s: np.ndarray, mass_kg: float) -> tuple[np.ndarray, float, float, float]`
 - Returns: `(thrust_vector_N, power_W, mass_flow_kg_s, exhaust_velocity_m_s)` in SI units.
 
-### Replay Binary Schema (`octo/core/recorder.py`) — **DRAFT**
-- Header (`OCTO` magic, version, endianness, frame/body/segment counts, units, `focus_body_id`), float32 relative positions, joint angles, safety factors, ledger drifts, and trailing flag table. Marked **DRAFT** until confirmed with the frontend owner.
+### Replay Telemetry Schema (`docs/replay_schema.md`, `py/export_replay.py`) — **DRAFT v2**
+- JSON format (`OCTO_JSON`, version 2, status `DRAFT`).
+- Includes top-level `meta` block with architecture concept (`"Ceres Tug"`), `thresholds_confirmed: false`, `config_hash` (SHA-256), `units` dictionary, `focus_body_id: "Sun"` (Sun fixed at origin `(0, 0, 0)` in all frames), `frame_count` ($\le 2000$), and `downsampling_note`.
+- Guarantees $t=0$ epoch frame is present as `frames[0]`.
+- Per-body telemetry: positions in AU relative to focus body, inertial velocities in km/s (`vx`, `vy`, `vz`), and instantaneous mass (`mass_kg`).
+- Ceres Tug runs include `tug_telemetry` (`thrust_n`, `tug_earth_distance_m`, `beam_power_w`, `beam_directions`, `propellant_spent_kg`).
+- Relative `ledger_drifts` (`energy`, `momentum`, `angular_momentum`, `mass`) from conservation audit.
+- Unproduced/deferred fields are strictly `null` (`joint_angles_rad`, `segment_safety_factors`, `num_arm_segments`).
 
 ---
 
@@ -180,6 +185,8 @@ Follow these non-negotiable rules:
 | 2026-10-24 | Keep propulsion concept pluggable via `config/base.yaml` | Allows testing mass driver, ion/fusion exhaust, solar sail, gravity tractor, and Lorentz-force arms behind one interface |
 | 2026-10-24 | Primary Architecture: Accept Ceres Gravity Tug with physical corrections | Analytical audit and research validation proved Candidate A viable with corrections: variable separation $d(t)$, out-of-ecliptic bi-conical canted plumes ($\pm 5^\circ\text{–}10^\circ$) to clear Moon ($1.137 \times 10^8\text{ m} > 3.3\times$ lunar excursion) and prevent sterilization; beam push booking $\psi_r = 8.70^\circ$ yaw trim; and off-axis L1 solar concentrator. DEFERRED: Octo-Earth (rigid circumterrestrial ring / equatorial tethers), ring/arms, replay/frontend. |
 | 2026-10-24 | Propose Enablers E1, E2, E3 (Pending Section 7 confirmation) | E1: power collector plus beamed link; E2: Ceres-class tug moved to Earth's orbit, the 0.3c accelerator and the asteroid belt reaction-mass supply; E3: shadow shield, radiators and off-axis sunlight lens. Kept proposed until Section 7 rulebook text confirmed. |
+| 2026-10-24 | Tug Propellant Resupply vs Standoff Scaling | If propellant is resupplied continuously from the asteroid belt (part of Enabler E2), Tug mass $M_{\text{tug}}$ stays constant. Alternatively, if propellant depletes from Ceres without resupply, recomputing standoff distance as $d(t) = \sqrt{G M_{\text{tug}}(t) / a_{\oplus}}$ delivers the exact constant pull $F_{\text{grav}} = M_{\oplus} a_{\oplus}$ on Earth regardless of depletion, verified within $10^{-5}$ relative tolerance. |
+| 2026-10-24 | Replay Schema DRAFT v2 | Updated schema in `docs/replay_schema.md` with explicit `meta` provenance, $t=0$ epoch guarantee, Sun-centric origin, velocity/mass reporting, and `tug_telemetry`. Generated two validated replay artifacts: `results/replay_hohmann.json` and `results/replay_ceres_tug.json`. |
 
 ---
 
@@ -227,3 +234,5 @@ Until confirmed, any clean run reports `"PASS (with unconfirmed thresholds)"`:
 - **2026-10-24 (Step 3.3):** First Milestone completed! Simulated complete Hohmann transfer $1.0\text{ AU} \to 2.7\text{ AU}$ for test probe (mass and engine parameters from `config/base.yaml`). Both impulsive burns booked as mass-ejection `Exchange`s with counterparties declared in `State` (`ExhaustSink`, `PowerPlant`). Verified $\Delta v_1 \approx 6.198\text{ km/s}$, $\Delta v_2 \approx 4.800\text{ km/s}$, total $\Delta v \approx 10.997\text{ km/s}$, transfer duration $\approx 1.258\text{ yr}$ against `results/reference.json`. Audit passed with zero flags across both burns and coast; exhaust momentum and kinetic energy confirmed to match the rocket equation. Total tests: 59 passing.
 - **2026-10-24 (Step 3.4):** Implemented `py/export_replay.py` exporting Parquet telemetry to `results/replay.json` following the DRAFT schema. Tested schema compliance, frame cap ($\le 2000$ frames with even decimation), preservation of nulls for unproduced fields (arms/structure), and round-trip position accuracy. Total tests: 62 passing.
 - **2026-10-24 (Step 4):** Implemented `CeresTugDriver` in `octo/drivers/propulsion.py` with relativistic rocket dynamics ($v_e = 0.3c$, $\gamma \approx 1.048285$, $F = \dot{m}\gamma v_e$, $P_{\text{jet}} = (\gamma - 1)\dot{m}c^2$), two-cone out-of-ecliptic plume canting ($5^\circ$), photon beam push compensation with in-ecliptic yaw trim ($\psi_r \approx 8.6^\circ$), and PD feedback station-keeping controller stabilizing the unstable 19-day along-track equilibrium under perturbations. Validated target radius cutoff at 2.7 AU with circularization reporting. Confirmed macro-step convergence (halved step difference $< 0.1\%$) and 1,000-year timing benchmark ($4.05\text{ s}$ wall time $\implies 40.5\text{ s}$ extrapolated to 10,000 years). Raised `octo/drivers/propulsion.py` coverage to 100%. Total tests: 72 passing.
+- **2026-10-24 (Step 4.1):** Verified Tug run and independent slow-spiral trajectory. Added closed-form spiral benchmark in `tests/test_tug_trajectory.py` matching `results/reference.json` ASSUMED benchmarks at 100, 500, and 1,000 years (1.0076, 1.0401, 1.0832 AU). Reported nominal arrival time of 10,144 years (exceeding 10,000 yr by 1.4% due to $1.5\%$ combined cant and yaw losses) and proposed config change for margin: target 9,500 yr with $\dot{m} = 2.501 \times 10^9\text{ kg/s}$, engine thrust $2.358 \times 10^{17}\text{ N}$, jet power $1.085 \times 10^{25}\text{ W}$, and propellant consumption $7.498 \times 10^{20}\text{ kg}$ (within Ceres' mass). Proved delivered pull invariance under tug mass depletion ($10^{-5}$ tolerance). Completed 1-year Sun-Earth-Moon-Tug N-body stability study: standoff deviation 630.8 km ($0.4570 R_{\text{Hill}}$), Moon stays safely bound. Redid 1,000-year timing with full coupler loop and audit every step (wall time 25.69 s $\implies$ 256.9 s / 4.28 min for 10,000 years). Renumbered build steps 5 to 9; marked `em` driver as DEFERRED.
+- **2026-10-24 (Step 3.4b):** Upgraded replay telemetry export to DRAFT v2 (`docs/replay_schema.md`). Implemented comprehensive `meta` provenance block, $t=0$ epoch frame guarantee, Sun-centric origin `(0, 0, 0)`, per-body velocities and masses, `tug_telemetry` with beam vectors and power, and relative `ledger_drifts`. Generated both `results/replay_hohmann.json` (301 frames) and `results/replay_ceres_tug.json` (600 frames). Added full schema, $t=0$, origin, velocity finite-difference consistency, and round-trip tests in `tests/test_export_replay.py`. All 81 tests passing.
