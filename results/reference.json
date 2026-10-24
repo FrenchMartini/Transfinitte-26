@@ -86,14 +86,16 @@
     }
   },
   "spiral_trajectory_benchmark": {
-    "earth_a_100yr_au": 1.0078,
-    "earth_a_500yr_au": 1.0397,
-    "earth_a_1000yr_au": 1.0818,
-    "earth_a_100yr_adopted_au": 1.0083,
-    "earth_a_500yr_adopted_au": 1.0425,
-    "earth_a_1000yr_adopted_au": 1.0878,
+    "f_nominal_n": 2.357951962801099e+17,
+    "f_effective_n": 2.325647824036852e+17,
+    "cant_angle_deg": 5.0,
+    "yaw_angle_deg": 8.082184,
+    "earth_a_100yr_au": 1.008303,
+    "earth_a_500yr_au": 1.042572,
+    "earth_a_1000yr_au": 1.087921,
+    "closed_form_arrival_yr": 9486.85,
     "rel_tol": 1.0e-3,
     "status": "ASSUMED",
-    "source": "Independent closed-form slow spiral with cant (5 deg) and yaw (8.6 deg) losses (tools/closed_form_spiral.py)"
+    "source": "Independent closed-form slow spiral computed directly from config/base.yaml (tools/closed_form_spiral.py)"
   }
 }

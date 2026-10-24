@@ -62,11 +62,15 @@ def test_reduced_model_vs_full_nbody_window(base_config: dict):
     mdot = float(prop_cfg.get("mass_flow_kg_s", 2.501e9))
     ve = float(prop_cfg.get("exhaust_velocity_m_s", 0.3 * constants.C_LIGHT))
 
+    from octo.drivers.propulsion import beam_photon_force, yaw_trim_angle
+
     gamma = lorentz_gamma(ve, constants.C_LIGHT)
     f_engine = mdot * gamma * ve
     cant_factor = math.cos(math.radians(float(tug_cfg.get("cone_half_angle_deg", 5.0))))
-    yaw_factor = math.cos(math.radians(8.6))
-    f_eff = f_engine * cant_factor * yaw_factor
+    f_cant = f_engine * cant_factor
+    f_photon = beam_photon_force(float(tug_cfg.get("beam_power_w", 1.0e25)), constants.C_LIGHT)
+    yaw_rad = yaw_trim_angle(f_photon, f_cant)
+    f_eff = f_cant * math.cos(yaw_rad)
     a_req = f_eff / m_earth
 
     # 1. Full N-body simulation: Sun, Earth, Tug with PD controller
@@ -163,9 +167,11 @@ def test_reduced_model_vs_full_nbody_window(base_config: dict):
 def test_reduced_model_matches_closed_form_spiral(ref_data: dict, base_config: dict):
     """Compare reduced model simulated a at 100, 500, and 1000 years against closed-form spiral.
 
+    Both the simulation and the reference benchmark use the exact parameters from config/base.yaml.
     Tolerance: 1e-3 on relative orbital expansion (a - a0) / a0.
     """
     import rebound
+    from octo.drivers.propulsion import beam_photon_force, two_cone_canting_loss, yaw_trim_angle
 
     bench = ref_data["spiral_trajectory_benchmark"]
     tol = bench["rel_tol"]  # 1.0e-3 (marked ASSUMED)
@@ -173,14 +179,23 @@ def test_reduced_model_matches_closed_form_spiral(ref_data: dict, base_config: d
     mu_sun = constants.GM_SUN
     m_sun = mu_sun / constants.G
     m_earth = constants.M_EARTH
-    r0 = constants.AU
+    r0 = float(base_config["initial_conditions"]["semi_major_axis_au"]) * constants.AU
     v0 = math.sqrt(mu_sun / r0)
 
-    # Effective force from nominal 2.208e17 N (as specified in closed-form expectation of ~1.0818 AU)
-    f_nominal = 2.208e17
-    cant_factor = math.cos(math.radians(5.0))
-    yaw_factor = math.cos(math.radians(8.6))
-    f_eff = f_nominal * cant_factor * yaw_factor
+    prop_cfg = base_config["propulsion"]
+    tug_cfg = base_config["ceres_tug"]
+    mdot = float(prop_cfg["mass_flow_kg_s"])
+    ve = float(prop_cfg["exhaust_velocity_m_s"])
+    cone_deg = float(tug_cfg["cone_half_angle_deg"])
+    beam_power_w = float(tug_cfg["beam_power_w"])
+
+    gamma = lorentz_gamma(ve, constants.C_LIGHT)
+    f_nominal = mdot * gamma * ve
+    cant_factor = two_cone_canting_loss(math.radians(cone_deg))
+    f_cant = f_nominal * cant_factor
+    f_photon = beam_photon_force(beam_power_w, constants.C_LIGHT)
+    yaw_rad = yaw_trim_angle(f_photon, f_cant)
+    f_eff = f_cant * math.cos(yaw_rad)
 
     sim = rebound.Simulation()
     sim.integrator = "ias15"
@@ -227,6 +242,5 @@ def test_reduced_model_matches_closed_form_spiral(ref_data: dict, base_config: d
         expansion_exp = a_expected_au - 1.0
         rel_err = abs(expansion_sim - expansion_exp) / expansion_exp
 
-        # Discrepancy on (a - a0)/a0 is well within 1e-3
-        assert rel_err < 0.05, f"At {yr} yr: sim a={a_sim_au:.6f} vs expected {a_expected_au:.6f}"
+        assert rel_err < tol, f"At {yr} yr: sim a={a_sim_au:.6f} vs expected {a_expected_au:.6f} (rel_err={rel_err:.4e} > {tol})"
         assert abs(a_sim_au - a_expected_au) < tol, f"At {yr} yr: abs diff={abs(a_sim_au - a_expected_au)} > {tol}"

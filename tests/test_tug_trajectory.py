@@ -36,51 +36,38 @@ def ref_data() -> dict:
 
 
 def test_closed_form_spiral_trajectory_100_500_1000_years(base_config: dict, ref_data: dict):
-    """Verify independent closed-form trajectory against reference.json benchmarks.
+    """Verify independent closed-form trajectory computed from config/base.yaml against reference.json.
 
     Governing slow-spiral equations:
-      F_eff = F_thrust * cos(cant) * cos(yaw)
+      F_nom = mdot * gamma * v_e
+      F_eff = F_nom * cos(cant) * cos(yaw)
       v(t) = v0 - (F_eff / M_earth) * t
       r(t) = GM_sun / v(t)^2
     """
+    from tools.closed_form_spiral import compute_benchmark_from_config
+
     bench = ref_data["spiral_trajectory_benchmark"]
     rel_tol = bench["rel_tol"]
 
-    mu_sun = constants.GM_SUN
-    m_earth = constants.M_EARTH
-    r0 = constants.AU
-    v0 = math.sqrt(mu_sun / r0)
+    computed = compute_benchmark_from_config(CONFIG_PATH)
 
-    # 1. Theoretical benchmark WITH cant (5 deg) and yaw (8.6 deg) losses
-    F_nominal = 2.208e17
-    cant_factor = math.cos(math.radians(5.0))
-    yaw_factor = math.cos(math.radians(8.6))
-    f_eff = F_nominal * cant_factor * yaw_factor
-    a_eff = f_eff / m_earth
+    assert pytest.approx(computed["f_nominal_n"], rel=rel_tol) == bench["f_nominal_n"]
+    assert pytest.approx(computed["f_effective_n"], rel=rel_tol) == bench["f_effective_n"]
 
-    # At 1000 years with losses, expected ~ 1.0818 AU (not 1.0832)
-    t_1000yr = 1000.0 * constants.YEAR
-    v_1000 = v0 - a_eff * t_1000yr
-    r_1000 = (mu_sun / (v_1000**2)) / constants.AU
-    assert pytest.approx(r_1000, rel=rel_tol) == bench["earth_a_1000yr_au"]
-
-    # 2. Benchmarks at 100, 500, 1000 years
     for yr, key in [(100, "earth_a_100yr_au"), (500, "earth_a_500yr_au"), (1000, "earth_a_1000yr_au")]:
-        t = yr * constants.YEAR
-        v = v0 - a_eff * t
-        r_au = (mu_sun / (v**2)) / constants.AU
-        assert pytest.approx(r_au, rel=rel_tol) == bench[key]
+        assert pytest.approx(computed[key], rel=rel_tol) == bench[key]
 
 
 def test_delivered_pull_stays_equal_as_tug_mass_depletes(base_config: dict):
     """Delivered pull on Earth stays equal to required thrust as Tug mass changes when standoff is recomputed."""
-    tug_cfg = base_config.get("ceres_tug", {})
-    m_tug_0 = float(tug_cfg.get("mass_kg", 9.4e20))
-    a_target = 3.697e-8  # nominal spiral acceleration
-    tol_rel = 1.0e-5
+    from tools.closed_form_spiral import compute_benchmark_from_config
 
-    # Target pull on Earth: F_target = M_earth * a_target
-    f_target = constants.M_EARTH * a_target
+    tug_cfg = base_config.get("ceres_tug", {})
+    m_tug_0 = float(tug_cfg["mass_kg"])
+    computed = compute_benchmark_from_config(CONFIG_PATH)
+    f_target = computed["f_effective_n"]
+    a_target = f_target / constants.M_EARTH
+    tol_rel = 1.0e-5
 
     # Simulate mass depletion across 10 steps (e.g. losing 10% mass per step down to 50%)
     for frac in np.linspace(1.0, 0.5, 10):
