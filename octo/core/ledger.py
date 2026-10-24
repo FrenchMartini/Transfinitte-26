@@ -75,6 +75,18 @@ class Ledger:
         self._power_in_terms: list[float] = []
         self._custom_scalars: dict[str, list[float]] = {}
 
+        all_actor_ids = list(self._known_bodies) + [s for s in EXHAUST_SINK_IDS if s not in self._known_bodies]
+        self._actor_impulse_x: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+        self._actor_impulse_y: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+        self._actor_impulse_z: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+        self._actor_scalar_impulse: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+        self._actor_ang_impulse_z: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+        self._actor_energy_supplied: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+        self._actor_energy_received: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+        self._actor_heat_dissipated: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+        self._actor_mass_supplied: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+        self._actor_mass_absorbed: dict[ComponentId, list[float]] = {a: [] for a in all_actor_ids}
+
         # Compute initial conservation baselines from initial_state
         (
             self._init_mass_kg,
@@ -150,6 +162,33 @@ class Ledger:
         tau_on_a = np.cross(pt, f_on_a)
         self._step_torques[exchange.b].append(tau_on_b)
         self._step_torques[exchange.a].append(tau_on_a)
+
+        # 2b. Per-actor cumulative impulse, angular impulse, power, heat, and mass flow
+        if dt_f > 0.0:
+            f_mag_dt = float(np.linalg.norm(f_on_b)) * dt_f
+            self._actor_impulse_x[exchange.b].append(float(f_on_b[0]) * dt_f)
+            self._actor_impulse_y[exchange.b].append(float(f_on_b[1]) * dt_f)
+            self._actor_impulse_z[exchange.b].append(float(f_on_b[2]) * dt_f)
+            self._actor_impulse_x[exchange.a].append(float(f_on_a[0]) * dt_f)
+            self._actor_impulse_y[exchange.a].append(float(f_on_a[1]) * dt_f)
+            self._actor_impulse_z[exchange.a].append(float(f_on_a[2]) * dt_f)
+            self._actor_scalar_impulse[exchange.b].append(f_mag_dt)
+            self._actor_scalar_impulse[exchange.a].append(f_mag_dt)
+            self._actor_ang_impulse_z[exchange.b].append(float(tau_on_b[2]) * dt_f)
+            self._actor_ang_impulse_z[exchange.a].append(float(tau_on_a[2]) * dt_f)
+
+            if exchange.power_in != 0.0:
+                de = exchange.power_in * dt_f
+                self._actor_energy_supplied[exchange.a].append(de)
+                self._actor_energy_received[exchange.b].append(de)
+            if exchange.heat_out != 0.0:
+                dh = exchange.heat_out * dt_f
+                self._actor_heat_dissipated[exchange.b].append(dh)
+                self._actor_heat_dissipated[exchange.a].append(dh)
+            if exchange.mass_out > 0.0:
+                dm_actor = exchange.mass_out * dt_f
+                self._actor_mass_absorbed[exchange.a].append(dm_actor)
+                self._actor_mass_supplied[exchange.b].append(dm_actor)
 
         # 3. Book power and heat over dt
         if exchange.power_in != 0.0:
@@ -245,6 +284,25 @@ class Ledger:
     def get_scalar_total(self, key: str) -> float:
         """Return compensated math.fsum total for named accumulator `key`."""
         return math.fsum(self._custom_scalars.get(key, []))
+
+    def summary_by_actor(self) -> dict[ComponentId, dict[str, Any]]:
+        """Return per-actor cumulative impulse, angular impulse, energy, heat, and mass totals."""
+        out: dict[ComponentId, dict[str, Any]] = {}
+        for actor in self._actor_impulse_x:
+            ix = math.fsum(self._actor_impulse_x[actor])
+            iy = math.fsum(self._actor_impulse_y[actor])
+            iz = math.fsum(self._actor_impulse_z[actor])
+            out[actor] = {
+                "net_impulse_vec_n_s": np.array([ix, iy, iz], dtype=np.float64),
+                "scalar_impulse_n_s": math.fsum(self._actor_scalar_impulse[actor]),
+                "net_ang_impulse_z_n_m_s": math.fsum(self._actor_ang_impulse_z[actor]),
+                "energy_supplied_j": math.fsum(self._actor_energy_supplied[actor]),
+                "energy_received_j": math.fsum(self._actor_energy_received[actor]),
+                "heat_dissipated_j": math.fsum(self._actor_heat_dissipated[actor]),
+                "mass_supplied_kg": math.fsum(self._actor_mass_supplied[actor]),
+                "mass_absorbed_kg": math.fsum(self._actor_mass_absorbed[actor]),
+            }
+        return out
 
     def _compute_state_totals(
         self, state: State

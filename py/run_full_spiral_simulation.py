@@ -103,6 +103,50 @@ def run_full_spiral_simulation(
     cutoff_time_s = 0.0
     arrival_year = 0.0
 
+    # Record exact initial state at step_index = 0, t_s = 0.0
+    rows.append({
+        "step_index": 0,
+        "t_s": 0.0,
+        "dt_s": 0.0,
+        "audit_pass": True,
+        "flags_count": 0,
+        "expelled_mass_kg": 0.0,
+        "heat_booked_j": 0.0,
+        "exhaust_ke_j": 0.0,
+        "energy_drift": 0.0,
+        "momentum_drift": 0.0,
+        "ang_mom_drift": 0.0,
+        "mass_drift": 0.0,
+        "Earth_r_au": float(r0 / constants.AU),
+        "Earth_v_km_s": float(v0 / 1000.0),
+        "Earth_mass_kg": float(m_earth),
+        "Earth_x_au": float(r0 / constants.AU),
+        "Earth_y_au": 0.0,
+        "Earth_z_au": 0.0,
+        "Earth_vx_km_s": 0.0,
+        "Earth_vy_km_s": float(v0 / 1000.0),
+        "Earth_vz_km_s": 0.0,
+        "Tug_r_au": float(math.sqrt(r0**2 + d0**2) / constants.AU),
+        "Tug_v_km_s": float(v0 / 1000.0),
+        "Tug_mass_kg": float(m_tug),
+        "Tug_x_au": float(r0 / constants.AU),
+        "Tug_y_au": float(d0 / constants.AU),
+        "Tug_z_au": 0.0,
+        "Tug_vx_km_s": 0.0,
+        "Tug_vy_km_s": float(v0 / 1000.0),
+        "Tug_vz_km_s": 0.0,
+        "Sun_x_au": 0.0,
+        "Sun_y_au": 0.0,
+        "Sun_z_au": 0.0,
+        "Sun_vx_km_s": 0.0,
+        "Sun_vy_km_s": 0.0,
+        "Sun_vz_km_s": 0.0,
+        "Sun_mass_kg": float(m_sun),
+        "thrust_n": float(f_engine),
+        "tug_earth_distance_m": float(d0),
+        "beam_power_w": 1.0e25,
+    })
+
     print("Starting full reduced model simulation to 2.7 AU...")
     t_start_wall = time.perf_counter()
 

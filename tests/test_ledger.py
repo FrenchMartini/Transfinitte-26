@@ -432,3 +432,74 @@ def test_h_bit_identical_determinism(thresholds: dict):
     assert res1[1] == res2[1]
     assert np.array_equal(res1[2], res2[2])
     assert np.array_equal(res1[3], res2[3])
+
+
+def test_ledger_summary_by_actor_closes_simulated_and_non_simulated(thresholds: dict):
+    """Verify Ledger.summary_by_actor tracks per-actor momentum, angular momentum, mass, and energy closure."""
+    state = State(t=0.0, stored_energy_j=0.0)
+    state.add_body(BodyState("Sun", constants.GM_SUN / constants.G, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
+    state.add_body(BodyState("Earth", constants.M_EARTH, [constants.AU, 0.0, 0.0], [0.0, 29784.69, 0.0]))
+    state.add_body(BodyState("Tug", 9.4e20, [constants.AU, 1.27e9, 0.0], [0.0, 29784.69, 0.0]))
+    state.add_body(BodyState("ExhaustSink", 0.0, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
+    state.add_body(BodyState("PowerPlant", 0.0, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
+    state.add_body(BodyState("BeltSupply", 1.0e22, [1.0e15, 0.0, 0.0], [0.0, 0.0, 0.0]))
+
+    ledger = Ledger(state, thresholds)
+    dt = 100.0
+    f_pull = np.array([0.0, 2.3256e17, 0.0])
+    f_photon = np.array([3.3356e16, 0.0, 0.0])
+    mdot = 2.501e9
+    p_jet = 1.085e25
+    p_waste = 1.085e23
+
+    ledger.begin_step()
+    ledger.book(
+        Exchange(
+            t=0.0,
+            a="Tug",
+            b="Earth",
+            force_on_b=f_pull,
+            point=state.get_body("Earth").position_m,
+            owner="propulsion",
+        ),
+        dt=dt,
+    )
+    ledger.book(
+        Exchange(
+            t=0.0,
+            a="ExhaustSink",
+            b="Tug",
+            force_on_b=f_pull - f_photon,
+            point=state.get_body("Tug").position_m,
+            mass_out=mdot,
+            exhaust_v=np.array([0.0, -89937737.4, 0.0]),
+            power_in=p_jet,
+            heat_out=p_waste,
+            owner="propulsion",
+        ),
+        dt=dt,
+    )
+    ledger.book(
+        Exchange(
+            t=0.0,
+            a="PowerPlant",
+            b="Tug",
+            force_on_b=f_photon,
+            point=state.get_body("Tug").position_m,
+            power_in=1.0e25,
+            owner="propulsion",
+        ),
+        dt=dt,
+    )
+
+    summary = ledger.summary_by_actor()
+    assert "Earth" in summary
+    assert "Tug" in summary
+    assert "ExhaustSink" in summary
+    assert "PowerPlant" in summary
+
+    # Sum of vector impulse across all actors in Ledger must be identically zero (Newton's 3rd Law)
+    total_impulse_vec = sum((info["net_impulse_vec_n_s"] for info in summary.values()), np.zeros(3))
+    assert np.allclose(total_impulse_vec, np.zeros(3), atol=1e-6)
+    assert summary["ExhaustSink"]["mass_absorbed_kg"] == pytest.approx(mdot * dt, rel=1e-12)
+    assert summary["PowerPlant"]["energy_supplied_j"] == pytest.approx(1.0e25 * dt, rel=1e-12)
