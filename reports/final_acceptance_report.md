@@ -12,8 +12,8 @@
 | # | Winning Condition | Rulebook Requirement | Simulated Result | Verdict |
 |---|---|---|---|---|
 | **W1** | **Target Orbit Reached** | $a_f = 2.70 \pm 0.05\text{ AU}$, $e_f \le 0.05$, $t \le 10000\text{ yr}$ | $a_f = 2.7000\text{ AU}$, $e_f = 0.000102$, $t = 9515.54\text{ yr}$ (total `9565.54` yr with coast) | **PASS** |
-| **W2** | **Earth Stays Safe** | Insolation, equilibrium temp, Moon retention ($\le 0.50\,R_H$), waste heat ($\le 5.0\text{ W/m}^2$) | $S = 1384.6\text{ W/m}^2$, $T_{\text{eq}} = 255.13\text{ K}$, Moon $r/R_H = 0.257 \to 0.095$ | **PASS** |
-| **W3** | **Structure Survives** | Minimum structural safety factor $\text{SF} \ge 1.50$ | Thrust cradle $\text{SF} = 14.90 \ge 1.50$ | **PASS** |
+| **W2** | **Earth Stays Safe (Conditional)** | Insolation, equilibrium temp, Moon retention ($\le 0.50\,R_H$), waste heat ($\le 5.0\text{ W/m}^2$) | $S = 1384.6\text{ W/m}^2$, $T_{\text{eq}} = 255.13\text{ K}$, Moon $r/R_H = 0.257 \to 0.095$ | **PASS (Conditional on E3 mirror $\eta \ge 0.837$)** |
+| **W3** | **Structure Survives** | Minimum structural safety factor $\text{SF} \ge 1.50$ | Thrust cradle $\text{SF} = 11.45 \ge 1.50$ | **PASS** |
 | **W4** | **Code is Validated** | All Participant Guide Section 6 benchmarks pass | `10/10` guide benchmarks passed | **PASS** |
 | **W5** | **Physics is Honest** | Bilateral `Exchange` booking; mass, momentum, angular momentum, energy close | Max relative drift $< 1.0e-09$ | **PASS** |
 | **W6** | **No Unresolved Flags** | Zero unexplained flags ($\le 3$ declared enablers) | `0` unresolved flags (`0` enabler-matched flags) | **PASS** |
@@ -24,7 +24,7 @@
 
 - **Initial Orbit ($t = 0$):** $a_0 = 1.0000\text{ AU}$
 - **Active Spiral Duration:** `9515.54` years (`349383` total steps, `1200` exported replay frames)
-- **Post-Cutoff Ballistic Coast:** `50.00` years (total epoch `9565.54` years, wall time `222.24` s)
+- **Post-Cutoff Ballistic Coast:** `50.00` years (total epoch `9565.54` years, wall time `178.47` s)
 - **Final Orbit Elements:**
   - Semi-major axis: $a_f = 2.7000\text{ AU}$
   - Eccentricity: $e_f = 0.000102$
@@ -45,10 +45,12 @@
 
 ## 3. Habitability, Thermal Shielding & Structural Integrity
 
-- **Solar Irradiance & L1 Concentrator:** Unmitigated irradiance at $2.7000\text{ AU}$ drops to $186.72\text{ W/m}^2$ ($T_{\text{eq}} = 154.60\text{ K}$). With the Enabler E3 L1 concentrator active, Earth receives $1384.6\text{ W/m}^2$ ($T_{\text{eq}} = 255.13\text{ K}$).
+- **Solar Irradiance & L1 Concentrator (Condition W2 Conditional):** Unmitigated irradiance at $2.7000\text{ AU}$ drops to $186.72\text{ W/m}^2$ ($T_{\text{eq}} = 154.60\text{ K}$). With the Enabler E3 L1 concentrator active, Earth receives $1384.6\text{ W/m}^2$ ($T_{\text{eq}} = 255.13\text{ K}$). Condition W2 is explicitly conditional on optical concentration with capture efficiency $\eta \ge 0.8373$.
+- **Mirror Umbra & Optical Orientation:** A flat on-axis mirror would cast an umbral cone ($L_{\text{umbra}} \approx 3.52 \times 10^6\text{ km} > d_{\text{L1}}$) shading Earth; shading is resolved by using an off-axis parabolic reflector or annular transmissive Fresnel optic. Mirror tilt is referenced to the Sun-Earth optical bisector (tilt $0^\circ$ corresponds to specular redirection onto Earth, NOT retro-reflection to the Sun).
+- **Thermal Safety Envelope:** The simulated equilibrium temperature $T_{\text{eq}} = 255.13\text{ K}$ satisfies the rulebook safety limits ($150\text{ K} - 320\text{ K}$). The narrower $240\text{ K} - 270\text{ K}$ range is designated as a team stress limit to protect the planetary biosphere.
 - **Plume Clearance:** Out-of-ecliptic cone half-angle $5.00^\circ$ at standoff $1.2701e+09\text{ m}$ provides vertical plume clearance of `1.1070e+08` m at Earth.
 - **Radiative Shield Attenuation:** Attenuation factor `1.0e-05` keeps surface waste-heat flux well below `5.0` $\text{W/m}^2$.
-- **Structural Safety Factor:** Ceres thrust cradle safety factor is `14.90` against required minimum `1.50`.
+- **Structural Safety Factor:** Ceres thrust cradle safety factor is `11.45` against required minimum `1.50`.
 
 ---
 

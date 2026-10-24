@@ -48,7 +48,7 @@ class RulebookValidator:
 
         # Threshold lookups
         max_years = float(get_threshold_value(self.thresholds, "simulation", "max_years"))
-        target_r = float(get_threshold_value(self.thresholds, "orbit_targets", "target_radius_au"))
+        target_r = float(summary.get("target_radius_au", get_threshold_value(self.thresholds, "orbit_targets", "target_radius_au")))
         tol_r = float(get_threshold_value(self.thresholds, "orbit_targets", "target_radius_tolerance_au"))
         max_e = float(get_threshold_value(self.thresholds, "orbit_targets", "max_eccentricity"))
         min_sf = float(get_threshold_value(self.thresholds, "structure", "min_safety_factor"))

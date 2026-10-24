@@ -223,8 +223,9 @@ class CeresTugDriver:
         # Orbital acceleration of Earth
         a_earth = f_grav_mag / earth.mass_kg
 
-        # 2. Required forward thrust on the tug (pull + accelerate with Earth)
-        f_nominal = f_grav_mag + tug.mass_kg * a_earth
+        # 2. Required forward thrust on the tug (pull + accelerate with Earth and Moon)
+        m_moon = self.state.get_body("Moon").mass_kg if self.state.has_body("Moon") else 0.0
+        f_nominal = f_grav_mag + (tug.mass_kg + m_moon) * a_earth
 
         # 3. Station-keeping thrust
         f_forward = max(0.0, f_nominal + delta_f)

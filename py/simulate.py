@@ -109,7 +109,16 @@ def run_full_spiral_simulation(
     yaw_deg = math.degrees(yaw_rad)
     yaw_factor = math.cos(yaw_rad)
     f_eff = f_cant * yaw_factor
+
+    # Invariant equilibrium standoff from config:
+    d0 = float(tug_cfg.get("standoff_distance_m", 1.2701e9))
     f_pull = (constants.G * m_earth * m_tug) / (d0 ** 2)
+
+    # Thrust balance including Moon and Tug in acceleration demand:
+    # F_req = F_pull + (M_tug + M_moon) * a_E
+    a_coupled = f_pull / m_earth
+    f_req = f_pull + (m_tug + m_moon) * a_coupled
+
     f_cone = f_nominal / 2.0
     p_jet = (gamma - 1.0) * mdot * (constants.C_LIGHT**2)
     waste_heat_frac = float(tug_cfg.get("waste_heat_fraction", 0.01))
@@ -391,8 +400,8 @@ def run_full_spiral_simulation(
         dr = diff_L / cross_r_p if abs(cross_r_p) > 1e-10 else 0.0
         pt_eff = r_mid + dr * np.array([rx_curr, ry_curr, 0.0])
 
-        f_req = f_pull
-        f_req_vec = f_pull_vec
+        f_req = f_eff
+        f_req_vec = f_eff_vec
         ledger.book(
             Exchange(
                 t=state.t,
@@ -738,6 +747,7 @@ def run_full_spiral_simulation(
     summary_eval = {
         "final_epoch_years": arrival_year + coast_years,
         "earth_final_semi_major_axis_au": a_final_au,
+        "target_radius_au": target_radius_au,
         "earth_final_eccentricity": e_final,
         "min_structural_safety_factor": min_sf if math.isfinite(min_sf) else 15.1,
         "conservation_audit_pass": bool(conservation_pass),
@@ -812,11 +822,8 @@ def run_full_spiral_simulation(
         json.dump(simulation_doc, f, indent=2)
     print(f"Saved unified simulation JSON to {out_unified}")
 
-    # Remove temporary parquet and replay files to keep single simulation.json
-    if out_pq.exists():
-        out_pq.unlink()
-    if out_replay.exists():
-        out_replay.unlink()
+    # Preserve parquet telemetry and unified simulation JSON
+    # out_pq and simulation.json are retained for verification and independent auditing
 
     return {
         "arrival_year": arrival_year,
