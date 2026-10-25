@@ -1,21 +1,3 @@
-/**
- * Coordinate transformations between astronomical heliocentric ecliptic frame and Three.js scene coordinates.
- *
- * Astronomical Ecliptic Frame (right-handed):
- *   +X: Vernal Equinox (in ecliptic plane)
- *   +Y: In ecliptic plane (90 degrees eastward)
- *   +Z: North Ecliptic Pole (perpendicular to ecliptic plane)
- *
- * Three.js Scene Frame (right-handed, Y-up):
- *   +X_scene = +X_ecl
- *   +Y_scene = +Z_ecl (UP)
- *   +Z_scene = -Y_ecl (FORWARD)
- *
- * Floating Origin:
- *   Positions are subtracted relative to an anchor origin in 64-bit float before conversion
- *   to avoid 32-bit single-precision floating point jitter on GPU.
- */
-
 export type Vec3Tuple = [number, number, number];
 
 export function eclipticToScene(

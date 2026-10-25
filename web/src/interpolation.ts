@@ -1,11 +1,11 @@
-/**
- * Frame interpolation strictly for smooth visualization.
- * Uses Keplerian angular tracking for orbiting bodies when frame intervals span orbital timescales (> 1 day),
- * preventing straight-line chord cuts through the Sun, while maintaining linear interpolation for short intervals.
- */
-
-import { SimulationFrame, BodyTelemetry, TugTelemetry } from './types';
+import type { SimulationFrame, BodyTelemetry, TugTelemetry } from './types';
 import { YEAR_SECONDS, AU_METERS } from './config';
+
+export const activeSimState = {
+  time_s: 0,
+  year: 0,
+  frame: null as SimulationFrame | null
+};
 
 export function findBoundingFrames(
   frames: SimulationFrame[],
@@ -22,7 +22,6 @@ export function findBoundingFrames(
     return [lastIdx, lastIdx, 0];
   }
 
-  // Binary search
   let low = 0;
   let high = lastIdx;
   while (low <= high) {
@@ -55,9 +54,8 @@ function interpolateBody(
   b1: BodyTelemetry,
   alpha: number,
   dtFrame_s: number,
-  tau_s: number
+  _tau_s: number
 ): BodyTelemetry {
-  // Focus body (Sun) is always at origin
   if (name === 'Sun' || (Math.abs(b0.x) < 0.01 && Math.abs(b0.y) < 0.01)) {
     return {
       x: 0.0,
@@ -70,21 +68,25 @@ function interpolateBody(
     };
   }
 
-  // For long orbital intervals (> 1 day), interpolate in polar coordinates around the Sun
-  // to avoid cutting straight chords through space
+  // Polar interpolation prevents chord cuts through Sun on long frame intervals
   if (dtFrame_s >= 86400.0) {
     const r0 = Math.sqrt(b0.x * b0.x + b0.y * b0.y);
     const r1 = Math.sqrt(b1.x * b1.x + b1.y * b1.y);
     const r_curr = lerp(r0, r1, alpha);
 
-    // Orbital angular velocity at current radius: omega = 2*pi / (r^1.5 * YEAR_SECONDS)
     const r_mid = Math.max(0.1, 0.5 * (r0 + r_curr));
     const omega = (2.0 * Math.PI) / (Math.pow(r_mid, 1.5) * YEAR_SECONDS);
+    const expectedDeltaTheta = omega * dtFrame_s;
 
-    // Initial angle at frame 0
     const theta0 = Math.atan2(b0.y, b0.x);
-    // Accumulated angle over elapsed time tau
-    const theta_curr = theta0 + omega * tau_s;
+    const theta1 = Math.atan2(b1.y, b1.x);
+
+    // Exact unwrapped boundary matching: guarantees zero snapping across frame transitions
+    const k = Math.round((theta0 + expectedDeltaTheta - theta1) / (2.0 * Math.PI));
+    const theta1_unwrapped = theta1 + k * 2.0 * Math.PI;
+    const totalDeltaTheta = theta1_unwrapped - theta0;
+
+    const theta_curr = theta0 + alpha * totalDeltaTheta;
 
     const v0 = Math.sqrt(b0.vx * b0.vx + b0.vy * b0.vy);
     const v1 = Math.sqrt(b1.vx * b1.vx + b1.vy * b1.vy);
@@ -101,7 +103,6 @@ function interpolateBody(
     };
   }
 
-  // Short intervals (< 1 day): standard Cartesian lerp
   return {
     x: lerp(b0.x, b1.x, alpha),
     y: lerp(b0.y, b1.y, alpha),
@@ -161,7 +162,7 @@ export function interpolateFrame(frames: SimulationFrame[], time_s: number): Sim
     }
   }
 
-  // Position Tug relative to Earth along track if Tug is present
+  // Tug standoff position along Earth velocity vector
   if (bodies['Earth'] && bodies['Tug'] && dtFrame_s >= 86400.0) {
     const earth = bodies['Earth'];
     const r_e = Math.sqrt(earth.x * earth.x + earth.y * earth.y);

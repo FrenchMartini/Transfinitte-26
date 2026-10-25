@@ -1,11 +1,9 @@
 /**
- * Audio Controller for Ambient Cosmic Music & Celestial Narration.
- * Implements smooth fading, autoplay policy handling, and dual-channel playback.
+ * Audio Controller for Ambient Cosmic Music & Celestial Voice Narration.
+ * Handles autoplay policy, user gestures, and dual-channel playback.
  */
 
-import { CELESTIAL_BODIES } from './planet_data';
-
-export class AudioManager {
+class AudioManager {
   private backgroundAudio: HTMLAudioElement | null = null;
   private narrationAudio: HTMLAudioElement | null = null;
 
@@ -13,22 +11,17 @@ export class AudioManager {
   private _narrationEnabled: boolean = true;
   private currentNarrationBody: string | null = null;
 
-  private onStateChange?: (musicOn: boolean, narrationOn: boolean) => void;
-
-  constructor(onStateChange?: (musicOn: boolean, narrationOn: boolean) => void) {
-    this.onStateChange = onStateChange;
-
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      this.initAudioElements();
-      this.bindUserInteraction();
+  constructor() {
+    if (typeof window !== 'undefined') {
+      this.init();
     }
   }
 
-  private initAudioElements(): void {
+  private init(): void {
     try {
       this.backgroundAudio = new Audio('/audio/background.mp4');
       this.backgroundAudio.loop = true;
-      this.backgroundAudio.volume = 0.28;
+      this.backgroundAudio.volume = 0.25;
 
       this.narrationAudio = new Audio();
       this.narrationAudio.volume = 0.85;
@@ -36,40 +29,31 @@ export class AudioManager {
       this.narrationAudio.addEventListener('ended', () => {
         this.currentNarrationBody = null;
       });
+
+      const handleFirstInteraction = () => {
+        if (this._musicEnabled && this.backgroundAudio && this.backgroundAudio.paused) {
+          this.backgroundAudio.play().catch(() => {});
+        }
+        document.removeEventListener('click', handleFirstInteraction);
+        document.removeEventListener('keydown', handleFirstInteraction);
+      };
+
+      document.addEventListener('click', handleFirstInteraction, { once: true });
+      document.addEventListener('keydown', handleFirstInteraction, { once: true });
     } catch (e) {
-      console.warn('Audio initialization notice (audio elements restricted):', e);
+      console.warn('Audio init warning:', e);
     }
-  }
-
-  private bindUserInteraction(): void {
-    const handleFirstInteraction = () => {
-      if (this._musicEnabled && this.backgroundAudio && this.backgroundAudio.paused) {
-        this.backgroundAudio.play().catch(() => {});
-      }
-      document.removeEventListener('click', handleFirstInteraction);
-      document.removeEventListener('touchstart', handleFirstInteraction);
-      document.removeEventListener('keydown', handleFirstInteraction);
-    };
-
-    document.addEventListener('click', handleFirstInteraction, { once: true });
-    document.addEventListener('touchstart', handleFirstInteraction, { once: true });
-    document.addEventListener('keydown', handleFirstInteraction, { once: true });
   }
 
   public toggleMusic(): boolean {
     this._musicEnabled = !this._musicEnabled;
-    if (this._musicEnabled) {
-      if (this.backgroundAudio) {
-        this.backgroundAudio.play().catch((e) => {
-          console.log('Background music will play on next user interaction:', e);
-        });
-      }
-    } else {
-      if (this.backgroundAudio) {
+    if (this.backgroundAudio) {
+      if (this._musicEnabled) {
+        this.backgroundAudio.play().catch(() => {});
+      } else {
         this.backgroundAudio.pause();
       }
     }
-    this.notifyState();
     return this._musicEnabled;
   }
 
@@ -79,37 +63,43 @@ export class AudioManager {
       this.narrationAudio.pause();
       this.currentNarrationBody = null;
     }
-    this.notifyState();
     return this._narrationEnabled;
   }
 
   public playNarration(bodyName: string): void {
     if (!this._narrationEnabled || !this.narrationAudio) return;
 
-    const info = CELESTIAL_BODIES[bodyName];
-    if (!info || !info.audioUrl) return;
+    const key = bodyName.toLowerCase();
+    const validBodies: Record<string, string> = {
+      system: '/audio/solar-system.mp3',
+      sun: '/audio/sun.mp3',
+      mercury: '/audio/mercury.mp3',
+      venus: '/audio/venus.mp3',
+      earth: '/audio/earth.mp3',
+      moon: '/audio/earth.mp3',
+      mars: '/audio/mars.mp3',
+      jupiter: '/audio/jupiter.mp3',
+      saturn: '/audio/saturn.mp3',
+      uranus: '/audio/uranus.mp3',
+      neptune: '/audio/neptune.mp3',
+      tug: '/audio/earth.mp3'
+    };
 
-    if (this.currentNarrationBody === bodyName && !this.narrationAudio.paused) {
-      return; // Already playing this celestial body's narration
+    const url = validBodies[key];
+    if (!url) return;
+
+    if (this.currentNarrationBody === key && !this.narrationAudio.paused) {
+      return;
     }
 
     try {
       this.narrationAudio.pause();
       this.narrationAudio.currentTime = 0;
-      this.narrationAudio.src = info.audioUrl;
-      this.currentNarrationBody = bodyName;
-      this.narrationAudio.play().catch((e) => {
-        console.log('Narration play queued for interaction:', e);
-      });
-    } catch (e) {
-      console.warn('Error playing narration:', e);
-    }
-  }
-
-  public stopNarration(): void {
-    if (this.narrationAudio) {
-      this.narrationAudio.pause();
-      this.currentNarrationBody = null;
+      this.narrationAudio.src = url;
+      this.currentNarrationBody = key;
+      this.narrationAudio.play().catch(() => {});
+    } catch {
+      // Audio autoplay policy catch
     }
   }
 
@@ -120,21 +110,6 @@ export class AudioManager {
   public isNarrationOn(): boolean {
     return this._narrationEnabled;
   }
-
-  private notifyState(): void {
-    if (this.onStateChange) {
-      this.onStateChange(this._musicEnabled, this._narrationEnabled);
-    }
-  }
-
-  public dispose(): void {
-    if (this.backgroundAudio) {
-      this.backgroundAudio.pause();
-      this.backgroundAudio.src = '';
-    }
-    if (this.narrationAudio) {
-      this.narrationAudio.pause();
-      this.narrationAudio.src = '';
-    }
-  }
 }
+
+export const audioManager = new AudioManager();

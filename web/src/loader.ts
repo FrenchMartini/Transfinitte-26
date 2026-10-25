@@ -1,8 +1,4 @@
-/**
- * Replay data loading, schema validation, and null-formatting utilities.
- */
-
-import { ReplayData, ConditionRecord } from './types';
+import type { ReplayData, ConditionRecord } from './types';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -56,9 +52,6 @@ export function validateReplayData(raw: unknown): ValidationResult {
   return { isValid: true, errors: [], data: data as ReplayData };
 }
 
-/**
- * Format any value or return strictly "not available yet" if null/undefined.
- */
 export function formatValueOrNull<T>(
   val: T | null | undefined,
   formatter?: (v: T) => string
@@ -72,9 +65,6 @@ export function formatValueOrNull<T>(
   return String(val);
 }
 
-/**
- * Return true if the "Thresholds not confirmed by organizers" banner must be displayed.
- */
 export function shouldShowThresholdBanner(meta?: { thresholds_confirmed?: boolean }): boolean {
   if (!meta || typeof meta.thresholds_confirmed !== 'boolean') {
     return true;
@@ -82,9 +72,6 @@ export function shouldShowThresholdBanner(meta?: { thresholds_confirmed?: boolea
   return meta.thresholds_confirmed === false;
 }
 
-/**
- * Extract conditions list from replay data or default to empty list.
- */
 export function parseConditions(data: Partial<ReplayData>): ConditionRecord[] {
   if (Array.isArray(data.conditions)) {
     return data.conditions;

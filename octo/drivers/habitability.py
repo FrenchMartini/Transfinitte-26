@@ -91,8 +91,6 @@ def compute_mirror_reflected_flux(
 ) -> float:
     """Compute additional reflected solar flux on Earth from the climate mirror swarm [W/m^2].
 
-    """Compute additional reflected solar flux on Earth from the climate mirror swarm [W/m^2].
-
     Geometry & Dual-Swarm Architecture:
     - L1 Day-Side Concentrating Swarm: Positioned at L1 sub-solar point (r_L1 = r - d_L1).
       Directs sunlight onto high latitudes (poles) and dawn/dusk terminators to prevent equatorial boiling.

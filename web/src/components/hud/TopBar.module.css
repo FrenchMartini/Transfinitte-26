@@ -1,0 +1,103 @@
+.topBar {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 12px;
+  background-color: var(--panel);
+  border-bottom: 1px solid var(--line);
+  z-index: var(--z-panels);
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.appLogo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.appTitle {
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controlBtn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  font-size: var(--font-size-body);
+  cursor: pointer;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controlBtn:hover {
+  border-color: var(--muted);
+}
+
+.controlBtnActive {
+  background-color: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.selectTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 8px;
+  font-size: var(--font-size-body);
+  height: 28px;
+  cursor: pointer;
+}
+
+.selectTrigger:hover {
+  border-color: var(--muted);
+}
+
+.selectContent {
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 4px;
+  z-index: var(--z-tooltip);
+}
+
+.selectItem {
+  padding: 6px 10px;
+  font-size: var(--font-size-body);
+  color: var(--text);
+  border-radius: var(--radius);
+  cursor: pointer;
+  outline: none;
+}
+
+.selectItem[data-highlighted] {
+  background-color: var(--line);
+  color: var(--accent);
+}

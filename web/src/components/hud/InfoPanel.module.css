@@ -1,0 +1,88 @@
+.infoPanel {
+  grid-area: info;
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  height: 100%;
+  background-color: var(--panel);
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+  z-index: var(--z-panels);
+}
+
+.infoHeader {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.title {
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-size: var(--font-size-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.infoRows {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dataRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-body);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  gap: 8px;
+}
+
+.rowLabel {
+  font-size: var(--font-size-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.rowValue {
+  color: var(--text);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clickableRow {
+  cursor: pointer;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: var(--radius);
+}
+
+.clickableRow:hover {
+  background-color: var(--bg);
+}
+
+.accentValue {
+  color: var(--accent);
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .infoPanel {
+    width: 100%;
+    max-height: 180px;
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+}
