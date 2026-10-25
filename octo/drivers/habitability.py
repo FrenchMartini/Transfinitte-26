@@ -125,30 +125,38 @@ def compute_mirror_reflected_flux(
     if mirror_config.get("tilt_schedule", False) or mirror_config.get("throttle_by_deficit", False):
         direct_flux = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r) ** 2)
         deficit_flux = max(0.0, constants.SOLAR_CONSTANT_1AU - direct_flux)
-        max_possible_flux = (s_at_l1 * area_m2 * reflectivity * capture_efficiency) / earth_disk_area
-        if max_possible_flux > 0.0:
-            cos_tilt = min(1.0, max(0.0, deficit_flux / max_possible_flux))
-            tilt_rad = math.acos(cos_tilt)
-            orient_deg = math.degrees(tilt_rad)
+
+        is_dual = bool(mirror_config.get("dual_swarm", False))
+        night_fraction = float(mirror_config.get("l2_night_flux_fraction", 0.35)) if is_dual else 0.0
+        day_fraction = 1.0 - night_fraction
+
+        target_l1_flux = day_fraction * deficit_flux
+        max_possible_l1 = (s_at_l1 * area_m2 * reflectivity * capture_efficiency) / earth_disk_area
+        flux_l1 = min(target_l1_flux, max_possible_l1) if max_possible_l1 > 0.0 else 0.0
+
+        if is_dual:
+            r_l2 = r + d_l
+            s_at_l2 = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_l2) ** 2)
+            max_possible_l2 = (s_at_l2 * (area_m2 * night_fraction) * reflectivity * capture_efficiency) / earth_disk_area
+            flux_l2 = min(night_fraction * deficit_flux, max_possible_l2) if max_possible_l2 > 0.0 else 0.0
         else:
-            orient_deg = 90.0
-        cos_orient = math.cos(math.radians(orient_deg))
+            flux_l2 = 0.0
+
+        return float(flux_l1 + flux_l2)
     else:
         orient_deg = float(mirror_config.get("orientation_deg", 0.0))
         cos_orient = max(0.0, math.cos(math.radians(orient_deg)))
+        p_reflected_l1 = s_at_l1 * area_m2 * reflectivity * cos_orient * capture_efficiency
 
-    p_reflected_l1 = s_at_l1 * area_m2 * reflectivity * cos_orient * capture_efficiency
+        p_reflected_l2 = 0.0
+        if mirror_config.get("dual_swarm", False):
+            r_l2 = r + d_l
+            s_at_l2 = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_l2) ** 2)
+            night_fraction = float(mirror_config.get("l2_night_flux_fraction", 0.35))
+            p_reflected_l2 = s_at_l2 * (area_m2 * night_fraction) * reflectivity * capture_efficiency
 
-    # 2. Night-Side L2 Halo Reflector Swarm (if dual_swarm enabled)
-    p_reflected_l2 = 0.0
-    if mirror_config.get("dual_swarm", False):
-        r_l2 = r + d_l
-        s_at_l2 = constants.SOLAR_CONSTANT_1AU * ((constants.AU / r_l2) ** 2)
-        night_fraction = float(mirror_config.get("l2_night_flux_fraction", 0.35))
-        p_reflected_l2 = s_at_l2 * (area_m2 * night_fraction) * reflectivity * capture_efficiency
-
-    total_flux = (p_reflected_l1 + p_reflected_l2) / earth_disk_area
-    return float(total_flux)
+        total_flux = (p_reflected_l1 + p_reflected_l2) / earth_disk_area
+        return float(total_flux)
 
 
 def compute_insolation(

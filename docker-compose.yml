@@ -1,0 +1,24 @@
+services:
+  orbitshift:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: orbitshift:latest
+    container_name: orbitshift-app
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      # Set RUN_SIMULATION=true to execute the full 9,566-yr simulation on startup.
+      # When false, it immediately serves the pre-computed verified dataset.
+      - RUN_SIMULATION=false
+      - PORT=80
+    volumes:
+      # Mount host results directory to persist simulation outputs (parquet, json, plots)
+      - ./results:/app/results
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
