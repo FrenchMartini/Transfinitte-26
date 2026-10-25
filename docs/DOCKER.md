@@ -1,6 +1,6 @@
-# OrbitShift Docker Deployment Guide
+# D-Orbit Docker Deployment Guide
 
-This guide describes how to run and deploy the **OrbitShift (`octo`)** multi-physics simulation and 3D web mission control using Docker and Docker Compose.
+This guide describes how to run and deploy the **D-Orbit (`octo`)** multi-physics simulation and 3D web mission control using Docker and Docker Compose.
 
 ---
 
@@ -16,12 +16,13 @@ This guide describes how to run and deploy the **OrbitShift (`octo`)** multi-phy
    ```text
    http://localhost:8080/
    ```
+   *(Or specify a custom host port: `HOST_PORT=8085 docker compose up -d`)*
 
 2. **Run the 9,566-Year Simulation on startup and serve fresh results:**
    ```bash
    RUN_SIMULATION=true docker compose up -d
    ```
-   This executes the complete secular spiral + ballistic coast trajectory simulation (`py/simulate.py`), writes the updated dataset to `./results`, and boots the Nginx web server.
+   This executes the complete secular spiral + ballistic coast trajectory simulation (`backend/py/simulate.py`), writes the updated dataset to `./results`, and boots the Nginx web server.
 
 3. **Stop the container:**
    ```bash
@@ -34,43 +35,43 @@ This guide describes how to run and deploy the **OrbitShift (`octo`)** multi-phy
 
 1. **Build the production image:**
    ```bash
-   docker build -t orbitshift:latest .
+   docker build -t dorbit:latest .
    ```
 
 2. **Run the Web Server (instant launch):**
    ```bash
    docker run -d \
-     --name orbitshift \
+     --name dorbit \
      -p 8080:80 \
      -v $(pwd)/results:/app/results \
-     orbitshift:latest
+     dorbit:latest
    ```
 
 3. **Run the Simulation once and start the web:**
    ```bash
    docker run -d \
-     --name orbitshift \
+     --name dorbit \
      -p 8080:80 \
      -e RUN_SIMULATION=true \
      -v $(pwd)/results:/app/results \
-     orbitshift:latest
+     dorbit:latest
    ```
    You can inspect logs in real time while the simulation runs:
    ```bash
-   docker logs -f orbitshift
+   docker logs -f dorbit
    ```
 
 4. **Run the Simulation standalone without starting the web server:**
    ```bash
    docker run --rm \
      -v $(pwd)/results:/app/results \
-     orbitshift:latest \
-     python py/simulate.py
+     dorbit:latest \
+     python backend/py/simulate.py
    ```
 
 5. **Run the Python test suite in Docker:**
    ```bash
-   docker run --rm orbitshift:latest pytest
+   docker run --rm dorbit:latest pytest
    ```
 
 ---
@@ -79,8 +80,9 @@ This guide describes how to run and deploy the **OrbitShift (`octo`)** multi-phy
 
 | Variable | Default | Description |
 |---|---|---|
-| `RUN_SIMULATION` | `false` | When set to `true` or `1`, executes `py/simulate.py` on container boot before starting the web server. |
+| `RUN_SIMULATION` | `false` | When set to `true` or `1`, executes `backend/py/simulate.py` on container boot before starting the web server. |
 | `PORT` | `80` | Internal port for Nginx web server inside the container. |
+| `HOST_PORT` | `8080` | Host port exposed via `docker-compose.yml` (e.g. `HOST_PORT=8085`). |
 
 ---
 

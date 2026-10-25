@@ -15,7 +15,7 @@ export function validateReplayData(raw: unknown): ValidationResult {
 
   const data = raw as Partial<ReplayData>;
 
-  if (data.format !== 'OCTO_JSON' && data.format !== 'OCTO_SIMULATION_JSON') {
+  if (data.format !== 'OCTO_JSON' && data.format !== 'OCTO_SIMULATION_JSON' && data.format !== 'OCTO_REPLAY') {
     errors.push(`Invalid format identifier: expected "OCTO_JSON" or "OCTO_SIMULATION_JSON", got "${data.format}".`);
   }
 
@@ -28,6 +28,9 @@ export function validateReplayData(raw: unknown): ValidationResult {
   } else {
     if (!data.meta.concept) {
       errors.push('Missing "meta.concept".');
+    }
+    if (typeof (data.meta as any).thresholds_confirmed === 'string') {
+      (data.meta as any).thresholds_confirmed = (data.meta as any).thresholds_confirmed === 'true';
     }
     if (typeof data.meta.thresholds_confirmed !== 'boolean') {
       errors.push('Missing or non-boolean "meta.thresholds_confirmed".');

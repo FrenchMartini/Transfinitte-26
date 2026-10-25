@@ -69,10 +69,18 @@ SOLAR_SYSTEM_PLANETS: dict[str, dict[str, float]] = {
 }
 
 
+def _find_repo_root() -> Path:
+    cur = Path(__file__).resolve().parent
+    for p in [cur, *cur.parents]:
+        if (p / "config" / "base.yaml").exists() or (p / "pyproject.toml").exists():
+            return p
+    return cur.parent.parent
+
+
 def compute_config_hash(config_path: Path | str | None = None) -> str:
     """Compute sha256 hex digest of config/base.yaml."""
     if config_path is None:
-        root = Path(__file__).resolve().parent.parent
+        root = _find_repo_root()
         config_path = root / "config" / "base.yaml"
     p = Path(config_path)
     if not p.is_file():
@@ -84,7 +92,7 @@ def compute_config_hash(config_path: Path | str | None = None) -> str:
 def _load_config(config_path: Path | str | None = None) -> dict[str, Any]:
     """Load YAML configuration dict."""
     if config_path is None:
-        root = Path(__file__).resolve().parent.parent
+        root = _find_repo_root()
         config_path = root / "config" / "base.yaml"
     p = Path(config_path)
     if not p.is_file():

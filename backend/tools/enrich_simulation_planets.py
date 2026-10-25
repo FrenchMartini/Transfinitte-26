@@ -15,7 +15,7 @@ import math
 import sys
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 
 YEAR_SECONDS = 31557600.0  # 365.25 days in seconds
 

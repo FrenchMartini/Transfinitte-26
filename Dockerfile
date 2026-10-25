@@ -53,16 +53,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy python project specification and install dependencies
+# Copy python project specification and backend
 COPY pyproject.toml ./
+COPY backend/ ./backend/
+
+# Install dependencies and package in editable mode
 RUN pip install --no-cache-dir --upgrade pip setuptools && \
     pip install --no-cache-dir -e .
 
-# Copy Python simulation core, configuration, and tools
-COPY octo/ ./octo/
+# Copy configuration, tests, results, and reports
 COPY config/ ./config/
-COPY py/ ./py/
-COPY tools/ ./tools/
+COPY tests/ ./tests/
 COPY results/ ./results/
 COPY reports/ ./reports/
 

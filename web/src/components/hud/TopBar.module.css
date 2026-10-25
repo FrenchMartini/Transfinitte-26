@@ -152,3 +152,65 @@
   transform: translateX(10px);
   background-color: var(--accent);
 }
+
+.ioBtn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 9px;
+  font-size: var(--font-size-body);
+  cursor: pointer;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 120ms ease;
+  user-select: none;
+}
+
+.ioBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background-color: var(--bg);
+}
+
+.ioIcon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.toastBanner {
+  position: absolute;
+  top: 46px;
+  right: 16px;
+  background-color: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: var(--font-size-body);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeInDown 200ms ease;
+}
+
+.toastBannerError {
+  border-color: #ff4d4f;
+  color: #ff7875;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

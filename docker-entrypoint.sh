@@ -1,14 +1,14 @@
 #!/bin/bash
 set -e
 
-echo "=========================================================="
-echo "   ORBITSHIFT (octo) — Planetary Flight Control System    "
-echo "=========================================================="
+echo "----------------------------------------------------------"
+echo "   D-ORBIT — Planetary Flight Control System    "
+echo "----------------------------------------------------------"
 
 # Check if simulation execution is requested or if simulation.json is missing
 if [ "${RUN_SIMULATION}" = "true" ] || [ "${RUN_SIMULATION}" = "1" ] || [ ! -f "/app/results/simulation.json" ]; then
-    echo ">> [1/2] Running full OrbitShift 9,566-year N-body simulation..."
-    python py/simulate.py
+    echo ">> [1/2] Running full D-Orbit 9,566-year N-body simulation..."
+    python backend/py/simulate.py
     echo ">> [1/2] Simulation completed successfully!"
 else
     echo ">> [1/2] Using verified pre-computed simulation dataset in /app/results"
@@ -30,6 +30,6 @@ if [ "$#" -gt 0 ] && [ "$1" != "nginx" ]; then
     exec "$@"
 fi
 
-echo ">> [2/2] Starting OrbitShift Web Interface on port ${PORT:-80}..."
+echo ">> [2/2] Starting D-Orbit Web Interface on port ${PORT:-80}..."
 echo ">> Dashboard is available at http://localhost:${PORT:-80}/"
 exec nginx -g "daemon off;"

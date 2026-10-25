@@ -14,5 +14,7 @@ __pycache__
 web/node_modules
 web/dist
 web/test-results
-legacy/node_modules
-legacy/dist
+backend/**/__pycache__
+backend/**/*.pyc
+backend/**/*.egg-info
+*.egg-info

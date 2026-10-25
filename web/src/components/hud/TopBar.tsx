@@ -1,4 +1,6 @@
+import { useRef, useState } from 'react';
 import { useSimStore } from '../../store/sim';
+import { exportReplayJson, parseAndValidateReplayFile } from '../../utils/replayIo';
 import styles from './TopBar.module.css';
 
 export function TopBar() {
@@ -13,9 +15,63 @@ export function TopBar() {
   const setOptionsOpen = useSimStore((s) => s.setOptionsOpen);
   const leftPanelOpen = useSimStore((s) => s.leftPanelOpen);
   const toggleLeftPanel = useSimStore((s) => s.toggleLeftPanel);
+  const replayData = useSimStore((s) => s.replayData);
+  const setReplayData = useSimStore((s) => s.setReplayData);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastIsError, setToastIsError] = useState(false);
+  const toastTimeoutRef = useRef<number | null>(null);
+
+  const showToast = (msg: string, isError = false) => {
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    setToastMessage(msg);
+    setToastIsError(isError);
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setToastMessage(null);
+    }, 4500);
+  };
+
+  const handleExport = () => {
+    try {
+      exportReplayJson(replayData);
+      showToast(`Exported ${replayData.frames.length.toLocaleString()} frames as replay JSON`);
+    } catch (err: any) {
+      showToast(`Export failed: ${err.message || String(err)}`, true);
+    }
+  };
+
+  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const result = await parseAndValidateReplayFile(file);
+    if (!result.success || !result.data) {
+      showToast(result.error || 'Failed to import replay file', true);
+    } else {
+      setReplayData(result.data);
+      showToast(`Loaded ${result.frameCount?.toLocaleString()} frames (${result.concept})`);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   return (
     <header className={styles.topBar}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        style={{ display: 'none' }}
+        onChange={handleImportFileChange}
+        aria-hidden="true"
+        id="topbar-replay-file-input"
+      />
+
       <div className={styles.leftSection}>
         <button
           type="button"
@@ -79,6 +135,30 @@ export function TopBar() {
 
         <button
           type="button"
+          className={styles.ioBtn}
+          onClick={() => fileInputRef.current?.click()}
+          title="Import Replay JSON (OCTO_JSON schema)"
+          aria-label="Import Replay JSON"
+          id="btn-import-replay"
+        >
+          <span className={styles.ioIcon}>⬇</span>
+          <span>Import</span>
+        </button>
+
+        <button
+          type="button"
+          className={styles.ioBtn}
+          onClick={handleExport}
+          title="Export current simulation dataset to JSON"
+          aria-label="Export Replay JSON"
+          id="btn-export-replay"
+        >
+          <span className={styles.ioIcon}>⬆</span>
+          <span>Export</span>
+        </button>
+
+        <button
+          type="button"
           className={styles.controlBtn}
           onClick={() => setOptionsOpen(true)}
           aria-label="Options"
@@ -86,6 +166,13 @@ export function TopBar() {
           Options
         </button>
       </div>
+
+      {toastMessage && (
+        <div className={`${styles.toastBanner} ${toastIsError ? styles.toastBannerError : ''}`}>
+          <span>{toastIsError ? '⚠' : '✓'}</span>
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </header>
   );
 }

@@ -21,7 +21,7 @@ AU = 1.495978707e11              # m
 YEAR = 31557600.0                # s (Julian year)
 C_LIGHT = 299792458.0            # m / s
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 DEFAULT_CONFIG_PATH = ROOT_DIR / "config" / "base.yaml"
 DEFAULT_REF_PATH = ROOT_DIR / "results" / "reference.json"
 

@@ -1,13 +1,13 @@
 services:
-  orbitshift:
+  dorbit:
     build:
       context: .
       dockerfile: Dockerfile
-    image: orbitshift:latest
-    container_name: orbitshift-app
+    image: dorbit:latest
+    container_name: dorbit-app
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${HOST_PORT:-8080}:80"
     environment:
       # Set RUN_SIMULATION=true to execute the full 9,566-yr simulation on startup.
       # When false, it immediately serves the pre-computed verified dataset.

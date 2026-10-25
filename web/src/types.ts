@@ -103,10 +103,13 @@ export interface ReplayData {
   version: number;
   status: string;
   meta: ReplayMeta;
-  num_bodies: number;
-  num_arm_segments: null;
+  num_bodies?: number;
+  num_arm_segments?: null;
+  mission_summary?: Record<string, unknown>;
+  monitors_summary?: Record<string, unknown>;
   flags?: ReplayFlag[];
   conditions?: ConditionRecord[];
   enablers?: EnablerRecord[];
   frames: SimulationFrame[];
+  [key: string]: unknown;
 }
