@@ -2,19 +2,40 @@ import { useSimStore } from '../../store/sim';
 import { BODIES } from '../../data/bodies';
 import styles from './InfoPanel.module.css';
 
-export function InfoPanel() {
+interface InfoPanelProps {
+  isCollapsed?: boolean;
+}
+
+export function InfoPanel({ isCollapsed = false }: InfoPanelProps) {
   const selectedBody = useSimStore((s) => s.selectedBody);
   const stats = useSimStore((s) => s.hudAnalytics);
   const setBenchmarksOpen = useSimStore((s) => s.setBenchmarksOpen);
   const setCantingOpen = useSimStore((s) => s.setCantingOpen);
+  const toggleRightPanel = useSimStore((s) => s.toggleRightPanel);
 
   const body = BODIES[selectedBody] || BODIES['Earth'];
 
   return (
-    <aside className={styles.infoPanel}>
+    <aside
+      className={`${styles.infoPanel} ${isCollapsed ? styles.infoPanelCollapsed : ''}`}
+      aria-hidden={isCollapsed}
+    >
       <div className={styles.infoHeader}>
-        <div className={styles.title}>{body.displayName}</div>
-        <div className={styles.subtitle}>{body.type}</div>
+        <div className={styles.infoHeaderMain}>
+          <div>
+            <div className={styles.title}>{body.displayName}</div>
+            <div className={styles.subtitle}>{body.type}</div>
+          </div>
+          <button
+            type="button"
+            className={styles.collapseBtn}
+            onClick={toggleRightPanel}
+            title="Collapse Telemetry & Info panel (I)"
+            aria-label="Collapse Right Panel"
+          >
+            ▶
+          </button>
+        </div>
       </div>
 
       <div className={styles.infoRows}>
@@ -75,6 +96,12 @@ export function InfoPanel() {
 
         {selectedBody === 'Tug' && (
           <>
+            <div className={styles.missionCard}>
+              <div className={styles.missionCardTitle}>Mission Architecture</div>
+              <div className={styles.missionCardText}>
+                Displaced Ceres-mass asteroid ballast tractor hovering 1.27M km ahead of Earth. Dual relativistic plasma thrusters canted ±5.0° clear the biosphere while continuously delivering 2.33 × 10¹⁷ N tangential gravitational pull.
+              </div>
+            </div>
             <div className={styles.dataRow}>
               <span className={styles.rowLabel}>Standoff Distance</span>
               <span className={`${styles.rowValue} mono`}>
@@ -118,6 +145,15 @@ export function InfoPanel() {
           </>
         )}
 
+        {selectedBody === 'Moon' && (
+          <div className={styles.missionCard}>
+            <div className={styles.missionCardTitle}>Hill Sphere Stability</div>
+            <div className={styles.missionCardText}>
+              Earth-Moon system migrates outwards collaboratively. Moon remains gravitationally bound within Earth's expanding Hill sphere throughout the full 10,000-year spiral.
+            </div>
+          </div>
+        )}
+
         {selectedBody !== 'Earth' && selectedBody !== 'Tug' && (
           <>
             <div className={styles.dataRow}>
@@ -146,11 +182,11 @@ export function InfoPanel() {
         <div
           className={`${styles.dataRow} ${styles.clickableRow}`}
           onClick={() => setCantingOpen(true)}
-          title="Click to view plume canting details"
+          title="Click to view plume canting details (C)"
         >
           <span className={styles.rowLabel}>Plume Canting</span>
           <span className={`${styles.rowValue} ${styles.accentValue} mono`}>
-            ±5.0° Out-Ecliptic
+            ±5.0° Out-Ecliptic ↗
           </span>
         </div>
 
@@ -162,11 +198,11 @@ export function InfoPanel() {
         <div
           className={`${styles.dataRow} ${styles.clickableRow}`}
           onClick={() => setBenchmarksOpen(true)}
-          title="Click to view 10/10 verification benchmarks"
+          title="Click to view 10/10 verification benchmarks (B)"
         >
           <span className={styles.rowLabel}>Verification</span>
           <span className={`${styles.rowValue} ${styles.accentValue} mono`}>
-            10/10 PASS
+            VIEW ↗
           </span>
         </div>
       </div>

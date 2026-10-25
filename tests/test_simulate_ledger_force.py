@@ -9,7 +9,7 @@ import pytest
 from octo.core import constants
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-_sim_path = ROOT_DIR / "py" / "simulate.py"
+_sim_path = ROOT_DIR / "backend" / "py" / "simulate.py"
 _spec = importlib.util.spec_from_file_location("simulate_mod", _sim_path)
 _sim_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_sim_mod)

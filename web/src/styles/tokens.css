@@ -12,9 +12,12 @@
   --alert: #FF5A4D;
 
   --z-canvas: 0;
-  --z-panels: 10;
-  --z-drawer: 20;
-  --z-tooltip: 30;
+  --z-tags: 15;
+  --z-panels: 20;
+  --z-drawer: 50;
+  --z-tooltip: 100;
+  --z-modal-overlay: 9990;
+  --z-modal: 10000;
 
   --font-size-label: 11px;
   --font-size-body: 13px;

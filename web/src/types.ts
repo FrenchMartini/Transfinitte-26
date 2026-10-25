@@ -1,5 +1,5 @@
 /**
- * TypeScript definitions for OrbitShift Replay Schema (OCTO_JSON v2 DRAFT).
+ * TypeScript definitions for D-Orbit Replay Schema (OCTO_JSON v2 DRAFT).
  */
 
 export interface ReplayUnits {

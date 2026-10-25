@@ -14,7 +14,7 @@ REPORT_MD_PATH = ROOT_DIR / "reports" / "final_acceptance_report.md"
 
 def test_acceptance_report_generated_from_files_and_matches_numbers(tmp_path: Path):
     """Verify py/generate_acceptance_report.py generates final_acceptance_report.md matching simulation.json and benchmarks.json."""
-    gen_path = ROOT_DIR / "py" / "generate_acceptance_report.py"
+    gen_path = ROOT_DIR / "backend" / "py" / "generate_acceptance_report.py"
     assert gen_path.is_file(), f"Missing {gen_path}"
 
     spec = importlib.util.spec_from_file_location("generate_acceptance_report", gen_path)

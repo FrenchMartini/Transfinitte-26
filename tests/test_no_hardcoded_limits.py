@@ -18,7 +18,7 @@ from octo.core.thresholds import load_thresholds, AssumedThresholdWarning
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-OCTO_DIR = ROOT_DIR / "octo"
+OCTO_DIR = ROOT_DIR / "backend" / "octo"
 
 # Explicit allowlist of (relative_file_path, numeric_value) pairs that coincide
 # with a number in rulebook_thresholds.yaml for legitimate mathematical/algorithmic
@@ -27,6 +27,7 @@ ALLOWLIST: set[tuple[str, float]] = {
     ("octo/core/ledger.py", 0.5),
     ("octo/drivers/orbit.py", 0.5),
     ("octo/drivers/propulsion.py", 0.5),
+    ("octo/core/gpu_accelerator.py", 0.5),
 }
 
 
@@ -72,7 +73,7 @@ def find_hardcoded_limit_violations(
     violations: list[str] = []
     for py_file in sorted(package_dir.rglob("*.py")):
         try:
-            rel_path = py_file.relative_to(ROOT_DIR).as_posix()
+            rel_path = py_file.relative_to(ROOT_DIR / "backend").as_posix()
         except ValueError:
             rel_path = py_file.name
 

@@ -4,9 +4,15 @@
 import json
 import math
 from pathlib import Path
+import sys
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-MOCK_FILE = ROOT_DIR / "mock" / "replay_mock.json"
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from octo.core.constants import SOLAR_CONSTANT_1AU
+
+MOCK_FILE = Path(__file__).resolve().parent / "replay_mock.json"
 
 YEAR_S = 31557600.0
 AU_M = 1.495978707e11
@@ -115,7 +121,7 @@ for i in range(FRAME_COUNT):
         "flag_count": 1 if t_yr >= 500.0 else 0,
         "joint_angles_rad": None,  # Required null
         "segment_safety_factors": segment_factors,  # Contains 0.48 < 1.5, or null
-        "insolation_w_m2": 1361.0,
+        "insolation_w_m2": float(SOLAR_CONSTANT_1AU),
         "waste_heat_w_m2": float(waste_heat),
         "moon_distance_m": 3.844e8
     }
@@ -205,7 +211,7 @@ mock_data = {
             "id": "E3",
             "name": "Adaptive L1 Solar Insolation Compensator",
             "relaxes": ["earth_safety.min_insolation_w_m2"],
-            "value": 1361.0,
+            "value": float(SOLAR_CONSTANT_1AU),
             "justification": "Parabolic reflector maintaining constant terrestrial solar constant"
         }
     ],

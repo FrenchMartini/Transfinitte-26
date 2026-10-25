@@ -31,7 +31,7 @@ export function OptionsModal() {
                   setBenchmarksOpen(true);
                 }}
               >
-                View 10/10 PASS
+                View
               </button>
             </div>
 

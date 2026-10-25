@@ -3,15 +3,17 @@
  * Handles autoplay policy, user gestures, and dual-channel playback.
  */
 
-class AudioManager {
+export class AudioManager {
   private backgroundAudio: HTMLAudioElement | null = null;
   private narrationAudio: HTMLAudioElement | null = null;
 
   private _musicEnabled: boolean = false;
   private _narrationEnabled: boolean = true;
   private currentNarrationBody: string | null = null;
+  private onStateChange?: (music: boolean, narration: boolean) => void;
 
-  constructor() {
+  constructor(onStateChange?: (music: boolean, narration: boolean) => void) {
+    this.onStateChange = onStateChange;
     if (typeof window !== 'undefined') {
       this.init();
     }
@@ -54,35 +56,80 @@ class AudioManager {
         this.backgroundAudio.pause();
       }
     }
+    this.onStateChange?.(this._musicEnabled, this._narrationEnabled);
     return this._musicEnabled;
   }
 
   public toggleNarration(): boolean {
     this._narrationEnabled = !this._narrationEnabled;
-    if (!this._narrationEnabled && this.narrationAudio) {
-      this.narrationAudio.pause();
+    if (!this._narrationEnabled) {
+      if (this.narrationAudio) {
+        this.narrationAudio.pause();
+      }
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
       this.currentNarrationBody = null;
     }
+    this.onStateChange?.(this._musicEnabled, this._narrationEnabled);
     return this._narrationEnabled;
   }
 
   public playNarration(bodyName: string): void {
-    if (!this._narrationEnabled || !this.narrationAudio) return;
+    if (!this._narrationEnabled) return;
 
     const key = bodyName.toLowerCase();
+
+    // Dedicated aerospace spoken narration for Tug and Moon
+    if (key === 'tug') {
+      if (this.narrationAudio) {
+        this.narrationAudio.pause();
+      }
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const text = 'Ceres Gravity Tug. A massive 9.4 times 10 to the 20 kilogram asteroid-class tractor hovering ahead of Earth along its orbital path. Powered by dual canted relativistic plasma plumes at 0.3c, it transfers momentum gravitationally to pull Earth out to 2.7 astronomical units.';
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1.02;
+        utter.pitch = 1.0;
+        this.currentNarrationBody = key;
+        window.speechSynthesis.speak(utter);
+      }
+      return;
+    }
+
+    if (key === 'moon') {
+      if (this.narrationAudio) {
+        this.narrationAudio.pause();
+      }
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const text = "The Moon. Earth's only natural satellite, orbiting at an average distance of 384,400 kilometers. Its orbit remains dynamically stable and bound within Earth's Hill sphere throughout the 10,000-year migration.";
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1.02;
+        utter.pitch = 1.0;
+        this.currentNarrationBody = key;
+        window.speechSynthesis.speak(utter);
+      }
+      return;
+    }
+
+    if (!this.narrationAudio) return;
+
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
     const validBodies: Record<string, string> = {
       system: '/audio/solar-system.mp3',
       sun: '/audio/sun.mp3',
       mercury: '/audio/mercury.mp3',
       venus: '/audio/venus.mp3',
       earth: '/audio/earth.mp3',
-      moon: '/audio/earth.mp3',
       mars: '/audio/mars.mp3',
       jupiter: '/audio/jupiter.mp3',
       saturn: '/audio/saturn.mp3',
       uranus: '/audio/uranus.mp3',
-      neptune: '/audio/neptune.mp3',
-      tug: '/audio/earth.mp3'
+      neptune: '/audio/neptune.mp3'
     };
 
     const url = validBodies[key];

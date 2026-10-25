@@ -3,16 +3,76 @@
   display: flex;
   flex-direction: column;
   width: 300px;
+  min-width: 300px;
+  max-width: 300px;
   height: 100%;
   background-color: var(--panel);
   border-left: 1px solid var(--line);
   overflow-y: auto;
+  overflow-x: hidden !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
   z-index: var(--z-panels);
+  box-sizing: border-box;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease;
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.infoPanelCollapsed {
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.infoPanel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.infoPanel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.infoPanel::-webkit-scrollbar-thumb {
+  background-color: var(--line);
+  border-radius: 4px;
+}
+
+.infoPanel::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted);
 }
 
 .infoHeader {
   padding: 12px;
   border-bottom: 1px solid var(--line);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.infoHeaderMain {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.collapseBtn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  transition: all 120ms ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.collapseBtn:hover {
+  color: var(--accent);
+  background-color: var(--bg);
+  border-color: var(--accent);
 }
 
 .title {
@@ -35,54 +95,102 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.missionCard {
+  background-color: var(--bg);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin: 2px 0 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+}
+
+.missionCardTitle {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.missionCardText {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text);
 }
 
 .dataRow {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
   font-size: var(--font-size-body);
-  line-height: 1.4;
+  line-height: 1.35;
   white-space: nowrap;
-  overflow: hidden;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .rowLabel {
   font-size: var(--font-size-label);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--muted);
-  flex-shrink: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rowValue {
   color: var(--text);
   text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 12px;
 }
 
 .clickableRow {
   cursor: pointer;
-  padding: 2px 4px;
-  margin: -2px -4px;
+  padding: 4px 6px;
+  margin: 0 -6px;
   border-radius: var(--radius);
+  border: 1px solid transparent;
+  transition: all 120ms ease;
 }
 
 .clickableRow:hover {
   background-color: var(--bg);
+  border-color: var(--line);
+}
+
+.clickableRow:hover .rowLabel {
+  color: var(--text);
 }
 
 .accentValue {
   color: var(--accent);
+  font-weight: 500;
 }
 
 @media (min-width: 640px) and (max-width: 1023px) {
   .infoPanel {
     width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     max-height: 180px;
     border-left: none;
     border-top: 1px solid var(--line);
+    transform: none !important;
+    opacity: 1 !important;
   }
 }

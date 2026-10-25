@@ -8,7 +8,7 @@ import pytest
 ROOT_DIR = Path(__file__).resolve().parent.parent
 BENCHMARKS_REPORT_PATH = ROOT_DIR / "reports" / "benchmarks.json"
 
-_gen_path = ROOT_DIR / "py" / "generate_benchmarks.py"
+_gen_path = ROOT_DIR / "backend" / "py" / "generate_benchmarks.py"
 _spec = importlib.util.spec_from_file_location("generate_benchmarks", _gen_path)
 _gen_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_gen_mod)

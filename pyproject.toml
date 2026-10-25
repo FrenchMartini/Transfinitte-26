@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "octo"
 version = "0.1.0"
-description = "Octo-Earth / OrbitShift simulation core for the TRANSFINITTE challenge"
+description = "Octo-Earth / D-Orbit simulation core for the TRANSFINITTE challenge"
 requires-python = ">=3.11"
 dependencies = [
     "numpy",
@@ -17,8 +17,25 @@ dependencies = [
     "hypothesis",
     "optuna",
     "matplotlib",
+    "tqdm",
+    "numba",
+    "poethepoet",
 ]
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["backend"]
 include = ["octo*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
+testpaths = ["tests"]
+
+[tool.poe.tasks]
+simulate = "python backend/py/simulate.py"
+simulate-gpu = "python backend/py/simulate.py --gpu"
+export = "python backend/py/export_replay.py"
+test = "pytest"
+test-audit = "pytest tests/test_simulate_ledger_force.py tests/test_export_replay.py tests/test_no_hardcoded_limits.py"
+benchmark = "python backend/tools/closed_form_spiral.py"
+web = { shell = "cd web && pnpm dev" }
+

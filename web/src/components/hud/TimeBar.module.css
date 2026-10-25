@@ -7,6 +7,16 @@
   background-color: var(--panel);
   border-top: 1px solid var(--line);
   z-index: var(--z-panels);
+  box-sizing: border-box;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease;
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.timeBarCollapsed {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .topRow {
@@ -225,7 +235,6 @@
   transform: translateX(-50%);
   font-size: 0.62rem;
   color: var(--muted);
-  font-family: var(--font-mono);
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -237,3 +246,26 @@
 .milestoneBadge:last-child {
   transform: translateX(-100%);
 }
+
+.collapseTimeBtn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  transition: all 120ms ease;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.collapseTimeBtn:hover {
+  color: var(--accent);
+  background-color: var(--bg);
+  border-color: var(--line);
+}
+

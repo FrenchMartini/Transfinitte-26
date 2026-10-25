@@ -74,14 +74,14 @@ function interpolateBody(
     const r1 = Math.sqrt(b1.x * b1.x + b1.y * b1.y);
     const r_curr = lerp(r0, r1, alpha);
 
-    const r_mid = Math.max(0.1, 0.5 * (r0 + r_curr));
+    const r_mid = Math.max(0.1, 0.5 * (r0 + r1));
     const omega = (2.0 * Math.PI) / (Math.pow(r_mid, 1.5) * YEAR_SECONDS);
     const expectedDeltaTheta = omega * dtFrame_s;
 
     const theta0 = Math.atan2(b0.y, b0.x);
     const theta1 = Math.atan2(b1.y, b1.x);
 
-    // Exact unwrapped boundary matching: guarantees zero snapping across frame transitions
+    // Exact unwrapped boundary matching: k is constant across the entire interval, eliminating 2pi snap
     const k = Math.round((theta0 + expectedDeltaTheta - theta1) / (2.0 * Math.PI));
     const theta1_unwrapped = theta1 + k * 2.0 * Math.PI;
     const totalDeltaTheta = theta1_unwrapped - theta0;

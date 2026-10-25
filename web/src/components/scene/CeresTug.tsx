@@ -1,9 +1,11 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import { useSimStore } from '../../store/sim';
 import { SCENE_SCALE_AU } from '../../config';
 import { eclipticToScene } from '../../coords';
+import { activeSimState } from '../../interpolation';
 
 const PLASMA_PARTICLE_COUNT = 360;
 const CANT_ANGLE_RAD = THREE.MathUtils.degToRad(5.0);
@@ -22,43 +24,74 @@ export function CeresTug() {
 
   const focusBody = useSimStore((s) => s.focusBody);
 
-  // 1. Ceres Asteroid Ballast Body (Displaced Chondrite)
+  // Surface texture map for Ceres Gravity Tug ballast
+  const [asteroidTexture, setAsteroidTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      '/textures/asteroid.jpg',
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.generateMipmaps = true;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.needsUpdate = true;
+        setAsteroidTexture(tex);
+      },
+      undefined,
+      (err) => {
+        console.warn('Failed to load /textures/asteroid.jpg:', err);
+      }
+    );
+  }, []);
+
+  // 1. Ceres Asteroid Ballast Body (Displaced Chondrite with proper spherical UV mapping)
   const ceresGeo = useMemo(() => {
-    const geo = new THREE.DodecahedronGeometry(0.24, 1);
+    const geo = new THREE.SphereGeometry(0.24, 48, 36);
     const pos = geo.attributes.position;
+    const v = new THREE.Vector3();
     for (let i = 0; i < pos.count; i++) {
-      const vx = pos.getX(i);
-      const vy = pos.getY(i);
-      const vz = pos.getZ(i);
-      const noise = 1.0 + 0.12 * Math.sin(vx * 12.0) * Math.cos(vy * 10.0);
-      pos.setXYZ(i, vx * noise, vy * noise, vz * noise);
+      v.fromBufferAttribute(pos, i);
+      const len = v.length();
+      const nx = v.x / len;
+      const ny = v.y / len;
+      const nz = v.z / len;
+      // Irregular asteroid morphology: triaxial ellipsoid shape + low-frequency crater basins
+      const triaxial = 1.0 + 0.08 * (nx * nx - ny * ny) - 0.04 * (nz * nz);
+      const terrain = 0.06 * Math.sin(nx * 6.0 + 0.5) * Math.cos(ny * 7.0) * Math.sin(nz * 5.0)
+                    + 0.025 * Math.sin(nx * 12.0) * Math.cos(nz * 12.0);
+      v.multiplyScalar(triaxial + terrain);
+      pos.setXYZ(i, v.x, v.y, v.z);
     }
     geo.computeVertexNormals();
     return geo;
   }, []);
 
-  // 2. Short and Extended Plume Geometries
+  // 2. Short and Extended Plume Geometries (Compact, sleek scale behind asteroid)
   const { shortPlumeGeo, extPlumeGeo } = useMemo(() => {
-    const shortG = new THREE.ConeGeometry(0.04, 0.32, 16, 1, true);
-    shortG.translate(0, -0.16, 0);
+    const shortG = new THREE.ConeGeometry(0.009, 0.07, 16, 1, true);
+    shortG.translate(0, -0.035, 0);
 
-    const extG = new THREE.ConeGeometry(0.11, 3.2, 16, 1, true);
-    extG.translate(0, -1.6, 0);
+    const extG = new THREE.ConeGeometry(0.022, 0.45, 16, 1, true);
+    extG.translate(0, -0.225, 0);
 
     return { shortPlumeGeo: shortG, extPlumeGeo: extG };
   }, []);
 
-  // 3. Biosphere Clearance Trajectory Lines
+  // 3. Biosphere Clearance Trajectory Lines (Tightly proportioned envelope)
   const { northLineGeo, southLineGeo } = useMemo(() => {
     const northPts = [
-      new THREE.Vector3(0, 0.09, 0.42),
-      new THREE.Vector3(0, 0.61, 1.40),
-      new THREE.Vector3(0, 1.25, 2.60)
+      new THREE.Vector3(0, 0.018, 0.292),
+      new THREE.Vector3(0, 0.18, 0.65),
+      new THREE.Vector3(0, 0.35, 1.15)
     ];
     const southPts = [
-      new THREE.Vector3(0, -0.09, 0.42),
-      new THREE.Vector3(0, -0.61, 1.40),
-      new THREE.Vector3(0, -1.25, 2.60)
+      new THREE.Vector3(0, -0.018, 0.292),
+      new THREE.Vector3(0, -0.18, 0.65),
+      new THREE.Vector3(0, -0.35, 1.15)
     ];
     return {
       northLineGeo: new THREE.BufferGeometry().setFromPoints(northPts),
@@ -66,7 +99,7 @@ export function CeresTug() {
     };
   }, []);
 
-  // 4. Relativistic Plasma Particle Stream (Twin Canted Cones @ 0.3c)
+  // 4. Relativistic Plasma Particle Stream (Twin Canted Cones @ 0.3c, tight particle plume)
   const { particleGeometry, particlesData } = useMemo(() => {
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(PLASMA_PARTICLE_COUNT * 3);
@@ -80,21 +113,21 @@ export function CeresTug() {
 
     for (let i = 0; i < PLASMA_PARTICLE_COUNT; i++) {
       const isNorth = i % 2 === 0;
-      const nozzleY = isNorth ? 0.09 : -0.09;
+      const nozzleY = isNorth ? 0.018 : -0.018;
       const cantSign = isNorth ? 1.0 : -1.0;
 
-      maxLifetimes[i] = 0.65 + Math.random() * 0.35;
+      maxLifetimes[i] = 0.35 + Math.random() * 0.20;
       lifetimes[i] = Math.random() * maxLifetimes[i];
-      const speed = 3.6 + Math.random() * 1.0;
+      const speed = 1.8 + Math.random() * 0.6;
 
-      velocities[i * 3 + 0] = (Math.random() - 0.5) * 0.04;
-      velocities[i * 3 + 1] = cantSign * sinCant * speed + (Math.random() - 0.5) * 0.02;
+      velocities[i * 3 + 0] = (Math.random() - 0.5) * 0.015;
+      velocities[i * 3 + 1] = cantSign * sinCant * speed + (Math.random() - 0.5) * 0.01;
       velocities[i * 3 + 2] = cosCant * speed;
 
       const t = lifetimes[i];
-      positions[i * 3 + 0] = (Math.random() - 0.5) * 0.02 + velocities[i * 3 + 0] * t;
-      positions[i * 3 + 1] = nozzleY + (Math.random() - 0.5) * 0.02 + velocities[i * 3 + 1] * t;
-      positions[i * 3 + 2] = 0.42 + velocities[i * 3 + 2] * t;
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 0.01 + velocities[i * 3 + 0] * t;
+      positions[i * 3 + 1] = nozzleY + (Math.random() - 0.5) * 0.01 + velocities[i * 3 + 1] * t;
+      positions[i * 3 + 2] = 0.292 + velocities[i * 3 + 2] * t;
 
       const progress = lifetimes[i] / maxLifetimes[i];
       if (progress < 0.3) {
@@ -124,7 +157,7 @@ export function CeresTug() {
   }, [towlinePositions]);
 
   useFrame((state, delta) => {
-    const currentFrame = useSimStore.getState().currentFrame;
+    const currentFrame = activeSimState.frame || useSimStore.getState().currentFrame;
     const earth = currentFrame.bodies['Earth'];
     if (!earth || !tugGroupRef.current) return;
 
@@ -183,20 +216,20 @@ export function CeresTug() {
       lifetimes[i] += dt;
       if (lifetimes[i] >= maxLifetimes[i]) {
         const isNorth = i % 2 === 0;
-        const nozzleY = isNorth ? 0.09 : -0.09;
+        const nozzleY = isNorth ? 0.018 : -0.018;
         const cantSign = isNorth ? 1.0 : -1.0;
 
         lifetimes[i] = 0;
-        maxLifetimes[i] = 0.65 + Math.random() * 0.35;
-        const speed = 3.6 + Math.random() * 1.0;
+        maxLifetimes[i] = 0.35 + Math.random() * 0.20;
+        const speed = 1.8 + Math.random() * 0.6;
 
-        velocities[i * 3 + 0] = (Math.random() - 0.5) * 0.04;
-        velocities[i * 3 + 1] = cantSign * sinCant * speed + (Math.random() - 0.5) * 0.02;
+        velocities[i * 3 + 0] = (Math.random() - 0.5) * 0.015;
+        velocities[i * 3 + 1] = cantSign * sinCant * speed + (Math.random() - 0.5) * 0.01;
         velocities[i * 3 + 2] = cosCant * speed;
 
-        positions[i * 3 + 0] = (Math.random() - 0.5) * 0.02;
-        positions[i * 3 + 1] = nozzleY + (Math.random() - 0.5) * 0.02;
-        positions[i * 3 + 2] = 0.42;
+        positions[i * 3 + 0] = (Math.random() - 0.5) * 0.01;
+        positions[i * 3 + 1] = nozzleY + (Math.random() - 0.5) * 0.01;
+        positions[i * 3 + 2] = 0.292;
       } else {
         positions[i * 3 + 0] += velocities[i * 3 + 0] * dt;
         positions[i * 3 + 1] += velocities[i * 3 + 1] * dt;
@@ -246,10 +279,12 @@ export function CeresTug() {
         {/* 1. Ceres Asteroid Body */}
         <mesh geometry={ceresGeo} castShadow receiveShadow>
           <meshStandardMaterial
-            color={0x6e6659}
-            roughness={0.85}
-            metalness={0.15}
-            flatShading
+            map={asteroidTexture || undefined}
+            bumpMap={asteroidTexture || undefined}
+            bumpScale={0.025}
+            color={asteroidTexture ? 0xd4c8b8 : 0x7a7268}
+            roughness={0.88}
+            metalness={0.08}
           />
         </mesh>
 
@@ -270,49 +305,157 @@ export function CeresTug() {
           </mesh>
         </group>
 
-        {/* 3. Flash Vaporization Chamber & Gantry */}
-        <mesh position={[0, 0, 0.16]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.065, 0.065, 0.09, 12]} />
-          <meshStandardMaterial
-            color={0xff6600}
-            emissive={0xff3300}
-            emissiveIntensity={0.85}
-            metalness={0.6}
-            roughness={0.25}
-          />
-        </mesh>
-        <mesh position={[0, 0, 0.20]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.12, 0.18, 0.16, 8]} />
-          <meshStandardMaterial color={0x8892b0} metalness={0.8} roughness={0.2} />
-        </mesh>
-        <mesh position={[0, 0, 0.28]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.26, 0.26, 0.02, 16]} />
-          <meshStandardMaterial color={0xd1d5db} metalness={0.95} roughness={0.1} />
+        {/* 3. Upgraded Flash Vaporization Chamber & External Thruster Mounting Assembly */}
+        {/* Rock Interface Cradle Mount (starts at outer asteroid rock face) */}
+        <mesh position={[0, 0, 0.238]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.038, 0.052, 0.030, 8]} />
+          <meshStandardMaterial color={0x1e293b} metalness={0.85} roughness={0.35} />
         </mesh>
 
-        {/* 4. Dual Canted Relativistic Thruster Nozzles (±5.0° Out-of-Ecliptic Canting) */}
+        {/* Machined Titanium Backing Plate & Structural Flange (Cleanly on outside surface) */}
+        <mesh position={[0, 0, 0.254]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.058, 0.058, 0.008, 24]} />
+          <meshStandardMaterial color={0x94a3b8} metalness={0.95} roughness={0.12} />
+        </mesh>
+        <mesh position={[0, 0, 0.256]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.042, 0.042, 0.008, 16]} />
+          <meshStandardMaterial color={0x475569} metalness={0.90} roughness={0.20} />
+        </mesh>
+
+        {/* High-Tech Vaporization Chamber Assembly */}
+        <group position={[0, 0, 0.246]}>
+          {/* Chamber Casing */}
+          <mesh rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.022, 0.022, 0.032, 16]} />
+            <meshStandardMaterial color={0x0f172a} metalness={0.85} roughness={0.25} />
+          </mesh>
+
+          {/* Intense Ionization Plasma Core */}
+          <mesh rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.015, 0.015, 0.034, 16]} />
+            <meshStandardMaterial
+              color={0xff8800}
+              emissive={0xff4400}
+              emissiveIntensity={1.4}
+              roughness={0.2}
+            />
+          </mesh>
+
+          {/* Magnetic Confinement Coils (Toroidal Superconducting Rings) */}
+          <mesh position={[0, 0, -0.012]} rotation={[0, 0, 0]}>
+            <torusGeometry args={[0.025, 0.0035, 12, 24]} />
+            <meshStandardMaterial color={0x38bdf8} emissive={0x0284c7} emissiveIntensity={0.8} metalness={0.9} roughness={0.1} />
+          </mesh>
+          <mesh position={[0, 0, 0.0]} rotation={[0, 0, 0]}>
+            <torusGeometry args={[0.026, 0.0035, 12, 24]} />
+            <meshStandardMaterial color={0x38bdf8} emissive={0x0284c7} emissiveIntensity={0.8} metalness={0.9} roughness={0.1} />
+          </mesh>
+          <mesh position={[0, 0, 0.012]} rotation={[0, 0, 0]}>
+            <torusGeometry args={[0.025, 0.0035, 12, 24]} />
+            <meshStandardMaterial color={0x38bdf8} emissive={0x0284c7} emissiveIntensity={0.8} metalness={0.9} roughness={0.1} />
+          </mesh>
+
+          {/* Heat-Dissipating Radial Cooling Fins */}
+          <mesh position={[0.025, 0, 0]} rotation={[0, 0, 0]}>
+            <boxGeometry args={[0.012, 0.003, 0.028]} />
+            <meshStandardMaterial color={0x64748b} metalness={0.9} roughness={0.2} />
+          </mesh>
+          <mesh position={[-0.025, 0, 0]} rotation={[0, 0, 0]}>
+            <boxGeometry args={[0.012, 0.003, 0.028]} />
+            <meshStandardMaterial color={0x64748b} metalness={0.9} roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 0.025, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <boxGeometry args={[0.012, 0.003, 0.028]} />
+            <meshStandardMaterial color={0x64748b} metalness={0.9} roughness={0.2} />
+          </mesh>
+          <mesh position={[0, -0.025, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <boxGeometry args={[0.012, 0.003, 0.028]} />
+            <meshStandardMaterial color={0x64748b} metalness={0.9} roughness={0.2} />
+          </mesh>
+        </group>
+
+        {/* 4. Sleek Miniature 3D Callout Label for Plasma Vaporisation Chamber */}
+        <Html
+          center
+          distanceFactor={1.6}
+          position={[0, 0.046, 0.250]}
+          style={{
+            pointerEvents: 'none',
+            userSelect: 'none',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '1px'
+            }}
+          >
+            <div
+              style={{
+                background: 'rgba(15, 23, 42, 0.88)',
+                border: '1px solid rgba(56, 189, 248, 0.65)',
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.5)',
+                borderRadius: '3px',
+                padding: '1px 4px',
+                fontSize: '6.5px',
+                fontFamily: 'var(--font-mono, monospace)',
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                color: '#38bdf8',
+                textTransform: 'uppercase',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
+                lineHeight: 1.2
+              }}
+            >
+              <span
+                style={{
+                  width: '3.5px',
+                  height: '3.5px',
+                  borderRadius: '50%',
+                  backgroundColor: '#f59e0b',
+                  boxShadow: '0 0 3px #f59e0b'
+                }}
+              />
+              Plasma Vaporisation Chamber
+            </div>
+            <div
+              style={{
+                width: '1px',
+                height: '5px',
+                background: 'linear-gradient(to bottom, rgba(56, 189, 248, 0.75), transparent)'
+              }}
+            />
+          </div>
+        </Html>
+
+        {/* 5. Dual Canted Relativistic Thruster Nozzles (±5.0° Out-of-Ecliptic Canting) */}
         {/* North Nozzle */}
-        <mesh position={[0, 0.09, 0.35]} rotation={[-Math.PI / 2 - CANT_ANGLE_RAD, 0, 0]} castShadow receiveShadow>
-          <coneGeometry args={[0.05, 0.14, 12, 1, true]} />
+        <mesh position={[0, 0.018, 0.274]} rotation={[-Math.PI / 2 - CANT_ANGLE_RAD, 0, 0]} castShadow receiveShadow>
+          <coneGeometry args={[0.010, 0.035, 12, 1, true]} />
           <meshStandardMaterial color={0x222222} metalness={0.9} roughness={0.2} />
         </mesh>
         {/* South Nozzle */}
-        <mesh position={[0, -0.09, 0.35]} rotation={[-Math.PI / 2 + CANT_ANGLE_RAD, 0, 0]} castShadow receiveShadow>
-          <coneGeometry args={[0.05, 0.14, 12, 1, true]} />
+        <mesh position={[0, -0.018, 0.274]} rotation={[-Math.PI / 2 + CANT_ANGLE_RAD, 0, 0]} castShadow receiveShadow>
+          <coneGeometry args={[0.010, 0.035, 12, 1, true]} />
           <meshStandardMaterial color={0x222222} metalness={0.9} roughness={0.2} />
         </mesh>
 
-        {/* 5. Short Illustrative Exhaust Plumes (±5.0° Canting) */}
+        {/* 6. Short Illustrative Exhaust Plumes (±5.0° Canting) */}
         <mesh
           ref={shortPlume1Ref}
           geometry={shortPlumeGeo}
-          position={[0, 0.09, 0.42]}
+          position={[0, 0.018, 0.292]}
           rotation={[-Math.PI / 2 - CANT_ANGLE_RAD, 0, 0]}
         >
           <meshBasicMaterial
             color={0x00d4ea}
             transparent
-            opacity={0.28}
+            opacity={0.30}
             blending={THREE.AdditiveBlending}
             side={THREE.DoubleSide}
           />
@@ -320,29 +463,29 @@ export function CeresTug() {
         <mesh
           ref={shortPlume2Ref}
           geometry={shortPlumeGeo}
-          position={[0, -0.09, 0.42]}
+          position={[0, -0.018, 0.292]}
           rotation={[-Math.PI / 2 + CANT_ANGLE_RAD, 0, 0]}
         >
           <meshBasicMaterial
             color={0x00d4ea}
             transparent
-            opacity={0.28}
+            opacity={0.30}
             blending={THREE.AdditiveBlending}
             side={THREE.DoubleSide}
           />
         </mesh>
 
-        {/* 6. Extended Out-of-Ecliptic Bi-Conical Plume Corridors (Visual Canting 28°) */}
+        {/* 7. Extended Out-of-Ecliptic Bi-Conical Plume Corridors (Visual Canting 28°) */}
         <mesh
           ref={extPlume1Ref}
           geometry={extPlumeGeo}
-          position={[0, 0.09, 0.42]}
+          position={[0, 0.018, 0.292]}
           rotation={[-Math.PI / 2 - VISUAL_CANT_ANGLE_RAD, 0, 0]}
         >
           <meshBasicMaterial
             color={0x00b4d8}
             transparent
-            opacity={0.075}
+            opacity={0.05}
             blending={THREE.AdditiveBlending}
             side={THREE.DoubleSide}
             depthWrite={false}
@@ -351,27 +494,27 @@ export function CeresTug() {
         <mesh
           ref={extPlume2Ref}
           geometry={extPlumeGeo}
-          position={[0, -0.09, 0.42]}
+          position={[0, -0.018, 0.292]}
           rotation={[-Math.PI / 2 + VISUAL_CANT_ANGLE_RAD, 0, 0]}
         >
           <meshBasicMaterial
             color={0x00b4d8}
             transparent
-            opacity={0.075}
+            opacity={0.05}
             blending={THREE.AdditiveBlending}
             side={THREE.DoubleSide}
             depthWrite={false}
           />
         </mesh>
 
-        {/* 7. Plume Safe Biosphere Clearance Envelope */}
-        {/* Out-of-ecliptic clearance rings at Earth encounter plane (Z = 1.40, Y = ±0.61) */}
-        <mesh position={[0, 0.61, 1.40]}>
-          <ringGeometry args={[0.10, 0.12, 32]} />
+        {/* 8. Plume Safe Biosphere Clearance Envelope */}
+        {/* Out-of-ecliptic clearance rings */}
+        <mesh position={[0, 0.18, 0.65]}>
+          <ringGeometry args={[0.035, 0.045, 32]} />
           <meshBasicMaterial color={0x38bdf8} transparent opacity={0.16} side={THREE.DoubleSide} />
         </mesh>
-        <mesh position={[0, -0.61, 1.40]}>
-          <ringGeometry args={[0.10, 0.12, 32]} />
+        <mesh position={[0, -0.18, 0.65]}>
+          <ringGeometry args={[0.035, 0.045, 32]} />
           <meshBasicMaterial color={0x38bdf8} transparent opacity={0.16} side={THREE.DoubleSide} />
         </mesh>
 
@@ -380,7 +523,7 @@ export function CeresTug() {
           object={
             new THREE.Line(
               northLineGeo,
-              new THREE.LineBasicMaterial({ color: 0x00b4d8, transparent: true, opacity: 0.18 })
+              new THREE.LineBasicMaterial({ color: 0x00b4d8, transparent: true, opacity: 0.16 })
             )
           }
         />
@@ -388,21 +531,21 @@ export function CeresTug() {
           object={
             new THREE.Line(
               southLineGeo,
-              new THREE.LineBasicMaterial({ color: 0x00b4d8, transparent: true, opacity: 0.18 })
+              new THREE.LineBasicMaterial({ color: 0x00b4d8, transparent: true, opacity: 0.16 })
             )
           }
         />
 
-        {/* Biosphere Protection Shield Perimeter Ring around Earth (Z = 1.40, radius 0.44) */}
-        <mesh position={[0, 0, 1.40]} rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.44, 0.455, 48]} />
-          <meshBasicMaterial color={0x10b981} transparent opacity={0.18} side={THREE.DoubleSide} />
+        {/* Biosphere Protection Shield Perimeter Ring (Z = 0.65, radius 0.18) */}
+        <mesh position={[0, 0, 0.65]} rotation={[Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.18, 0.19, 48]} />
+          <meshBasicMaterial color={0x10b981} transparent opacity={0.16} side={THREE.DoubleSide} />
         </mesh>
 
-        {/* 8. Relativistic Plasma Particle Stream Emitter */}
+        {/* 9. Relativistic Plasma Particle Stream Emitter */}
         <points geometry={particleGeometry}>
           <pointsMaterial
-            size={0.024}
+            size={0.014}
             vertexColors
             transparent
             opacity={0.75}

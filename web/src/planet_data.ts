@@ -1,6 +1,6 @@
 /**
  * Astronomical and Aerospace Celestial Body Data.
- * Inspired by 3D Solar System Visualizer with OrbitShift mission-specific additions.
+ * Inspired by 3D Solar System Visualizer with D-Orbit mission-specific additions.
  */
 
 export interface CelestialBodyInfo {
@@ -86,7 +86,7 @@ export const CELESTIAL_BODIES: Record<string, CelestialBodyInfo> = {
     yearLength: '365.256 days (initial: 1.0 AU → target: 2.7 AU, 4.43 yr)',
     orbitalSpeedKmh: 107226,
     moons: 1,
-    fact: 'Humanity’s home world. The OrbitShift mission expands Earth’s orbit from 1.0000 AU out to 2.7000 AU over 9,516 years.',
+    fact: 'Humanity’s home world. The D-Orbit mission expands Earth’s orbit from 1.0000 AU out to 2.7000 AU over 9,516 years.',
     gravityNote: 'Earth maintains surface gravity and keeps the Moon securely bound inside its expanding Hill sphere throughout migration.',
     audioUrl: '/audio/earth.mp3',
     accentColor: '#38bdf8',
@@ -141,7 +141,7 @@ export const CELESTIAL_BODIES: Record<string, CelestialBodyInfo> = {
     orbitalSpeedKmh: 86677,
     moons: 2,
     fact: 'Home to Olympus Mons (21.9 km high) and Valles Marineris. Earth safely crosses Mars’ orbital radius (1.52 AU) at Year ~3,100.',
-    gravityNote: 'Mars has 38% Earth gravity. OrbitShift coordinates phase timing to avoid gravitational resonance during crossing.',
+    gravityNote: 'Mars has 38% Earth gravity. D-Orbit coordinates phase timing to avoid gravitational resonance during crossing.',
     audioUrl: '/audio/mars.mp3',
     accentColor: '#ef4444'
   },

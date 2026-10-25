@@ -22,8 +22,7 @@ def test_solar_constant_matches_participant_guide_formula():
 def test_solar_constant_defined_only_in_octo_core_constants():
     """Verify no file outside octo/core/constants.py defines SOLAR_CONSTANT or hardcodes 1361."""
     search_dirs = [
-        ROOT_DIR / "octo",
-        ROOT_DIR / "py",
+        ROOT_DIR / "backend",
         ROOT_DIR / "config",
         ROOT_DIR / "web" / "src",
     ]

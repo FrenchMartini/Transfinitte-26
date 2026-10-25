@@ -15,6 +15,9 @@ export function useKeyboardShortcuts() {
   const resetView = useSimStore((s) => s.resetView);
   const focusBody = useSimStore((s) => s.focusBody);
   const cameraFocus = useSimStore((s) => s.cameraFocus);
+  const toggleLeftPanel = useSimStore((s) => s.toggleLeftPanel);
+  const toggleRightPanel = useSimStore((s) => s.toggleRightPanel);
+  const toggleBottomPanel = useSimStore((s) => s.toggleBottomPanel);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -32,10 +35,22 @@ export function useKeyboardShortcuts() {
           setIsPlaying(!isPlaying);
           break;
         case 'ArrowLeft':
+          if (e.shiftKey || e.altKey) {
+            e.preventDefault();
+            seekTimeSec(currentTimeSec - 10 * YEAR_SECONDS);
+          }
+          break;
+        case 'ArrowRight':
+          if (e.shiftKey || e.altKey) {
+            e.preventDefault();
+            seekTimeSec(currentTimeSec + 10 * YEAR_SECONDS);
+          }
+          break;
+        case 'BracketLeft':
           e.preventDefault();
           seekTimeSec(currentTimeSec - 10 * YEAR_SECONDS);
           break;
-        case 'ArrowRight':
+        case 'BracketRight':
           e.preventDefault();
           seekTimeSec(currentTimeSec + 10 * YEAR_SECONDS);
           break;
@@ -50,6 +65,18 @@ export function useKeyboardShortcuts() {
         case 'KeyR':
           e.preventDefault();
           resetView();
+          break;
+        case 'KeyB':
+          e.preventDefault();
+          toggleLeftPanel();
+          break;
+        case 'KeyI':
+          e.preventDefault();
+          toggleRightPanel();
+          break;
+        case 'KeyT':
+          e.preventDefault();
+          toggleBottomPanel();
           break;
         case 'Equal':
         case 'NumpadAdd':
@@ -82,6 +109,9 @@ export function useKeyboardShortcuts() {
     zoomIn,
     zoomOut,
     resetView,
-    focusBody
+    focusBody,
+    toggleLeftPanel,
+    toggleRightPanel,
+    toggleBottomPanel
   ]);
 }

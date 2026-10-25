@@ -2,7 +2,7 @@
 
 **Architecture:** Ceres Tug (`mode: averaged`, Reduced Model Validated against Full N-Body)  
 **Overall Verdict:** **PASS (with unconfirmed thresholds)**  
-**Config Hash:** `sha256:b50109a64bf6ef7a336b71035606de65fc901156f5c0ad2c5284bd552c21e4b2`  
+**Config Hash:** `sha256:unknown`  
 **Validation Benchmarks Passed:** **10/10**
 
 ---
@@ -23,8 +23,8 @@
 ## 2. Trajectory & Propulsion Telemetry (`results/simulation.json`)
 
 - **Initial Orbit ($t = 0$):** $a_0 = 1.0000\text{ AU}$
-- **Active Spiral Duration:** `9515.54` years (`349383` total steps, `1200` exported replay frames)
-- **Post-Cutoff Ballistic Coast:** `50.00` years (total epoch `9565.54` years, wall time `178.47` s)
+- **Active Spiral Duration:** `9515.54` years (`349383` total steps, `2500` exported replay frames)
+- **Post-Cutoff Ballistic Coast:** `50.00` years (total epoch `9565.54` years, wall time `324.59` s)
 - **Final Orbit Elements:**
   - Semi-major axis: $a_f = 2.7000\text{ AU}$
   - Eccentricity: $e_f = 0.000102$

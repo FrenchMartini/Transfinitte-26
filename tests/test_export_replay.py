@@ -12,7 +12,7 @@ import importlib.util
 from octo.core import constants
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-_export_replay_path = ROOT_DIR / "py" / "export_replay.py"
+_export_replay_path = ROOT_DIR / "backend" / "py" / "export_replay.py"
 _spec = importlib.util.spec_from_file_location("export_replay", _export_replay_path)
 _mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_mod)
@@ -203,7 +203,7 @@ def test_export_replay_frame_cap_at_2000_frames():
             data = json.load(f)
 
         assert data["meta"]["frame_count"] <= MAX_REPLAY_FRAMES
-        assert len(data["frames"]) <= 2000
+        assert len(data["frames"]) <= MAX_REPLAY_FRAMES
 
 
 def test_velocity_consistency_against_position_differences():

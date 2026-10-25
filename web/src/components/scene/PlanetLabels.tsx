@@ -3,8 +3,9 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useSimStore } from '../../store/sim';
-import { SCENE_SCALE_AU } from '../../config';
+import { SCENE_SCALE_AU, MOON_ROTATION_PERIOD_SECONDS } from '../../config';
 import { eclipticToScene } from '../../coords';
+import { activeSimState } from '../../interpolation';
 import { BODIES } from '../../data/bodies';
 
 const LABELED_BODIES = [
@@ -21,124 +22,146 @@ const LABELED_BODIES = [
   'Neptune'
 ];
 
-export function PlanetLabels() {
-  const showOrbits = useSimStore((s) => s.showOrbits);
+interface BodyLabelProps {
+  name: string;
+}
+
+function BodyLabel({ name }: BodyLabelProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  const labelDivRef = useRef<HTMLDivElement>(null);
   const cameraFocus = useSimStore((s) => s.cameraFocus);
   const focusBody = useSimStore((s) => s.focusBody);
+  const isFocused = cameraFocus === name;
   const { camera } = useThree();
 
-  const labelPositionsRef = useRef<Record<string, [number, number, number]>>({});
-  const labelDistancesRef = useRef<Record<string, number>>({});
-
   useFrame(() => {
-    const currentFrame = useSimStore.getState().currentFrame;
-    const currentYear = useSimStore.getState().currentYear;
+    if (!groupRef.current) return;
+    const currentFrame = activeSimState.frame || useSimStore.getState().currentFrame;
+    const currentYear = activeSimState.year || useSimStore.getState().currentYear;
+    const simTime_s = activeSimState.time_s || useSimStore.getState().currentTimeSec;
 
-    // Sun
-    labelPositionsRef.current['Sun'] = [0, 2.6, 0];
-    labelDistancesRef.current['Sun'] = camera.position.length();
+    let x = 0;
+    let y = 0;
+    let z = 0;
 
-    // Earth
-    const earth = currentFrame.bodies['Earth'];
-    if (earth) {
-      const ePos = eclipticToScene([earth.x, earth.y, earth.z], [0, 0, 0], SCENE_SCALE_AU);
-      labelPositionsRef.current['Earth'] = [ePos[0], ePos[1] + 0.8, ePos[2]];
-      labelDistancesRef.current['Earth'] = camera.position.distanceTo(new THREE.Vector3(...ePos));
-
-      // Moon
-      const moonAngle = currentYear * 13.37 * 2 * Math.PI;
-      const moonDist = 1.1;
-      const mPos: [number, number, number] = [
-        ePos[0] + Math.cos(moonAngle) * moonDist,
-        ePos[1] + Math.sin(moonAngle * 0.5) * 0.15 + 0.4,
-        ePos[2] + Math.sin(moonAngle) * moonDist
-      ];
-      labelPositionsRef.current['Moon'] = mPos;
-      labelDistancesRef.current['Moon'] = camera.position.distanceTo(new THREE.Vector3(...mPos));
-
-      // Tug
-      const vx = earth.vx;
-      const vy = earth.vy;
-      const vLen = Math.hypot(vx, vy) || 1;
-      const tangX = -vy / vLen;
-      const tangZ = -vx / vLen;
-      const tPos: [number, number, number] = [
-        ePos[0] + tangX * 0.95,
-        ePos[1] + 0.5,
-        ePos[2] + tangZ * 0.95
-      ];
-      labelPositionsRef.current['Tug'] = tPos;
-      labelDistancesRef.current['Tug'] = camera.position.distanceTo(new THREE.Vector3(...tPos));
-    }
-
-    // Other planets
-    for (const name of ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']) {
+    if (name === 'Sun') {
+      x = 0;
+      y = 2.6;
+      z = 0;
+    } else if (name === 'Earth') {
+      const earth = currentFrame?.bodies?.['Earth'];
+      if (earth) {
+        const ePos = eclipticToScene([earth.x, earth.y, earth.z], [0, 0, 0], SCENE_SCALE_AU);
+        x = ePos[0];
+        y = ePos[1] + 0.8;
+        z = ePos[2];
+      }
+    } else if (name === 'Moon') {
+      const earth = currentFrame?.bodies?.['Earth'];
+      if (earth) {
+        const ePos = eclipticToScene([earth.x, earth.y, earth.z], [0, 0, 0], SCENE_SCALE_AU);
+        const lunarAngle = (2.0 * Math.PI * simTime_s) / MOON_ROTATION_PERIOD_SECONDS;
+        const lunarDist = 0.92;
+        x = ePos[0] + Math.cos(lunarAngle) * lunarDist;
+        y = ePos[1] + Math.sin(lunarAngle) * 0.089 * lunarDist + 0.4;
+        z = ePos[2] + Math.sin(lunarAngle) * lunarDist;
+      }
+    } else if (name === 'Tug') {
+      const earth = currentFrame?.bodies?.['Earth'];
+      if (earth) {
+        const ePos = eclipticToScene([earth.x, earth.y, earth.z], [0, 0, 0], SCENE_SCALE_AU);
+        let dirX = 0;
+        let dirY = 0;
+        let dirZ = 0;
+        const tugData = currentFrame.bodies?.['Tug'];
+        if (tugData) {
+          const tRaw = eclipticToScene([tugData.x, tugData.y, tugData.z], [0, 0, 0], SCENE_SCALE_AU);
+          dirX = tRaw[0] - ePos[0];
+          dirY = tRaw[1] - ePos[1];
+          dirZ = tRaw[2] - ePos[2];
+        }
+        const len = Math.hypot(dirX, dirY, dirZ);
+        if (len < 1e-4) {
+          const vScene = eclipticToScene([earth.vx, earth.vy, earth.vz], [0, 0, 0], 1.0);
+          dirX = vScene[0];
+          dirY = vScene[1];
+          dirZ = vScene[2];
+        }
+        const norm = Math.hypot(dirX, dirY, dirZ) || 1;
+        const standoff = 1.4;
+        x = ePos[0] + (dirX / norm) * standoff;
+        y = ePos[1] + (dirY / norm) * standoff + 0.5;
+        z = ePos[2] + (dirZ / norm) * standoff;
+      }
+    } else {
       const data = BODIES[name];
       if (data) {
         const rScene = data.orbitAu * SCENE_SCALE_AU;
         const theta = (currentYear / data.periodYr) * 2 * Math.PI;
-        const pos: [number, number, number] = [
-          rScene * Math.cos(theta),
-          data.radiusKm > 20000 ? 1.5 : 0.6,
-          -rScene * Math.sin(theta)
-        ];
-        labelPositionsRef.current[name] = pos;
-        labelDistancesRef.current[name] = camera.position.distanceTo(new THREE.Vector3(...pos));
+        x = rScene * Math.cos(theta);
+        y = data.radiusKm > 20000 ? 1.5 : 0.6;
+        z = -rScene * Math.sin(theta);
       }
     }
+
+    groupRef.current.position.set(x, y, z);
+
+    if (labelDivRef.current) {
+      const dist = camera.position.distanceTo(groupRef.current.position);
+      const opacity = isFocused ? 1 : Math.max(0, Math.min(1, 1 - (dist - 30) / 100));
+      labelDivRef.current.style.opacity = String(opacity);
+      labelDivRef.current.style.display = opacity <= 0.04 ? 'none' : 'block';
+    }
   });
+
+  return (
+    <group ref={groupRef}>
+      <Html
+        center
+        zIndexRange={[15, 0]}
+        style={{
+          pointerEvents: 'auto',
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        <div
+          ref={labelDivRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            focusBody(name);
+          }}
+          style={{
+            background: 'var(--panel)',
+            border: isFocused ? '1px solid var(--accent)' : '1px solid var(--line)',
+            color: isFocused ? 'var(--accent)' : 'var(--text)',
+            padding: '2px 6px',
+            borderRadius: 'var(--radius)',
+            fontSize: '10px',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            transition: 'border-color 150ms ease, color 150ms ease',
+          }}
+        >
+          {name}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+export function PlanetLabels() {
+  const showOrbits = useSimStore((s) => s.showOrbits);
 
   if (!showOrbits) return null;
 
   return (
     <group>
-      {LABELED_BODIES.map((name) => {
-        const pos = labelPositionsRef.current[name] ?? [0, 0, 0];
-        const dist = labelDistancesRef.current[name] ?? 50;
-        const isFocused = cameraFocus === name;
-
-        // Distance fading: Hide if too far, keep focused body visible
-        const opacity = isFocused ? 1 : Math.max(0, Math.min(1, 1 - (dist - 30) / 100));
-        if (opacity <= 0.05) return null;
-
-        return (
-          <Html
-            key={name}
-            position={pos}
-            center
-            style={{
-              pointerEvents: 'auto',
-              cursor: 'pointer',
-              userSelect: 'none',
-              opacity,
-              transition: 'opacity 200ms ease'
-            }}
-          >
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                focusBody(name);
-              }}
-              style={{
-                background: 'rgba(10, 11, 13, 0.75)',
-                border: isFocused ? '1px solid var(--accent)' : '1px solid var(--line)',
-                color: isFocused ? 'var(--accent)' : 'var(--text)',
-                padding: '2px 6px',
-                borderRadius: 'var(--radius)',
-                fontSize: '10px',
-                fontFamily: 'var(--font-sans)',
-                fontWeight: 600,
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
-                backdropFilter: 'blur(4px)'
-              }}
-            >
-              {name}
-            </div>
-          </Html>
-        );
-      })}
+      {LABELED_BODIES.map((name) => (
+        <BodyLabel key={name} name={name} />
+      ))}
     </group>
   );
 }

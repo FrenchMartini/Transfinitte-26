@@ -6,6 +6,13 @@ import {
   SCENE_SCALE_AU,
   EARTH_ROTATION_PERIOD_SECONDS,
   MOON_ROTATION_PERIOD_SECONDS,
+  MERCURY_ROTATION_PERIOD_SECONDS,
+  VENUS_ROTATION_PERIOD_SECONDS,
+  MARS_ROTATION_PERIOD_SECONDS,
+  JUPITER_ROTATION_PERIOD_SECONDS,
+  SATURN_ROTATION_PERIOD_SECONDS,
+  URANUS_ROTATION_PERIOD_SECONDS,
+  NEPTUNE_ROTATION_PERIOD_SECONDS,
   PHOBOS_ORBIT_PERIOD_SECONDS,
   DEIMOS_ORBIT_PERIOD_SECONDS,
   IO_ORBIT_PERIOD_SECONDS,
@@ -33,13 +40,13 @@ import {
 } from '../../shaders/sun_plasma';
 
 const PLANET_CONFIGS = [
-  { name: 'Mercury', radius: 0.22, texture: '/textures/mercury.jpeg', defaultColor: 0x94a3b8 },
-  { name: 'Venus', radius: 0.34, texture: '/textures/venus.jpeg', defaultColor: 0xfde047 },
-  { name: 'Mars', radius: 0.28, texture: '/textures/mars.jpg', defaultColor: 0xc2410c },
-  { name: 'Jupiter', radius: 0.78, texture: '/textures/jupiter.jpg', defaultColor: 0xd97706 },
-  { name: 'Saturn', radius: 0.65, texture: '/textures/saturn.jpg', defaultColor: 0xeab308, hasRing: true },
-  { name: 'Uranus', radius: 0.50, texture: '/textures/uranus.jpeg', defaultColor: 0xa5f3fc, hasUranusRing: true },
-  { name: 'Neptune', radius: 0.48, texture: '/textures/neptune.jpg', defaultColor: 0x38bdf8 }
+  { name: 'Mercury', radius: 0.22, texture: '/textures/mercury.jpeg', defaultColor: 0x94a3b8, period_s: MERCURY_ROTATION_PERIOD_SECONDS, spinRate: 0.12, tiltDeg: 0.03 },
+  { name: 'Venus', radius: 0.34, texture: '/textures/venus.jpeg', defaultColor: 0xfde047, period_s: VENUS_ROTATION_PERIOD_SECONDS, spinRate: -0.10, tiltDeg: 177.36 },
+  { name: 'Mars', radius: 0.28, texture: '/textures/mars.jpg', defaultColor: 0xc2410c, period_s: MARS_ROTATION_PERIOD_SECONDS, spinRate: 0.28, tiltDeg: 25.19 },
+  { name: 'Jupiter', radius: 0.78, texture: '/textures/jupiter.jpg', defaultColor: 0xd97706, period_s: JUPITER_ROTATION_PERIOD_SECONDS, spinRate: 0.55, tiltDeg: 3.13 },
+  { name: 'Saturn', radius: 0.65, texture: '/textures/saturn.jpg', defaultColor: 0xeab308, hasRing: true, period_s: SATURN_ROTATION_PERIOD_SECONDS, spinRate: 0.48, tiltDeg: 26.73 },
+  { name: 'Uranus', radius: 0.50, texture: '/textures/uranus.jpeg', defaultColor: 0xa5f3fc, hasUranusRing: true, period_s: URANUS_ROTATION_PERIOD_SECONDS, spinRate: -0.55, tiltDeg: 97.77 },
+  { name: 'Neptune', radius: 0.48, texture: '/textures/neptune.jpg', defaultColor: 0x38bdf8, period_s: NEPTUNE_ROTATION_PERIOD_SECONDS, spinRate: 0.35, tiltDeg: 28.32 }
 ];
 
 export function Planets() {
@@ -72,6 +79,7 @@ export function Planets() {
   const tritonRef = useRef<THREE.Mesh>(null);
 
   const planetRefs = useRef<Record<string, THREE.Group>>({});
+  const globeRefs = useRef<Record<string, THREE.Mesh>>({});
 
   const focusBody = useSimStore((s) => s.focusBody);
 
@@ -145,7 +153,7 @@ export function Planets() {
     });
   }, []);
 
-  useFrame((state, delta) => {
+  useFrame((state) => {
     // 1. Animate Sun Procedural Plasma & Corona
     const t = state.clock.getElapsedTime();
     sunMaterials.plasma.uniforms.uTime.value = t;
@@ -188,8 +196,10 @@ export function Planets() {
     }
 
     // 4. Terrestrial & Giant Planets + Their Natural Moons
+    const wallTime = state.clock.getElapsedTime();
     for (const p of PLANET_CONFIGS) {
       const grp = planetRefs.current[p.name];
+      const globe = globeRefs.current[p.name];
       const data = BODIES[p.name];
       if (grp && data) {
         const rScene = data.orbitAu * SCENE_SCALE_AU;
@@ -199,8 +209,19 @@ export function Planets() {
           0,
           -rScene * Math.sin(theta)
         );
-        // Axial spin
-        grp.rotation.y += delta * 0.1;
+      }
+
+      if (globe) {
+        // Physical axial rotation driven by simulation time
+        const absPeriod = Math.abs(p.period_s);
+        const simPhase = ((simTime_s % absPeriod) + absPeriod) % absPeriod;
+        const simAngle = (simPhase / absPeriod) * 2 * Math.PI * (p.period_s >= 0 ? 1 : -1);
+
+        // Ambient continuous rotation so planets visibly spin in real-time
+        const ambientAngle = wallTime * p.spinRate;
+
+        // Rotate globe around polar axis
+        globe.rotation.y = simAngle + ambientAngle;
       }
     }
 
@@ -412,16 +433,40 @@ export function Planets() {
               focusBody(p.name);
             }}
           >
-            {/* Globe */}
-            <mesh castShadow receiveShadow>
-              <sphereGeometry args={[p.radius, 48, 48]} />
-              <meshStandardMaterial
-                map={tex ?? undefined}
-                color={tex ? 0xffffff : p.defaultColor}
-                roughness={0.75}
-                metalness={0.05}
-              />
-            </mesh>
+            {/* Globe with axial tilt */}
+            <group rotation={[0, 0, THREE.MathUtils.degToRad(p.tiltDeg)]}>
+              <mesh
+                ref={(el) => {
+                  if (el) globeRefs.current[p.name] = el;
+                }}
+                castShadow
+                receiveShadow
+              >
+                <sphereGeometry args={[p.radius, 48, 48]} />
+                <meshStandardMaterial
+                  map={tex ?? undefined}
+                  color={tex ? 0xffffff : p.defaultColor}
+                  roughness={0.75}
+                  metalness={0.05}
+                />
+              </mesh>
+
+              {/* Uranus Ring System aligned in equatorial plane around polar axis */}
+              {p.hasUranusRing && (
+                <mesh rotation={[Math.PI / 2, 0, 0]} castShadow={false} receiveShadow>
+                  <ringGeometry args={[p.radius * 1.35, p.radius * 1.80, 96]} />
+                  <meshStandardMaterial
+                    color={0xa5f3fc}
+                    side={THREE.DoubleSide}
+                    transparent
+                    opacity={0.35}
+                    depthWrite={false}
+                    roughness={0.70}
+                    metalness={0.20}
+                  />
+                </mesh>
+              )}
+            </group>
 
             {/* Saturn Ring System (matching legacy line 127 createSaturnRingMesh) */}
             {p.hasRing && (
@@ -436,24 +481,6 @@ export function Planets() {
                     depthWrite={false}
                     roughness={0.80}
                     metalness={0.05}
-                  />
-                </mesh>
-              </group>
-            )}
-
-            {/* Uranus Tilted Ring System (matching legacy line 169 createUranusRingMesh) */}
-            {p.hasUranusRing && (
-              <group rotation={[Math.PI / 2 + THREE.MathUtils.degToRad(97.77), 0, 0]}>
-                <mesh castShadow={false} receiveShadow>
-                  <ringGeometry args={[p.radius * 1.40, p.radius * 1.85, 96]} />
-                  <meshStandardMaterial
-                    color={0xa5f3fc}
-                    side={THREE.DoubleSide}
-                    transparent
-                    opacity={0.28}
-                    depthWrite={false}
-                    roughness={0.70}
-                    metalness={0.20}
                   />
                 </mesh>
               </group>

@@ -43,6 +43,16 @@ export interface SimState {
   dpr: number;
   contextLost: boolean;
 
+  leftPanelOpen: boolean;
+  rightPanelOpen: boolean;
+  bottomPanelOpen: boolean;
+
+  toggleLeftPanel: () => void;
+  toggleRightPanel: () => void;
+  toggleBottomPanel: () => void;
+  setLeftPanelOpen: (open: boolean) => void;
+  setRightPanelOpen: (open: boolean) => void;
+  setBottomPanelOpen: (open: boolean) => void;
   setSelectedBody: (body: string) => void;
   setCameraFocus: (focus: string) => void;
   focusBody: (body: string) => void;
@@ -91,6 +101,17 @@ export const useSimStore = create<SimState>((set, get) => ({
   qualityTier: 3,
   dpr: getInitialDpr(),
   contextLost: false,
+
+  leftPanelOpen: true,
+  rightPanelOpen: true,
+  bottomPanelOpen: true,
+
+  toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
+  toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
+  toggleBottomPanel: () => set((s) => ({ bottomPanelOpen: !s.bottomPanelOpen })),
+  setLeftPanelOpen: (open: boolean) => set({ leftPanelOpen: open }),
+  setRightPanelOpen: (open: boolean) => set({ rightPanelOpen: open }),
+  setBottomPanelOpen: (open: boolean) => set({ bottomPanelOpen: open }),
 
   setSelectedBody: (body: string) => {
     get().focusBody(body);

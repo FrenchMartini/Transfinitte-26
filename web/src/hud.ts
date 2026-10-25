@@ -144,3 +144,17 @@ export function computeHudAnalytics(frame: SimulationFrame): HudAnalytics {
     moon_distance_km: moon_km
   };
 }
+
+export function formatHudLines(stats: HudAnalytics): string[] {
+  const lines = [
+    '=== D-ORBIT TELEMETRY HUD // CERES TUG ===',
+    `r_Earth: ${stats.radius_au.toFixed(4)} AU`,
+    `v_Earth: ${stats.orbital_speed_km_s.toFixed(3)} km/s`,
+    `Thrust: ${stats.thrust_n.toExponential(3)} N`,
+    `LEDGER_AUDIT: ${stats.ledger_pass ? 'PASS' : 'FAIL'}`,
+  ];
+  if (!stats.is_thrusting) {
+    lines.push('STATUS: UNPOWERED BALLISTIC COAST');
+  }
+  return lines;
+}

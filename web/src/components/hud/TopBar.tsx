@@ -11,14 +11,23 @@ export function TopBar() {
   const toggleMusic = useSimStore((s) => s.toggleMusic);
   const toggleNarration = useSimStore((s) => s.toggleNarration);
   const setOptionsOpen = useSimStore((s) => s.setOptionsOpen);
-  const setBenchmarksOpen = useSimStore((s) => s.setBenchmarksOpen);
-  const setCantingOpen = useSimStore((s) => s.setCantingOpen);
+  const leftPanelOpen = useSimStore((s) => s.leftPanelOpen);
+  const toggleLeftPanel = useSimStore((s) => s.toggleLeftPanel);
 
   return (
     <header className={styles.topBar}>
       <div className={styles.leftSection}>
+        <button
+          type="button"
+          className={styles.sidebarToggleBtn}
+          onClick={toggleLeftPanel}
+          title={leftPanelOpen ? "Collapse Bodies Sidebar (B)" : "Expand Bodies Sidebar (B)"}
+          aria-label="Toggle Celestial Bodies Sidebar"
+        >
+          {leftPanelOpen ? '◀' : '▶'}
+        </button>
         <img src="/delta.webp" alt="Delta" className={styles.appLogo} />
-        <span className={styles.appTitle}>Far Orbit</span>
+        <span className={styles.appTitle}>D-Orbit</span>
         <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
           <span style={{ fontSize: 'var(--font-size-label)', color: 'var(--muted)', textTransform: 'uppercase' }}>Mission</span>
           <span className="mono" style={{ fontSize: 'var(--font-size-body)', color: 'var(--text)' }}>
@@ -42,38 +51,30 @@ export function TopBar() {
 
         <button
           type="button"
-          className={`${styles.controlBtn} ${musicEnabled ? styles.controlBtnActive : ''}`}
+          role="switch"
+          aria-checked={musicEnabled}
+          className={`${styles.toggleBtn} ${musicEnabled ? styles.toggleBtnActive : ''}`}
           onClick={toggleMusic}
           title="Toggle ambient background music"
         >
-          Music
+          <span className={styles.toggleLabel}>Music</span>
+          <span className={styles.toggleTrack}>
+            <span className={styles.toggleThumb} />
+          </span>
         </button>
 
         <button
           type="button"
-          className={`${styles.controlBtn} ${narrationEnabled ? styles.controlBtnActive : ''}`}
+          role="switch"
+          aria-checked={narrationEnabled}
+          className={`${styles.toggleBtn} ${narrationEnabled ? styles.toggleBtnActive : ''}`}
           onClick={toggleNarration}
           title="Toggle celestial voice narration"
         >
-          Narration
-        </button>
-
-        <button
-          type="button"
-          className={styles.controlBtn}
-          onClick={() => setCantingOpen(true)}
-          title="Plume Canting & Protection Architecture (C)"
-        >
-          Plumes
-        </button>
-
-        <button
-          type="button"
-          className={styles.controlBtn}
-          onClick={() => setBenchmarksOpen(true)}
-          title="Astrodynamic Verification Benchmarks"
-        >
-          Verification
+          <span className={styles.toggleLabel}>Narration</span>
+          <span className={styles.toggleTrack}>
+            <span className={styles.toggleThumb} />
+          </span>
         </button>
 
         <button

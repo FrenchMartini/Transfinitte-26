@@ -1,89 +1,36 @@
 import * as Collapsible from '@radix-ui/react-collapsible';
-import * as Select from '@radix-ui/react-select';
 import { useSimStore } from '../../store/sim';
 import { CELESTIAL_LIST, BODIES } from '../../data/bodies';
 import styles from './BodiesPanel.module.css';
 
-export function BodiesPanel() {
+interface BodiesPanelProps {
+  isCollapsed?: boolean;
+}
+
+export function BodiesPanel({ isCollapsed = false }: BodiesPanelProps) {
   const selectedBody = useSimStore((s) => s.selectedBody);
   const cameraFocus = useSimStore((s) => s.cameraFocus);
   const focusBody = useSimStore((s) => s.focusBody);
   const scaleExpanded = useSimStore((s) => s.scaleExpanded);
   const toggleScaleExpanded = useSimStore((s) => s.toggleScaleExpanded);
+  const toggleLeftPanel = useSimStore((s) => s.toggleLeftPanel);
 
   return (
-    <aside className={styles.bodiesPanel}>
-      <div className={styles.sectionTitle}>Celestial Bodies</div>
-
-      {/* Merged Dropdown Selector */}
-      <div style={{ padding: '0 12px 8px' }}>
-        <Select.Root value={cameraFocus} onValueChange={focusBody}>
-          <Select.Trigger
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              height: '30px',
-              padding: '0 8px',
-              background: 'var(--bg)',
-              border: '1px solid var(--line)',
-              borderRadius: 'var(--radius)',
-              color: 'var(--text)',
-              fontSize: 'var(--font-size-body)',
-              cursor: 'pointer'
-            }}
-            aria-label="Target Focus Dropdown"
-          >
-            <Select.Value placeholder="Select Target" />
-            <Select.Icon>▼</Select.Icon>
-          </Select.Trigger>
-          <Select.Portal>
-            <Select.Content
-              style={{
-                background: 'var(--panel)',
-                border: '1px solid var(--line)',
-                borderRadius: 'var(--radius)',
-                padding: '4px',
-                zIndex: 'var(--z-tooltip)'
-              }}
-              position="popper"
-              sideOffset={4}
-            >
-              <Select.Viewport>
-                <Select.Item
-                  value="system"
-                  style={{
-                    padding: '6px 10px',
-                    fontSize: 'var(--font-size-body)',
-                    color: 'var(--text)',
-                    borderRadius: 'var(--radius)',
-                    cursor: 'pointer',
-                    outline: 'none'
-                  }}
-                >
-                  <Select.ItemText>🌌 Solar System</Select.ItemText>
-                </Select.Item>
-                {CELESTIAL_LIST.map((key) => (
-                  <Select.Item
-                    key={key}
-                    value={key}
-                    style={{
-                      padding: '6px 10px',
-                      fontSize: 'var(--font-size-body)',
-                      color: 'var(--text)',
-                      borderRadius: 'var(--radius)',
-                      cursor: 'pointer',
-                      outline: 'none'
-                    }}
-                  >
-                    <Select.ItemText>{BODIES[key]?.displayName || key}</Select.ItemText>
-                  </Select.Item>
-                ))}
-              </Select.Viewport>
-            </Select.Content>
-          </Select.Portal>
-        </Select.Root>
+    <aside
+      className={`${styles.bodiesPanel} ${isCollapsed ? styles.bodiesPanelCollapsed : ''}`}
+      aria-hidden={isCollapsed}
+    >
+      <div className={styles.sectionHeader}>
+        <span className={styles.sectionTitle}>Celestial Bodies</span>
+        <button
+          type="button"
+          className={styles.collapseBtn}
+          onClick={toggleLeftPanel}
+          title="Collapse Bodies Panel (B)"
+          aria-label="Collapse Left Panel"
+        >
+          ◀
+        </button>
       </div>
 
       {/* Direct Clickable Bodies List */}
@@ -120,8 +67,11 @@ export function BodiesPanel() {
         <Collapsible.Root open={scaleExpanded} onOpenChange={toggleScaleExpanded}>
           <Collapsible.Trigger asChild>
             <button type="button" className={styles.scaleHeaderBtn} id="btn-toggle-matrix">
-              <span className={styles.sectionTitle} style={{ padding: 0 }}>Scale Matrix</span>
-              <span className={`${styles.chevron} ${scaleExpanded ? styles.chevronOpen : ''}`}>▼</span>
+              <span className={styles.scaleHeaderTitle}>Scale Matrix</span>
+              <div className={styles.scaleHeaderRight}>
+                <span className={styles.scaleTag}>Reference</span>
+                <span className={`${styles.chevron} ${scaleExpanded ? styles.chevronOpen : ''}`}>▼</span>
+              </div>
             </button>
           </Collapsible.Trigger>
 

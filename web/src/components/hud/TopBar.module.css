@@ -16,6 +16,29 @@
   gap: 8px;
 }
 
+.sidebarToggleBtn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 120ms ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.sidebarToggleBtn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background-color: var(--bg);
+}
+
 .appLogo {
   width: 20px;
   height: 20px;
@@ -61,43 +84,71 @@
   border-color: var(--accent);
 }
 
-.selectTrigger {
+.toggleBtn {
   display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  background-color: var(--bg);
+  gap: 7px;
+  background: transparent;
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 0 8px;
-  font-size: var(--font-size-body);
   height: 28px;
   cursor: pointer;
-}
-
-.selectTrigger:hover {
-  border-color: var(--muted);
-}
-
-.selectContent {
-  background-color: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 4px;
-  z-index: var(--z-tooltip);
-}
-
-.selectItem {
-  padding: 6px 10px;
   font-size: var(--font-size-body);
-  color: var(--text);
-  border-radius: var(--radius);
-  cursor: pointer;
-  outline: none;
+  transition: border-color 150ms ease, background-color 150ms ease;
+  user-select: none;
 }
 
-.selectItem[data-highlighted] {
-  background-color: var(--line);
-  color: var(--accent);
+.toggleBtn:hover {
+  border-color: var(--muted);
+  background-color: var(--bg);
+}
+
+.toggleBtnActive {
+  border-color: var(--accent);
+}
+
+.toggleLabel {
+  font-size: var(--font-size-label);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 150ms ease;
+}
+
+.toggleBtnActive .toggleLabel {
+  color: var(--text);
+}
+
+.toggleTrack {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 14px;
+  background-color: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.toggleBtnActive .toggleTrack {
+  background-color: rgba(255, 176, 0, 0.2);
+  border-color: var(--accent);
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--muted);
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms ease;
+}
+
+.toggleBtnActive .toggleThumb {
+  transform: translateX(10px);
+  background-color: var(--accent);
 }

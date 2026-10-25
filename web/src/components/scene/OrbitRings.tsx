@@ -93,7 +93,7 @@ export function OrbitRings() {
   }, []);
 
   // 2. Dynamic Earth Migration Orbit Ring (Single Closed Loop at Earth's Current a(t))
-  const { earthGeo, earthLineLoop, earthPositions } = useMemo(() => {
+  const { earthLineLoop } = useMemo(() => {
     // Initial radius: 1.0 AU (10.0 scene units)
     const initialSceneR = 1.0 * SCENE_SCALE_AU;
     const positions = buildRingPositions(initialSceneR);
@@ -114,10 +114,10 @@ export function OrbitRings() {
 
     const loop = new THREE.LineLoop(geo, mat);
     loop.name = 'orbitRing_EarthCurrent';
-    return { earthGeo: geo, earthLineLoop: loop, earthPositions: positions };
+    return { earthGeo: geo, earthLineLoop: loop };
   }, []);
 
-  // Redraw Earth's current orbit ring outward as Earth migrates
+  // Redraw Earth's current orbit ring outward as Earth migrates via GPU scale
   useFrame(() => {
     if (!showOrbits) return;
     const currentFrame = activeSimState.frame || useSimStore.getState().currentFrame;
@@ -125,23 +125,9 @@ export function OrbitRings() {
     if (!earth) return;
 
     const currentRadiusAu = Math.hypot(earth.x, earth.y);
-    const currentRadiusScene = currentRadiusAu * SCENE_SCALE_AU;
-
-    if (Math.abs(currentRadiusScene - lastEarthRadiusRef.current) > 1e-4) {
-      lastEarthRadiusRef.current = currentRadiusScene;
-
-      for (let i = 0; i < SEGMENTS; i++) {
-        const theta = (i / SEGMENTS) * 2 * Math.PI;
-        earthPositions[i * 3 + 0] = currentRadiusScene * Math.cos(theta);
-        earthPositions[i * 3 + 1] = 0.0;
-        earthPositions[i * 3 + 2] = currentRadiusScene * Math.sin(theta);
-      }
-
-      if (import.meta.env.DEV) {
-        assertFiniteNonZeroRingVertices(earthPositions, 'EarthCurrentOrbit_DynamicUpdate');
-      }
-
-      (earthGeo.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+    if (Math.abs(currentRadiusAu - lastEarthRadiusRef.current) > 1e-4) {
+      lastEarthRadiusRef.current = currentRadiusAu;
+      earthLineLoop.scale.set(currentRadiusAu, 1.0, currentRadiusAu);
     }
   });
 

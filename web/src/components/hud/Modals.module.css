@@ -1,8 +1,8 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(10, 11, 13, 0.7);
-  z-index: var(--z-drawer);
+  background-color: rgba(10, 11, 13, 0.80);
+  z-index: var(--z-modal-overlay, 9990);
 }
 
 .content {
@@ -10,35 +10,88 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 90vw;
-  max-width: 440px;
-  max-height: 85dvh;
+  width: 92vw;
+  max-width: 500px;
+  max-height: 88dvh;
   background-color: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 20px;
   overflow-y: auto;
-  z-index: var(--z-tooltip);
+  z-index: var(--z-modal, 10000);
   color: var(--text);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content::-webkit-scrollbar-thumb {
+  background-color: var(--line);
+  border-radius: 4px;
+}
+
+.mediumContent {
+  max-width: 580px;
 }
 
 .wideContent {
-  max-width: 700px;
+  max-width: 840px;
 }
 
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding-bottom: 12px;
+  gap: 12px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.headerBadge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .title {
   font-size: var(--font-size-title);
   font-weight: 600;
   color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.headerStatus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.statusPill {
+  font-size: var(--font-size-label);
+  color: var(--accent);
+  background-color: rgba(255, 176, 0, 0.12);
+  border: 1px solid var(--accent);
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .closeBtn {
@@ -46,24 +99,46 @@
   color: var(--muted);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: var(--font-size-body);
+  font-size: 13px;
+  transition: all 120ms ease;
+  line-height: 1;
 }
 
 .closeBtn:hover {
   color: var(--text);
   border-color: var(--muted);
+  background-color: var(--bg);
 }
 
 .body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+}
+
+.cardSection {
+  background-color: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionHeading {
+  font-size: var(--font-size-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 2px;
 }
 
 .dataRow {
@@ -71,6 +146,8 @@
   justify-content: space-between;
   align-items: center;
   font-size: var(--font-size-body);
+  line-height: 1.4;
+  gap: 12px;
 }
 
 .label {
@@ -78,10 +155,125 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .value {
   color: var(--text);
+  text-align: right;
+  word-break: break-word;
+}
+
+.accentValue {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.schematicBox {
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.schematicRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: var(--font-size-body);
+}
+
+.schematicLabel {
+  font-size: var(--font-size-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.summaryBanner {
+  background-color: var(--bg);
+  border-left: 2px solid var(--accent);
+  border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 14px;
+  font-size: var(--font-size-body);
+  color: var(--text);
+  border-radius: var(--radius);
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background-color: var(--bg);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.tableWrapper::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tableWrapper::-webkit-scrollbar-thumb {
+  background-color: var(--line);
+  border-radius: 4px;
+}
+
+.benchmarkTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-body);
+  text-align: left;
+}
+
+.benchmarkTable th {
+  font-size: var(--font-size-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background-color: var(--panel);
+  white-space: nowrap;
+}
+
+.benchmarkTable td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.benchmarkTable tr:last-child td {
+  border-bottom: none;
+}
+
+.benchmarkName {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.benchmarkSource {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.passTag {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .actionBtn {
@@ -92,33 +284,10 @@
   padding: 4px 10px;
   font-size: var(--font-size-body);
   cursor: pointer;
+  transition: all 120ms ease;
 }
 
 .actionBtn:hover {
   border-color: var(--muted);
-}
-
-.benchmarkTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size-body);
-}
-
-.benchmarkTable th {
-  text-align: left;
-  font-size: var(--font-size-label);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--line);
-}
-
-.benchmarkTable td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--line);
-}
-
-.passTag {
-  color: var(--accent);
+  background-color: var(--bg);
 }

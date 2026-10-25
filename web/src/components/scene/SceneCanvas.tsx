@@ -7,7 +7,7 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 type ControlsRef = ComponentRef<typeof OrbitControls>;
 import { useSimStore } from '../../store/sim';
-import { YEAR_SECONDS, SCENE_SCALE_AU } from '../../config';
+import { YEAR_SECONDS, SCENE_SCALE_AU, MOON_ROTATION_PERIOD_SECONDS } from '../../config';
 import { eclipticToScene } from '../../coords';
 import { interpolateFrame, activeSimState } from '../../interpolation';
 import { computeHudAnalytics } from '../../hud';
@@ -30,13 +30,18 @@ function easeInOutCubic(t: number): number {
 function getBodyWorldPosition(
   bodyKey: string,
   currentFrame: any,
-  currentYear: number
+  currentYear: number,
+  fallbackTarget?: THREE.Vector3
 ): THREE.Vector3 {
+  if (bodyKey === 'freeform') {
+    return fallbackTarget ? fallbackTarget.clone() : new THREE.Vector3(0, 0, 0);
+  }
+
   if (bodyKey === 'system' || bodyKey === 'Sun') {
     return new THREE.Vector3(0, 0, 0);
   }
 
-  const earth = currentFrame.bodies['Earth'];
+  const earth = currentFrame.bodies?.['Earth'];
   if (!earth) return new THREE.Vector3(0, 0, 0);
   const earthScene = eclipticToScene([earth.x, earth.y, earth.z], [0, 0, 0], SCENE_SCALE_AU);
 
@@ -45,28 +50,30 @@ function getBodyWorldPosition(
   }
 
   if (bodyKey === 'Moon') {
-    const moonAngle = currentYear * 13.37 * 2 * Math.PI;
-    const moonDist = 1.1;
+    const simTime_s = currentFrame.time_s ?? (currentYear * YEAR_SECONDS);
+    const lunarAngle = (2.0 * Math.PI * simTime_s) / MOON_ROTATION_PERIOD_SECONDS;
+    const lunarDist = 0.92;
     return new THREE.Vector3(
-      earthScene[0] + Math.cos(moonAngle) * moonDist,
-      earthScene[1] + Math.sin(moonAngle * 0.5) * 0.15,
-      earthScene[2] + Math.sin(moonAngle) * moonDist
+      earthScene[0] + Math.cos(lunarAngle) * lunarDist,
+      earthScene[1] + Math.sin(lunarAngle) * 0.089 * lunarDist,
+      earthScene[2] + Math.sin(lunarAngle) * lunarDist
     );
   }
 
   if (bodyKey === 'Tug') {
-    const vx = earth.vx;
-    const vy = earth.vy;
-    const vLen = Math.hypot(vx, vy) || 1;
-    const tangX = -vy / vLen;
-    const tangZ = -vx / vLen;
-    return new THREE.Vector3(
-      earthScene[0] + tangX * 1.4,
-      earthScene[1],
-      earthScene[2] + tangZ * 1.4
-    );
+    let dir = new THREE.Vector3();
+    const tugData = currentFrame.bodies?.['Tug'];
+    if (tugData) {
+      const tugRaw = eclipticToScene([tugData.x, tugData.y, tugData.z], [0, 0, 0], SCENE_SCALE_AU);
+      dir.set(tugRaw[0] - earthScene[0], tugRaw[1] - earthScene[1], tugRaw[2] - earthScene[2]);
+    }
+    if (dir.lengthSq() < 1e-6) {
+      const vScene = eclipticToScene([earth.vx, earth.vy, earth.vz], [0, 0, 0], 1.0);
+      dir.set(vScene[0], vScene[1], vScene[2]);
+    }
+    dir.normalize();
+    return new THREE.Vector3(earthScene[0], earthScene[1], earthScene[2]).addScaledVector(dir, 1.4);
   }
-
 
   if (bodyKey === 'AsteroidBelt') {
     return new THREE.Vector3(2.7 * SCENE_SCALE_AU, 0, 0);
@@ -95,14 +102,16 @@ function getBodyViewParams(bodyKey: string): {
   switch (bodyKey) {
     case 'system':
       return { offset: new THREE.Vector3(0, 52, 62), minDist: 5.0, maxDist: 1800 };
+    case 'freeform':
+      return { offset: new THREE.Vector3(0, 0, 0), minDist: 0.1, maxDist: 3000 };
     case 'Sun':
       return { offset: new THREE.Vector3(0, 4.5, 7.5), minDist: 3.2, maxDist: 150 };
     case 'Earth':
       return { offset: new THREE.Vector3(1.4, 0.9, 1.8), minDist: 0.8, maxDist: 40 };
     case 'Moon':
-      return { offset: new THREE.Vector3(0.5, 0.35, 0.65), minDist: 0.3, maxDist: 20 };
+      return { offset: new THREE.Vector3(0.35, 0.22, 0.45), minDist: 0.15, maxDist: 15 };
     case 'Tug':
-      return { offset: new THREE.Vector3(0.9, 0.6, 1.2), minDist: 0.5, maxDist: 30 };
+      return { offset: new THREE.Vector3(0.55, 0.35, 0.65), minDist: 0.20, maxDist: 20 };
     case 'Mercury':
       return { offset: new THREE.Vector3(0.7, 0.5, 0.9), minDist: 0.4, maxDist: 25 };
     case 'Venus':
@@ -130,6 +139,7 @@ function SimController({ controlsRef }: { controlsRef: React.RefObject<ControlsR
   useEffect(() => {
     if (typeof window !== 'undefined') {
       (window as any).__threeScene = scene;
+      (window as any).THREE = THREE;
     }
   }, [scene]);
 
@@ -147,12 +157,54 @@ function SimController({ controlsRef }: { controlsRef: React.RefObject<ControlsR
   const currentSpeedRef = useRef(targetPlaybackSpeed);
   const lastHudUpdateRef = useRef(0);
   const lastHandledZoomRef = useRef(0);
+  const userInteractingRef = useRef(false);
+  const activeKeysRef = useRef<Set<string>>(new Set());
+  const prevBodyPosRef = useRef<THREE.Vector3 | null>(null);
+  const controlsInitializedRef = useRef(false);
   const maxTime = frames[frames.length - 1].time_s;
 
   const prefersReducedMotion = useMemo(() => {
     return typeof window !== 'undefined'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
       : false;
+  }, []);
+
+  // Listen to keyboard controls (WASD, Arrow keys, Q/E) for smooth fly/pan navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLSelectElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+      const code = e.code;
+      if (
+        code === 'KeyW' || code === 'KeyS' || code === 'KeyA' || code === 'KeyD' ||
+        code === 'ArrowUp' || code === 'ArrowDown' || code === 'ArrowLeft' || code === 'ArrowRight' ||
+        code === 'KeyQ' || code === 'KeyE'
+      ) {
+        activeKeysRef.current.add(code);
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      activeKeysRef.current.delete(e.code);
+    };
+
+    const onBlur = () => {
+      activeKeysRef.current.clear();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
   }, []);
 
   // Camera transition state: allows smooth 1.2s ease-in-out with interruption blending
@@ -179,10 +231,16 @@ function SimController({ controlsRef }: { controlsRef: React.RefObject<ControlsR
     if (cameraFocus !== lastFocusRef.current) {
       lastFocusRef.current = cameraFocus;
 
+      if (cameraFocus === 'freeform') {
+        transitionRef.current.targetBody = 'freeform';
+        return;
+      }
+
       const duration = prefersReducedMotion ? 0.35 : 1.2;
       const startCam = camera.position.clone();
       const startTgt = controlsRef.current ? controlsRef.current.target.clone() : new THREE.Vector3();
 
+      prevBodyPosRef.current = null;
       transitionRef.current = {
         active: true,
         startTime: -1, // will set on next frame with clock
@@ -243,9 +301,12 @@ function SimController({ controlsRef }: { controlsRef: React.RefObject<ControlsR
     }
     const timeSecondaryEl = document.getElementById('time-secondary');
     if (timeSecondaryEl) {
-      const totalFrames = frames.length - 1;
-      const frameIdx = Math.min(totalFrames, Math.floor((simTimeRef.current / maxTime) * totalFrames));
-      timeSecondaryEl.textContent = `Frame ${frameIdx} / ${totalFrames} | ${simTimeRef.current.toFixed(1)} s`;
+      const totalFrames = frames.length;
+      const frameIdx = Math.min(
+        totalFrames,
+        Math.max(1, Math.floor((simTimeRef.current / maxTime) * (totalFrames - 1)) + 1)
+      );
+      timeSecondaryEl.textContent = `Frame ${frameIdx} / ${totalFrames} | ${(simTimeRef.current / 1e9).toFixed(1)} Gs`;
     }
     const scrubberEl = document.getElementById('timeline-scrubber') as HTMLInputElement | null;
     if (scrubberEl && document.activeElement !== scrubberEl) {
@@ -271,13 +332,71 @@ function SimController({ controlsRef }: { controlsRef: React.RefObject<ControlsR
       }
     }
 
-    // Camera Ease-In-Out & Tracking Loop
     const trans = transitionRef.current;
-    const targetPos = getBodyWorldPosition(trans.targetBody, continuousFrame, activeSimState.year);
+
+    // Attach OrbitControls listeners on the first frame where controlsRef.current is mounted
+    if (controlsRef.current && !controlsInitializedRef.current) {
+      controlsInitializedRef.current = true;
+      controlsRef.current.addEventListener('start', () => {
+        userInteractingRef.current = true;
+        transitionRef.current.active = false;
+      });
+      controlsRef.current.addEventListener('end', () => {
+        userInteractingRef.current = false;
+        const currentTrans = transitionRef.current;
+        if (controlsRef.current && currentTrans.targetBody !== 'system' && currentTrans.targetBody !== 'freeform') {
+          const continuousFrame = activeSimState.frame || frames[0];
+          const targetPos = getBodyWorldPosition(currentTrans.targetBody, continuousFrame, activeSimState.year);
+          if (controlsRef.current.target.distanceTo(targetPos) > 1.2) {
+            currentTrans.targetBody = 'freeform';
+            useSimStore.getState().setCameraFocus('freeform');
+          }
+        }
+      });
+    }
+
+    // 1. Interactive Keyboard Fly / Pan Navigation (WASD, Arrow keys, Q/E)
+    const keys = activeKeysRef.current;
+    if (keys.size > 0) {
+      trans.active = false;
+      if (trans.targetBody !== 'freeform') {
+        trans.targetBody = 'freeform';
+        useSimStore.getState().setCameraFocus('freeform');
+      }
+
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+      const camRight = new THREE.Vector3().crossVectors(camDir, camera.up).normalize();
+      const camUp = new THREE.Vector3().crossVectors(camRight, camDir).normalize();
+
+      const moveDir = new THREE.Vector3();
+      if (keys.has('KeyW') || keys.has('ArrowUp')) moveDir.add(camUp);
+      if (keys.has('KeyS') || keys.has('ArrowDown')) moveDir.sub(camUp);
+      if (keys.has('KeyD') || keys.has('ArrowRight')) moveDir.add(camRight);
+      if (keys.has('KeyA') || keys.has('ArrowLeft')) moveDir.sub(camRight);
+      if (keys.has('KeyE')) moveDir.add(camDir);
+      if (keys.has('KeyQ')) moveDir.sub(camDir);
+
+      if (moveDir.lengthSq() > 0) {
+        moveDir.normalize();
+        const dist = controlsRef.current
+          ? camera.position.distanceTo(controlsRef.current.target)
+          : 15.0;
+        const panSpeed = Math.max(1.5, Math.min(dist * 0.85, 80.0)) * delta;
+        const moveVec = moveDir.multiplyScalar(panSpeed);
+        camera.position.add(moveVec);
+        if (controlsRef.current) {
+          controlsRef.current.target.add(moveVec);
+        }
+      }
+    }
+
+    // 2. Camera Ease-In-Out & Continuous Body Tracking
+    const targetPos = getBodyWorldPosition(trans.targetBody, continuousFrame, activeSimState.year, controlsRef.current?.target);
     const { offset } = getBodyViewParams(trans.targetBody);
     const desiredCamPos = targetPos.clone().add(offset);
 
-    if (trans.active) {
+    if (trans.active && trans.targetBody !== 'freeform') {
       if (trans.startTime < 0) {
         trans.startTime = now;
       }
@@ -292,14 +411,18 @@ function SimController({ controlsRef }: { controlsRef: React.RefObject<ControlsR
 
       if (progress >= 1.0) {
         trans.active = false;
+        prevBodyPosRef.current = targetPos.clone();
       }
-    } else {
-      // Steady-state continuous tracking
-      if (controlsRef.current && trans.targetBody !== 'system') {
-        const deltaMove = targetPos.clone().sub(controlsRef.current.target);
-        controlsRef.current.target.copy(targetPos);
-        camera.position.add(deltaMove);
+    } else if (trans.targetBody !== 'system' && trans.targetBody !== 'freeform') {
+      // Steady-state continuous tracking: translate camera and target by the moving body's displacement
+      if (prevBodyPosRef.current) {
+        const bodyDelta = targetPos.clone().sub(prevBodyPosRef.current);
+        if (controlsRef.current && !userInteractingRef.current) {
+          controlsRef.current.target.add(bodyDelta);
+        }
+        camera.position.add(bodyDelta);
       }
+      prevBodyPosRef.current = targetPos.clone();
     }
 
     if (controlsRef.current) {
@@ -328,10 +451,10 @@ function SolarLighting() {
 
   return (
     <>
-      <ambientLight color={0xdbeafe} intensity={0.22} />
+      <ambientLight color={0xdbeafe} intensity={0.18} />
       <pointLight
         ref={lightRef}
-        args={[0xfff8ea, 18.0, 0, 0.0]}
+        args={[0xfff8ea, 6.5, 0, 0.0]}
         position={[0, 0, 0]}
         decay={0}
         distance={0}
@@ -372,8 +495,8 @@ export function SceneCanvas() {
         ref={controlsRef}
         enableDamping
         dampingFactor={0.06}
-        minDistance={0.5}
-        maxDistance={1800}
+        minDistance={0.15}
+        maxDistance={2500}
       />
 
       <SimController controlsRef={controlsRef} />
@@ -389,9 +512,9 @@ export function SceneCanvas() {
       {/* Selective bloom for Sun & relativistic plasma plume glow */}
       <EffectComposer enableNormalPass={false} multisampling={0}>
         <Bloom
-          luminanceThreshold={0.88}
-          luminanceSmoothing={0.2}
-          intensity={0.4}
+          luminanceThreshold={0.90}
+          luminanceSmoothing={0.25}
+          intensity={0.22}
         />
       </EffectComposer>
     </Canvas>
